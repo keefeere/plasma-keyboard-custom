@@ -13,6 +13,105 @@ KeyboardLayout {
     readonly property real functionKeyWidth: mapFromItem(normalKey, normalKey.width / 2, 0).x
     KeyboardRow {
         Key {
+            text: "`"
+            alternativeKeys: "`~"
+            smallText: "~"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_1
+            text: "1"
+            alternativeKeys: "1!"
+            smallText: "!"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_2
+            text: "2"
+            alternativeKeys: "2@"
+            smallText: "@"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_3
+            text: "3"
+            alternativeKeys: "3#"
+            smallText: "#"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_4
+            text: "4"
+            alternativeKeys: "4$"
+            smallText: "$"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_5
+            text: "5"
+            alternativeKeys: "5%"
+            smallText: "%"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_6
+            text: "6"
+            alternativeKeys: "6^"
+            smallText: "^"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_7
+            text: "7"
+            alternativeKeys: "7&"
+            smallText: "&"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_8
+            text: "8"
+            alternativeKeys: "8*"
+            smallText: "*"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_9
+            text: "9"
+            alternativeKeys: "9("
+            smallText: "("
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_0
+            text: "0"
+            alternativeKeys: "0)"
+            smallText: ")"
+            smallTextVisible: true
+        }
+        Key {
+            text: "-"
+            alternativeKeys: "-_"
+            smallText: "_"
+            smallTextVisible: true
+        }
+        Key {
+            text: "+"
+            alternativeKeys: "+="
+            smallText: "="
+            smallTextVisible: true
+        }
+        BackspaceKey {
+        }
+    }
+    KeyboardRow {
+        Key {
+            key: Qt.Key_Tab
+            displayText: "Tab"
+            noModifier: true
+            functionKey: true
+            highlighted: true
+        }
+        Key {
             key: 0x0419
             text: "й"
         }
@@ -33,6 +132,8 @@ KeyboardLayout {
             key: 0x0415
             text: "е"
             alternativeKeys: "её"
+            smallText: "ё"
+            smallTextVisible: true
         }
         Key {
             key: 0x041D
@@ -57,9 +158,33 @@ KeyboardLayout {
         Key {
             key: 0x0425
             text: "х"
+            alternativeKeys: "х[{"
+            smallText: "[{"
+            smallTextVisible: true
+        }
+        Key {
+            key: 0x042A
+            text: "ъ"
+            alternativeKeys: "ъ]}"
+            smallText: "]}"
+            smallTextVisible: true
+        }
+        Key {
+            text: "\\"
+            alternativeKeys: "\\|/"
+            smallText: "|/"
+            smallTextVisible: true
         }
     }
     KeyboardRow {
+        Key {
+            key: Qt.Key_Delete
+            displayText: "Del"
+            noModifier: true
+            functionKey: true
+            highlighted: true
+            Layout.preferredWidth: functionKeyWidth / 2
+        }
         Key {
             key: 0x0424
             text: "ф"
@@ -99,14 +224,25 @@ KeyboardLayout {
         Key {
             key: 0x0416
             text: "ж"
+            alternativeKeys: "ж;:"
+            smallText: ";:"
+            smallTextVisible: true
         }
         Key {
             key: 0x042D
             text: "э"
+            alternativeKeys: "э'\""
+            smallText: "'\""
+            smallTextVisible: true
+        }
+        EnterKey {
+            weight: normalKeyWidth * 2
+            Layout.fillWidth: false
         }
     }
     KeyboardRow {
         ShiftKey {
+            weight: functionKeyWidth / 2
         }
         Key {
             key: 0x042F
@@ -135,17 +271,43 @@ KeyboardLayout {
         Key {
             key: 0x042C
             text: "ь"
-            alternativeKeys: "ьъ"
+            alternativeKeys: "ь"
+            smallTextVisible: true
         }
         Key {
             key: 0x0411
             text: "б"
+            alternativeKeys: "б,<"
+            smallText: ",<"
+            smallTextVisible: true
         }
         Key {
             key: 0x042E
             text: "ю"
+            alternativeKeys: "ю.>"
+            smallText: ".>"
+            smallTextVisible: true
         }
-        BackspaceKey {
+        Key {
+            key: Qt.Key_Period
+            text: "/"
+            alternativeKeys: "/!?.,"
+            smallText: "/!?.,"
+            smallTextVisible: true
+            highlighted: true
+        }
+
+        ShiftKey {
+            weight: functionKeyWidth / 2
+        }
+        Key {
+            key: Qt.Key_Up
+            Layout.fillWidth: false
+            displayText: "\u2191"
+            repeat: true
+            noModifier: true
+            functionKey: true
+            highlighted: true
         }
     }
     KeyboardRow {
@@ -157,34 +319,34 @@ KeyboardLayout {
             weight: normalKeyWidth
             Layout.fillWidth: false
         }
-        Key {
-            key: Qt.Key_Comma
-            weight: normalKeyWidth
-            Layout.fillWidth: false
-            text: ","
-            smallText: "\u2699"
-            smallTextVisible: keyboard.isFunctionPopupListAvailable()
-            highlighted: true
-        }
         SpaceKey {
         }
         Key {
-            key: Qt.Key_Period
-            weight: normalKeyWidth
+            key: Qt.Key_Left
             Layout.fillWidth: false
-            text: "."
-            alternativeKeys: "!.?"
-            smallText: "!?"
-            smallTextVisible: true
+            displayText: "\u2190"
+            repeat: true
+            noModifier: true
+            functionKey: true
             highlighted: true
         }
-        HideKeyboardKey {
-            weight: normalKeyWidth
+        Key {
+            key: Qt.Key_Right
             Layout.fillWidth: false
+            displayText: "\u2192"
+            repeat: true
+            noModifier: true
+            functionKey: true
+            highlighted: true
         }
-        EnterKey {
-            weight: functionKeyWidth
+        Key {
+            key: Qt.Key_Down
             Layout.fillWidth: false
+            displayText: "\u2193"
+            repeat: true
+            noModifier: true
+            functionKey: true
+            highlighted: true
         }
     }
 }

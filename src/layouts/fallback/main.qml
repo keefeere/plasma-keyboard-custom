@@ -12,6 +12,23 @@ KeyboardLayout {
     readonly property real normalKeyWidth: normalKey.width
     readonly property real functionKeyWidth: mapFromItem(normalKey, normalKey.width / 2, 0).x
     KeyboardRow {
+        Key { key: Qt.Key_QuoteLeft; text: "`"; alternativeKeys: "`~"; smallText: "~"; smallTextVisible: true }
+        Key { key: Qt.Key_1; text: "1"; alternativeKeys: "1!"; smallText: "!"; smallTextVisible: true }
+        Key { key: Qt.Key_2; text: "2"; alternativeKeys: "2@"; smallText: "@"; smallTextVisible: true }
+        Key { key: Qt.Key_3; text: "3"; alternativeKeys: "3#"; smallText: "#"; smallTextVisible: true }
+        Key { key: Qt.Key_4; text: "4"; alternativeKeys: "4$"; smallText: "$"; smallTextVisible: true }
+        Key { key: Qt.Key_5; text: "5"; alternativeKeys: "5%"; smallText: "%"; smallTextVisible: true }
+        Key { key: Qt.Key_6; text: "6"; alternativeKeys: "6^"; smallText: "^"; smallTextVisible: true }
+        Key { key: Qt.Key_7; text: "7"; alternativeKeys: "7&"; smallText: "&"; smallTextVisible: true }
+        Key { key: Qt.Key_8; text: "8"; alternativeKeys: "8*"; smallText: "*"; smallTextVisible: true }
+        Key { key: Qt.Key_9; text: "9"; alternativeKeys: "9("; smallText: "("; smallTextVisible: true }
+        Key { key: Qt.Key_0; text: "0"; alternativeKeys: "0)"; smallText: ")"; smallTextVisible: true }
+        Key { key: Qt.Key_Minus; text: "-"; alternativeKeys: "-_"; smallText: "_"; smallTextVisible: true }
+        Key { key: Qt.Key_Equal; text: "="; alternativeKeys: "=+"; smallText: "+"; smallTextVisible: true }
+        BackspaceKey { }
+    }
+    KeyboardRow {
+        Key { key: Qt.Key_Tab; displayText: "Tab"; noModifier: true; functionKey: true; highlighted: true; Layout.preferredWidth: functionKeyWidth; Layout.fillWidth: false }
         Key {
             key: Qt.Key_Q
             text: "q"
@@ -148,6 +165,9 @@ KeyboardLayout {
             weight: functionKeyWidth
             Layout.fillWidth: false
         }
+
+        Key { key: Qt.Key_Delete; displayText: "Del"; noModifier: true; functionKey: true; highlighted: true; Layout.preferredWidth: functionKeyWidth; Layout.fillWidth: false
+        }
         Key {
             key: Qt.Key_Z
             text: "z"
@@ -218,6 +238,10 @@ KeyboardLayout {
             weight: normalKeyWidth
             Layout.fillWidth: false
         }
+        Key { key: Qt.Key_Left; displayText: "←"; repeat: true; noModifier: true; functionKey: true; highlighted: true }
+        Key { key: Qt.Key_Right; displayText: "→"; repeat: true; noModifier: true; functionKey: true; highlighted: true }
+        Key { key: Qt.Key_Up; displayText: "↑"; repeat: true; noModifier: true; functionKey: true; highlighted: true }
+        Key { key: Qt.Key_Down; displayText: "↓"; repeat: true; noModifier: true; functionKey: true; highlighted: true }
         EnterKey {
             weight: functionKeyWidth
             Layout.fillWidth: false
