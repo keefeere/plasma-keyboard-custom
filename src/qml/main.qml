@@ -147,7 +147,7 @@ InputPanelWindow {
             }
 
             Component.onCompleted: {
-                VirtualKeyboardSettings.styleName = "Breeze";
+                VirtualKeyboardSettings.styleName = "PlasmaBreeze";
                 inputPanel.updateLocales();
             }
         }

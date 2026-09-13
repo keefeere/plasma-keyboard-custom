@@ -50,8 +50,8 @@ KeyboardStyle {
         }
     }
 
-    // Always have the keyboard panel be 30% of the screen height, or 150px (whichever is larger)
-    readonly property real targetKeyboardHeight: Math.max(Screen.height * 0.3, 150)
+    // Always have the keyboard panel be 42% of the screen height, or 150px (whichever is larger)
+    readonly property real targetKeyboardHeight: Math.max(Screen.height * 0.42, 150)
 
     // The value to multiply the height by to get the width
     readonly property real aspectRatio: {
@@ -134,7 +134,8 @@ KeyboardStyle {
                 anchors.centerIn: parent
                 font {
                     family: theme.fontFamily
-                    weight: Font.Light
+                    // Modifier and function keys (Ctrl, Alt, Tab, Del, arrows, ...) are bold
+                    weight: control.functionKey ? Font.Bold : Font.Light
                     pixelSize: 60 * scaleHint
                     capitalization: control.uppercased ? Font.AllUppercase : Font.MixedCase
                 }
@@ -418,7 +419,7 @@ KeyboardStyle {
                 verticalAlignment: Text.AlignVCenter
                 font {
                     family: theme.fontFamily
-                    weight: Font.Light
+                    weight: Font.Bold
                     pixelSize: 40 * scaleHint
                     capitalization: Font.AllUppercase
                 }
@@ -456,7 +457,7 @@ KeyboardStyle {
                 anchors.margins: theme.keyContentMargin
                 font {
                     family: theme.fontFamily
-                    weight: Font.Light
+                    weight: Font.Bold
                     pixelSize: 40 * scaleHint
                     capitalization: Font.AllUppercase
                 }

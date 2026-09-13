@@ -26,6 +26,51 @@
 
 Q_GLOBAL_STATIC(InputMethod, s_im)
 
+KeyboardModifiers::KeyboardModifiers(QObject *parent)
+    : QObject(parent)
+{
+}
+
+KeyboardModifiers *KeyboardModifiers::instance()
+{
+    static KeyboardModifiers s_instance;
+    return &s_instance;
+}
+
+bool KeyboardModifiers::ctrl() const
+{
+    return m_ctrl;
+}
+
+void KeyboardModifiers::setCtrl(bool ctrl)
+{
+    if (m_ctrl == ctrl) {
+        return;
+    }
+    m_ctrl = ctrl;
+    Q_EMIT ctrlChanged();
+}
+
+bool KeyboardModifiers::alt() const
+{
+    return m_alt;
+}
+
+void KeyboardModifiers::setAlt(bool alt)
+{
+    if (m_alt == alt) {
+        return;
+    }
+    m_alt = alt;
+    Q_EMIT altChanged();
+}
+
+void KeyboardModifiers::reset()
+{
+    setCtrl(false);
+    setAlt(false);
+}
+
 Q_GLOBAL_STATIC_WITH_ARGS(const std::set<int>,
                           IGNORED_KEYS,
                           {
@@ -330,9 +375,47 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
     return {};
 }
 
+bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
+{
+    auto *modifiers = KeyboardModifiers::instance();
+    if (!modifiers->ctrl() && !modifiers->alt()) {
+        return false;
+    }
+
+    const QList<xkb_keysym_t> keysyms = QXkbCommon::toKeysym(event);
+    if (keysyms.isEmpty()) {
+        return false;
+    }
+
+    const uint32_t keycode = m_input.keycodeForKeysym(keysyms.first());
+    if (keycode == 0) {
+        return false;
+    }
+
+    const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0);
+
+    if (press) {
+        // Set the modifier state before pressing the key so the compositor
+        // delivers the shortcut (e.g. Ctrl+C) to the client.
+        m_input.sendModifiers(depressed, 0, 0, 0);
+        m_input.key(InputPlugin::Pressed, keycode);
+    } else {
+        m_input.key(InputPlugin::Released, keycode);
+        m_input.sendModifiers(0, 0, 0, 0);
+        // The modifiers only apply to a single key press.
+        modifiers->reset();
+    }
+    return true;
+}
+
 void InputListenerItem::keyPressEvent(QKeyEvent *event)
 {
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
+        return;
+    }
+
+    if (handleModifiedKey(event, true)) {
+        event->accept();
         return;
     }
 
@@ -348,6 +431,11 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
 void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
 {
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
+        return;
+    }
+
+    if (handleModifiedKey(event, false)) {
+        event->accept();
         return;
     }
 

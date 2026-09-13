@@ -6,6 +6,7 @@
 */
 
 #include "config-plasma-keyboard.h"
+#include "inputlisteneritem.h"
 #include "inputpanelintegration.h"
 #include "layoutpathhelper.h"
 #include "logging.h"
@@ -86,6 +87,9 @@ int main(int argc, char **argv)
             PlasmaKeyboardSettings::self()->load();
         });
     // clang-format on
+
+    // Expose the Ctrl/Alt latch state to the keyboard layouts.
+    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.lib", 1, 0, "Modifiers", KeyboardModifiers::instance());
 
     QQmlApplicationEngine view;
     KLocalization::setupLocalizedContext(&view);

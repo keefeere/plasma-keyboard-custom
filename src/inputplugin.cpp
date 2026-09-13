@@ -8,6 +8,8 @@
 #include "inputplugin.h"
 #include "inputmethod_p.h"
 
+#include <xkbcommon/xkbcommon-names.h>
+
 InputPlugin::InputPlugin(InputMethod *inputMethod)
 {
     connect(inputMethod, &InputMethod::deactivate, this, &InputPlugin::deactivate);
@@ -112,6 +114,32 @@ void InputPlugin::key(KeyState state, quint32 scancode)
         return;
     }
     m_context->key(m_context->m_lastKeyboardSerial, m_context->m_lastKeyboardTime, scancode, static_cast<uint32_t>(state));
+}
+
+void InputPlugin::sendModifiers(uint32_t depressed, uint32_t latched, uint32_t locked, uint32_t group)
+{
+    if (!m_context) {
+        return;
+    }
+    m_context->modifiers(m_context->m_latestSerial, depressed, latched, locked, group);
+}
+
+uint32_t InputPlugin::keycodeForKeysym(uint32_t keysym) const
+{
+    if (!m_keyboard) {
+        return 0;
+    }
+    return m_keyboard->evdevKeycodeForKeysym(keysym);
+}
+
+uint32_t InputPlugin::controlMask() const
+{
+    return m_keyboard ? m_keyboard->modifierMask(XKB_MOD_NAME_CTRL) : 0;
+}
+
+uint32_t InputPlugin::altMask() const
+{
+    return m_keyboard ? m_keyboard->modifierMask(XKB_MOD_NAME_ALT) : 0;
 }
 
 InputPlugin::ContentHint InputPlugin::contentHint() const

@@ -19,6 +19,41 @@
 
 class OverlayController;
 
+/**
+ * Global state for the on-screen Ctrl/Alt keys.
+ *
+ * The keys in the layouts toggle these values. InputListenerItem consults
+ * them when forwarding key events to the compositor, so that a latched
+ * modifier is applied to the next key and then cleared.
+ */
+class KeyboardModifiers : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(bool ctrl READ ctrl WRITE setCtrl NOTIFY ctrlChanged)
+    Q_PROPERTY(bool alt READ alt WRITE setAlt NOTIFY altChanged)
+
+public:
+    static KeyboardModifiers *instance();
+
+    bool ctrl() const;
+    void setCtrl(bool ctrl);
+
+    bool alt() const;
+    void setAlt(bool alt);
+
+    Q_INVOKABLE void reset();
+
+Q_SIGNALS:
+    void ctrlChanged();
+    void altChanged();
+
+private:
+    explicit KeyboardModifiers(QObject *parent = nullptr);
+
+    bool m_ctrl = false;
+    bool m_alt = false;
+};
+
 class InputListenerItem : public QQuickItem
 {
     Q_OBJECT
@@ -55,6 +90,15 @@ Q_SIGNALS:
     void keyNavigationReleased(int key);
 
 private:
+    /**
+     * Sends the key described by @p event as a real key event with the
+     * currently latched Ctrl/Alt modifiers applied.
+     *
+     * Returns true if the event was handled, in which case the caller must
+     * not process it any further.
+     */
+    bool handleModifiedKey(QKeyEvent *event, bool press);
+
     InputPlugin m_input;
     OverlayController *m_overlayController = nullptr;
     bool m_keyboardNavigationActive = false;

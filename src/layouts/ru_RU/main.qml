@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.VirtualKeyboard
 import QtQuick.VirtualKeyboard.Components
 import QtQuick.Layouts
+import org.kde.plasma.keyboard.lib as PlasmaKeyboard
 
 KeyboardLayout {
     sharedLayouts: ['symbols']
@@ -183,7 +184,8 @@ KeyboardLayout {
             noModifier: true
             functionKey: true
             highlighted: true
-            Layout.preferredWidth: functionKeyWidth / 2
+            Layout.preferredWidth: normalKeyWidth
+            Layout.fillWidth: false
         }
         Key {
             key: 0x0424
@@ -242,7 +244,8 @@ KeyboardLayout {
     }
     KeyboardRow {
         ShiftKey {
-            weight: functionKeyWidth / 2
+            weight: normalKeyWidth
+            Layout.fillWidth: false
         }
         Key {
             key: 0x042F
@@ -298,10 +301,16 @@ KeyboardLayout {
         }
 
         ShiftKey {
-            weight: functionKeyWidth / 2
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+        }
+        FillerKey {
+            weight: normalKeyWidth
+            Layout.fillWidth: false
         }
         Key {
             key: Qt.Key_Up
+            weight: normalKeyWidth
             Layout.fillWidth: false
             displayText: "\u2191"
             repeat: true
@@ -309,20 +318,37 @@ KeyboardLayout {
             functionKey: true
             highlighted: true
         }
-    }
-    KeyboardRow {
-        SymbolModeKey {
-            weight: functionKeyWidth
+        FillerKey {
+            weight: normalKeyWidth
             Layout.fillWidth: false
         }
-        ChangeLanguageKey {
+    }
+    KeyboardRow {
+        PlasmaKeyboard.ModifierKey {
+            modifier: "ctrl"
+            displayText: "Ctrl"
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+        }
+        SymbolModeKey {
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+        }
+        PlasmaKeyboard.LanguageKey {
             weight: normalKeyWidth
             Layout.fillWidth: false
         }
         SpaceKey {
         }
+        PlasmaKeyboard.ModifierKey {
+            modifier: "alt"
+            displayText: "Alt"
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+        }
         Key {
             key: Qt.Key_Left
+            weight: normalKeyWidth
             Layout.fillWidth: false
             displayText: "\u2190"
             repeat: true
@@ -331,18 +357,20 @@ KeyboardLayout {
             highlighted: true
         }
         Key {
-            key: Qt.Key_Right
+            key: Qt.Key_Down
+            weight: normalKeyWidth
             Layout.fillWidth: false
-            displayText: "\u2192"
+            displayText: "\u2193"
             repeat: true
             noModifier: true
             functionKey: true
             highlighted: true
         }
         Key {
-            key: Qt.Key_Down
+            key: Qt.Key_Right
+            weight: normalKeyWidth
             Layout.fillWidth: false
-            displayText: "\u2193"
+            displayText: "\u2192"
             repeat: true
             noModifier: true
             functionKey: true

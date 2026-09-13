@@ -154,6 +154,56 @@ void Keyboard::keyboard_keymap(uint32_t format, int32_t fd, uint32_t size)
         mXkbState.reset(nullptr);
 }
 
+static uint32_t normalizeKeysymUtf32(uint32_t keysym)
+{
+    uint32_t utf32 = xkb_keysym_to_utf32(keysym);
+    if (utf32 >= 'A' && utf32 <= 'Z') {
+        utf32 += 'a' - 'A';
+    }
+    return utf32;
+}
+
+uint32_t Keyboard::evdevKeycodeForKeysym(uint32_t keysym) const
+{
+    if (!mXkbKeymap) {
+        return 0;
+    }
+
+    xkb_state *state = xkb_state_new(mXkbKeymap.get());
+    if (!state) {
+        return 0;
+    }
+
+    const uint32_t targetUtf32 = normalizeKeysymUtf32(keysym);
+    const xkb_keycode_t minKeycode = xkb_keymap_min_keycode(mXkbKeymap.get());
+    const xkb_keycode_t maxKeycode = xkb_keymap_max_keycode(mXkbKeymap.get());
+
+    uint32_t result = 0;
+    for (xkb_keycode_t code = minKeycode; code <= maxKeycode; ++code) {
+        const xkb_keysym_t sym = xkb_state_key_get_one_sym(state, code);
+        if (sym == keysym) {
+            result = code - 8; // map xkb keycode to evdev scancode
+            break;
+        }
+        if (targetUtf32 != 0 && normalizeKeysymUtf32(sym) == targetUtf32) {
+            result = code - 8;
+            break;
+        }
+    }
+
+    xkb_state_unref(state);
+    return result;
+}
+
+uint32_t Keyboard::modifierMask(const char *name) const
+{
+    if (!mXkbKeymap) {
+        return 0;
+    }
+    const xkb_mod_index_t index = xkb_keymap_mod_get_index(mXkbKeymap.get(), name);
+    return index == XKB_MOD_INVALID ? 0 : (1u << index);
+}
+
 void Keyboard::keyboard_key(uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
     // Store the serial and time from the compositor so they can be used later

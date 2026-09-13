@@ -16,3 +16,9 @@ target_link_libraries(breezestyle
 )
 
 ecm_finalize_qml_module(breezestyle)
+
+# Also install the style under a unique name. Qt Virtual Keyboard resolves the
+# style by scanning the QML import paths and prefers the system-installed
+# "Breeze" style, so a distinct name guarantees the version built from this
+# repository is the one that gets loaded.
+install(FILES breeze/style.qml DESTINATION ${KDE_INSTALL_QMLDIR}/QtQuick/VirtualKeyboard/Styles/PlasmaBreeze)

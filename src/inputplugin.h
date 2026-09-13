@@ -79,6 +79,24 @@ public:
     void keysym(uint timestamp, uint sym, KeyState state, uint modifiers);
     void key(KeyState state, quint32 scancode);
 
+    /**
+     * Forwards a modifiers event to the compositor, so that subsequently
+     * forwarded key events are interpreted with these modifiers.
+     */
+    void sendModifiers(uint32_t depressed, uint32_t latched, uint32_t locked, uint32_t group);
+
+    /**
+     * Looks up the evdev/scancode keycode that produces @p keysym in the
+     * compositor's keymap. Returns 0 if there is no such key.
+     */
+    uint32_t keycodeForKeysym(uint32_t keysym) const;
+
+    /**
+     * Modifier masks for Control and Alt as defined by the compositor's keymap.
+     */
+    uint32_t controlMask() const;
+    uint32_t altMask() const;
+
     ContentHint contentHint() const;
     ContentPurpose contentPurpose() const;
     uint32_t cursorPos() const;

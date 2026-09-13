@@ -94,6 +94,17 @@ public:
     Keyboard(::wl_keyboard *keyboard, InputMethodContext *parent);
     ~Keyboard();
 
+    /**
+     * Returns the evdev/scancode keycode producing @p keysym in the keymap,
+     * or 0 if it cannot be found.
+     */
+    uint32_t evdevKeycodeForKeysym(uint32_t keysym) const;
+
+    /**
+     * Returns the modifier mask for the modifier named @p name (e.g. "Control").
+     */
+    uint32_t modifierMask(const char *name) const;
+
 Q_SIGNALS:
     void keyPressed(QKeyEvent *keyEvent);
     void keyReleased(QKeyEvent *keyEvent);
