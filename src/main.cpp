@@ -24,12 +24,129 @@
 #include <QCommandLineParser>
 #include <QDBusConnection>
 #include <QDBusMessage>
+#include <QDBusVariant>
 #include <QDir>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include <QTimer>
+#include <QVariantMap>
 #include <QWindow>
 #include <qpa/qwindowsysteminterface.h>
+
+namespace
+{
+constexpr auto s_kwinService = "org.kde.KWin";
+constexpr auto s_kwinPath = "/VirtualKeyboard";
+constexpr auto s_kwinIface = "org.kde.kwin.VirtualKeyboard";
+constexpr auto s_kwinPropertiesIface = "org.freedesktop.DBus.Properties";
+
+int kwinMode()
+{
+    QDBusMessage msg =
+        QDBusMessage::createMethodCall(QLatin1String(s_kwinService), QLatin1String(s_kwinPath), QLatin1String(s_kwinPropertiesIface), QStringLiteral("Get"));
+    msg << QLatin1String(s_kwinIface) << QStringLiteral("mode");
+    const QDBusMessage reply = QDBusConnection::sessionBus().call(msg);
+    if (reply.type() == QDBusMessage::ReplyMessage && !reply.arguments().isEmpty()) {
+        return reply.arguments().first().value<QDBusVariant>().variant().toInt();
+    }
+    return -1;
+}
+
+void setKwinMode(int mode)
+{
+    QDBusMessage msg =
+        QDBusMessage::createMethodCall(QLatin1String(s_kwinService), QLatin1String(s_kwinPath), QLatin1String(s_kwinPropertiesIface), QStringLiteral("Set"));
+    msg << QLatin1String(s_kwinIface) << QStringLiteral("mode") << QVariant::fromValue(QDBusVariant(QVariant::fromValue(mode)));
+    QDBusConnection::sessionBus().call(msg, QDBus::NoBlock);
+}
+
+void activateKwinKeyboard()
+{
+    QDBusMessage msg =
+        QDBusMessage::createMethodCall(QLatin1String(s_kwinService), QLatin1String(s_kwinPath), QLatin1String(s_kwinIface), QStringLiteral("forceActivate"));
+    QDBusConnection::sessionBus().call(msg, QDBus::NoBlock);
+}
+} // namespace
+
+/**
+ * Shows the keyboard when the global shortcut is pressed. KWin only shows the
+ * panel for the configured input mode, so temporarily switch to AnyInput and
+ * restore the previous mode once the panel is hidden again.
+ */
+class KeyboardHotkeyController : public QObject
+{
+    Q_OBJECT
+public:
+    explicit KeyboardHotkeyController(QObject *parent = nullptr)
+        : QObject(parent)
+    {
+        QDBusConnection::sessionBus().connect(QLatin1String(s_kwinService),
+                                              QLatin1String(s_kwinPath),
+                                              QLatin1String(s_kwinPropertiesIface),
+                                              QStringLiteral("PropertiesChanged"),
+                                              this,
+                                              SLOT(onPropertiesChanged(QString, QVariantMap, QStringList)));
+
+        // The PropertiesChanged signal is not always delivered; poll instead.
+        auto *pollTimer = new QTimer(this);
+        pollTimer->setInterval(1000);
+        connect(pollTimer, &QTimer::timeout, this, &KeyboardHotkeyController::restoreModeIfHidden);
+        pollTimer->start();
+    }
+
+public Q_SLOTS:
+    void showKeyboard()
+    {
+        qCDebug(PlasmaKeyboard) << "Show-virtual-keyboard shortcut triggered";
+        if (m_savedMode < 0) {
+            m_savedMode = kwinMode();
+        }
+        if (m_savedMode != 2) {
+            setKwinMode(2); // AnyInput
+        }
+        activateKwinKeyboard();
+    }
+
+    void restoreModeIfHidden()
+    {
+        if (m_savedMode < 0) {
+            return;
+        }
+        QDBusMessage msg = QDBusMessage::createMethodCall(QLatin1String(s_kwinService),
+                                                          QLatin1String(s_kwinPath),
+                                                          QLatin1String(s_kwinPropertiesIface),
+                                                          QStringLiteral("Get"));
+        msg << QLatin1String(s_kwinIface) << QStringLiteral("visible");
+        const QDBusMessage reply = QDBusConnection::sessionBus().call(msg);
+        if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty()) {
+            return;
+        }
+        if (!reply.arguments().first().value<QDBusVariant>().variant().toBool()) {
+            setKwinMode(m_savedMode);
+            m_savedMode = -1;
+        }
+    }
+
+private Q_SLOTS:
+    void onPropertiesChanged(const QString &interfaceName, const QVariantMap &changed, const QStringList &invalidated)
+    {
+        Q_UNUSED(invalidated);
+        if (interfaceName != QLatin1String(s_kwinIface)) {
+            return;
+        }
+        if (!changed.contains(QStringLiteral("visible")) || changed.value(QStringLiteral("visible")).toBool()) {
+            return;
+        }
+        if (m_savedMode >= 0) {
+            setKwinMode(m_savedMode);
+            m_savedMode = -1;
+        }
+    }
+
+private:
+    int m_savedMode = -1;
+};
 
 // signal handler for SIGINT & SIGTERM
 #ifdef Q_OS_UNIX
@@ -73,14 +190,8 @@ int main(int argc, char **argv)
     const QList<QKeySequence> defaultShortcut{QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_K)};
     KGlobalAccel::self()->setDefaultShortcut(showAction, defaultShortcut, KGlobalAccel::NoAutoloading);
     KGlobalAccel::self()->setShortcut(showAction, defaultShortcut, KGlobalAccel::NoAutoloading);
-    QObject::connect(showAction, &QAction::triggered, &application, [] {
-        qCDebug(PlasmaKeyboard) << "Show-virtual-keyboard shortcut triggered";
-        QDBusMessage msg = QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),
-                                                          QStringLiteral("/VirtualKeyboard"),
-                                                          QStringLiteral("org.kde.kwin.VirtualKeyboard"),
-                                                          QStringLiteral("forceActivate"));
-        QDBusConnection::sessionBus().call(msg, QDBus::NoBlock);
-    });
+    auto *hotkeyController = new KeyboardHotkeyController(&application);
+    QObject::connect(showAction, &QAction::triggered, hotkeyController, &KeyboardHotkeyController::showKeyboard);
 
     KCrash::initialize();
 
@@ -150,3 +261,5 @@ int main(int argc, char **argv)
 
     return application.exec();
 }
+
+#include "main.moc"
