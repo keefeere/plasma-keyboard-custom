@@ -69,7 +69,7 @@ InputPanelWindow {
         onToggleShift: inputPanel.InputContext.priv.shiftHandler.toggleShift()
         onToggleSymbols: inputPanel.keyboard.symbolMode = !inputPanel.keyboard.symbolMode
         onSwitchLanguage: inputPanel.keyboard.changeInputLanguage(false)
-        onHideKeyboard: inputPanel.InputContext.priv.hideInputPanel()
+        onHideKeyboard: Qt.inputMethod.hide()
     }
 
     // Let the key panels know a gamepad is available, so they can show
@@ -78,6 +78,15 @@ InputPanelWindow {
         target: PlasmaKeyboard.Modifiers
         property: "gamepadAvailable"
         value: gamepad.available
+    }
+
+    // Qt Virtual Keyboard's HideInputPanel only hides its internal panel; hide
+    // our window as well so the keyboard actually disappears.
+    Connections {
+        target: inputPanel.InputContext.priv
+        function onHideInputPanel() {
+            Qt.inputMethod.hide();
+        }
     }
 
     // Unified overlay system for diacritics, emoji, text expansion, etc.

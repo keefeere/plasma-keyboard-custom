@@ -321,7 +321,7 @@ KeyboardLayout {
             functionKey: true
             highlighted: true
         }
-        HideKeyboardKey {
+        PlasmaKeyboard.HideKey {
             weight: normalKeyWidth
             Layout.fillWidth: false
         }

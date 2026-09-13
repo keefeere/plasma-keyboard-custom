@@ -61,6 +61,18 @@ void setKwinMode(int mode)
     QDBusConnection::sessionBus().call(msg, QDBus::NoBlock);
 }
 
+bool kwinVisible()
+{
+    QDBusMessage msg =
+        QDBusMessage::createMethodCall(QLatin1String(s_kwinService), QLatin1String(s_kwinPath), QLatin1String(s_kwinPropertiesIface), QStringLiteral("Get"));
+    msg << QLatin1String(s_kwinIface) << QStringLiteral("visible");
+    const QDBusMessage reply = QDBusConnection::sessionBus().call(msg);
+    if (reply.type() == QDBusMessage::ReplyMessage && !reply.arguments().isEmpty()) {
+        return reply.arguments().first().value<QDBusVariant>().variant().toBool();
+    }
+    return false;
+}
+
 void activateKwinKeyboard()
 {
     QDBusMessage msg =
@@ -105,6 +117,11 @@ public Q_SLOTS:
     void showKeyboard()
     {
         qCDebug(PlasmaKeyboard) << "Show-virtual-keyboard shortcut triggered";
+        if (kwinVisible()) {
+            // Toggle: hide the keyboard if it is currently shown.
+            QGuiApplication::inputMethod()->hide();
+            return;
+        }
         if (m_savedMode < 0) {
             m_savedMode = kwinMode();
         }
