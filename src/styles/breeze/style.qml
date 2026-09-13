@@ -353,6 +353,14 @@ KeyboardStyle {
         id: hideKeyPanel
 
         Item {
+            GamepadBadge {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 4
+                glyph: "B"
+                badgeColor: "#c62828"
+            }
+
             Kirigami.Icon {
                 id: hideKeyIcon
                 anchors.centerIn: parent

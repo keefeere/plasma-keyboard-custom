@@ -321,7 +321,7 @@ KeyboardLayout {
             functionKey: true
             highlighted: true
         }
-        FillerKey {
+        HideKeyboardKey {
             weight: normalKeyWidth
             Layout.fillWidth: false
         }
