@@ -73,11 +73,13 @@ Q_SIGNALS:
 
 private Q_SLOTS:
     void onInputEvent(const QString &event, double value);
+    void onKWinPropertiesChanged(const QString &interfaceName, const QVariantMap &changed, const QStringList &invalidated);
 
 private:
     void handleDirection(int key, bool pressed);
     uint interceptMode() const;
     void setInterceptMode(uint mode);
+    void refreshFromKWin();
 
     bool m_available = false;
     QString m_compositePath;
@@ -85,5 +87,6 @@ private:
     uint m_savedInterceptMode = 0;
     QSet<int> m_pressedDirections;
     QTimer *m_repeatTimer = nullptr;
+    QTimer *m_kwinPollTimer = nullptr;
     int m_repeatKey = 0;
 };

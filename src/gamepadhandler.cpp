@@ -90,6 +90,47 @@ GamepadHandler::GamepadHandler(QObject *parent)
         m_available = true;
         Q_EMIT availableChanged();
     }
+
+    // Interception follows the actual state of the panel as reported by KWin,
+    // which is more reliable than the window visibility of this process.
+    QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.KWin"),
+                                          QStringLiteral("/VirtualKeyboard"),
+                                          QStringLiteral("org.freedesktop.DBus.Properties"),
+                                          QStringLiteral("PropertiesChanged"),
+                                          this,
+                                          SLOT(onKWinPropertiesChanged(QString, QVariantMap, QStringList)));
+    refreshFromKWin();
+
+    // Safety net in case the PropertiesChanged signal is not delivered.
+    m_kwinPollTimer = new QTimer(this);
+    m_kwinPollTimer->setInterval(1000);
+    connect(m_kwinPollTimer, &QTimer::timeout, this, &GamepadHandler::refreshFromKWin);
+    m_kwinPollTimer->start();
+}
+
+void GamepadHandler::onKWinPropertiesChanged(const QString &interfaceName, const QVariantMap &changed, const QStringList &invalidated)
+{
+    Q_UNUSED(invalidated);
+    if (interfaceName != QLatin1String("org.kde.kwin.VirtualKeyboard")) {
+        return;
+    }
+    if (changed.contains(QStringLiteral("visible"))) {
+        setActive(changed.value(QStringLiteral("visible")).toBool());
+    }
+}
+
+void GamepadHandler::refreshFromKWin()
+{
+    QDBusMessage msg = QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),
+                                                      QStringLiteral("/VirtualKeyboard"),
+                                                      QStringLiteral("org.freedesktop.DBus.Properties"),
+                                                      QStringLiteral("Get"));
+    msg << QStringLiteral("org.kde.kwin.VirtualKeyboard") << QStringLiteral("visible");
+    const QDBusMessage reply = QDBusConnection::sessionBus().call(msg);
+    if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty()) {
+        return;
+    }
+    setActive(reply.arguments().first().value<QDBusVariant>().variant().toBool());
 }
 
 GamepadHandler::~GamepadHandler()

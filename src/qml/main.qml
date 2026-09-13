@@ -22,10 +22,6 @@ InputPanelWindow {
     color: 'transparent'
 
     onVisibleChanged: {
-        // While the keyboard is visible, intercept gamepad input so it does
-        // not also reach the game/Steam mapping.
-        gamepad.setActive(visible);
-
         if (!visible) {
             // Reset keyboard navigation when hidden
             // Note: keyboard property is internal Qt API
@@ -196,8 +192,8 @@ InputPanelWindow {
         visible: gamepad.available && inputPanel.keyboard.navigationModeActive && activeKey !== null
         width: 24
         height: 24
-        x: activeKey ? activeKey.mapToItem(root, activeKey.width - width - 3, activeKey.height - height - 3).x : 0
-        y: activeKey ? activeKey.mapToItem(root, activeKey.width - width - 3, activeKey.height - height - 3).y : 0
+        x: activeKey ? activeKey.mapToItem(null, activeKey.width - width - 3, activeKey.height - height - 3).x : 0
+        y: activeKey ? activeKey.mapToItem(null, activeKey.width - width - 3, activeKey.height - height - 3).y : 0
 
         Rectangle {
             anchors.fill: parent
