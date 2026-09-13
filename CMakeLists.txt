@@ -3,16 +3,16 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-set(PROJECT_VERSION "6.7.80")
+set(PROJECT_VERSION "6.7.90")
 
 project(plasma-keyboard VERSION ${PROJECT_VERSION})
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(PROJECT_DEP_VERSION "6.6.90")
-set(QT_MIN_VERSION "6.10.0")
-set(KF6_MIN_VERSION "6.26.0")
+set(PROJECT_DEP_VERSION "6.7.90")
+set(QT_MIN_VERSION "6.11.0")
+set(KF6_MIN_VERSION "6.30.0")
 
 find_package(ECM ${KF6_MIN_VERSION} REQUIRED)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
@@ -38,6 +38,7 @@ option(PLASMA_KEYBOARD_VIBRATION_ENABLED "Whether to enable haptic feedback via 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
     Core
     Gui
+    Qml
     VirtualKeyboard
     WaylandClient
 )
