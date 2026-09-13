@@ -10,7 +10,8 @@ project(plasma-keyboard VERSION ${PROJECT_VERSION})
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(PROJECT_DEP_VERSION "6.7.90")
+# Locally relaxed from 6.7.90: PlasmaQuick 6.7.90 is not available on this system
+set(PROJECT_DEP_VERSION "6.7.5")
 set(QT_MIN_VERSION "6.11.0")
 set(KF6_MIN_VERSION "6.30.0")
 
@@ -75,7 +76,12 @@ if(BUILD_TESTING)
     add_subdirectory(autotests)
 endif()
 
-ki18n_install(po)
+# Translations are intentionally NOT installed: this is a parallel build of
+# plasma-keyboard that coexists with the official package, and installing the
+# same <locale>/LC_MESSAGES/*.mo files would conflict with it. The application
+# keeps using the "plasma-keyboard" translation domain provided by the official
+# package when it is present.
+# ki18n_install(po)
 
 file(GLOB_RECURSE ALL_CLANG_FORMAT_SOURCE_FILES *.cpp *.h *.c)
 kde_clang_format(${ALL_CLANG_FORMAT_SOURCE_FILES})

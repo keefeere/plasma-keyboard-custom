@@ -65,6 +65,21 @@ void KeyboardModifiers::setAlt(bool alt)
     Q_EMIT altChanged();
 }
 
+bool KeyboardModifiers::gamepadAvailable() const
+{
+    return m_gamepadAvailable;
+}
+
+void KeyboardModifiers::setGamepadAvailable(bool available)
+{
+    if (m_gamepadAvailable == available) {
+        return;
+    }
+    m_gamepadAvailable = available;
+    qCDebug(PlasmaKeyboard) << "KeyboardModifiers::gamepadAvailable ->" << available;
+    Q_EMIT gamepadAvailableChanged();
+}
+
 void KeyboardModifiers::reset()
 {
     setCtrl(false);
@@ -406,6 +421,14 @@ bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
         modifiers->reset();
     }
     return true;
+}
+
+void InputListenerItem::sendKeyEvent(int key, const QString &text)
+{
+    QKeyEvent pressEvent(QEvent::KeyPress, key, Qt::NoModifier, text);
+    QKeyEvent releaseEvent(QEvent::KeyRelease, key, Qt::NoModifier, text);
+    keyPressEvent(&pressEvent);
+    keyReleaseEvent(&releaseEvent);
 }
 
 void InputListenerItem::keyPressEvent(QKeyEvent *event)

@@ -6,7 +6,7 @@ include(ECMAddTests)
 
 file(GENERATE
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/mockinputmethodcompositor_config.h
-    CONTENT "#pragma once\n#define PLASMA_KEYBOARD_BINARY_PATH \"$<TARGET_FILE:plasma-keyboard>\"\n"
+    CONTENT "#pragma once\n#define PLASMA_KEYBOARD_BINARY_PATH \"$<TARGET_FILE:plasma-keyboard-custom>\"\n"
 )
 
 ecm_add_test(mockinputmethodcompositor.cpp LINK_LIBRARIES

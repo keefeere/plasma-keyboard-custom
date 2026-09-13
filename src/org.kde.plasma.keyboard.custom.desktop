@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
 
 [Desktop Entry]
-Name=Plasma Keyboard
+Name=plasma-keyboard-custom
 Name[ar]=لوحة المفاتيح بلازما
 Name[bg]=Клавиатура на Plasma
 Name[ca]=Teclat del Plasma
@@ -30,7 +30,7 @@ Name[pa]=ਪਲਾਜ਼ਮਾ ਕੀਬੋਰਡ
 Name[pl]=Klawiatura Plazmy
 Name[pt_BR]=Teclado do Plasma
 Name[ro]=Tastatură Plasma
-Name[ru]=Клавиатура Plasma
+Name[ru]=plasma-keyboard-custom
 Name[sk]=Klávesnica Plasma
 Name[sl]=Plasma tipkovnica
 Name[sv]=Plasma tangentbord
@@ -39,7 +39,7 @@ Name[ug]=Plasma ھەرپتاختا
 Name[uk]=Клавіатура Плазми
 Name[zh_CN]=Plasma 键盘
 Name[zh_TW]=Plasma 鍵盤
-Exec=plasma-keyboard
+Exec=plasma-keyboard-custom
 Type=Application
 X-KDE-Wayland-VirtualKeyboard=true
 Icon=input-keyboard-virtual

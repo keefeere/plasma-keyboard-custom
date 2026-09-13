@@ -3,16 +3,16 @@
 
 add_definitions(-DQT_NO_KEYWORDS)
 
-kcmutils_add_qml_kcm(kcm_plasmakeyboard)
+kcmutils_add_qml_kcm(kcm_plasmakeyboardcustom)
 
-kconfig_add_kcfg_files(kcm_plasmakeyboard GENERATE_MOC ../src/plasmakeyboardsettings.kcfgc)
+kconfig_add_kcfg_files(kcm_plasmakeyboardcustom GENERATE_MOC ../src/plasmakeyboardsettings.kcfgc)
 
-target_sources(kcm_plasmakeyboard PRIVATE
+target_sources(kcm_plasmakeyboardcustom PRIVATE
     plasmakeyboardkcm.cpp
     plasmakeyboardkcm.h
 )
 
-target_link_libraries(kcm_plasmakeyboard PRIVATE
+target_link_libraries(kcm_plasmakeyboardcustom PRIVATE
     Qt::Core
     Qt::Qml
     KF6::CoreAddons

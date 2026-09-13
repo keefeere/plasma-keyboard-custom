@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.VirtualKeyboard
 import QtQuick.VirtualKeyboard.Components
 import QtQuick.Layouts
-import org.kde.plasma.keyboard.lib as PlasmaKeyboard
+import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
 
 KeyboardLayout {
     inputMode: InputEngine.InputMode.Latin
@@ -296,10 +296,6 @@ KeyboardLayout {
             alternativeKeys: "?"
             smallText: "?"
             smallTextVisible: true
-        }
-        ShiftKey {
-            weight: normalKeyWidth
-            Layout.fillWidth: false
         }
         FillerKey {
             weight: normalKeyWidth

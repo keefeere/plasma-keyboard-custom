@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 
     KLocalizedString::setApplicationDomain("plasma-keyboard");
 
-    KAboutData aboutData(QStringLiteral("plasma-keyboard"),
+    KAboutData aboutData(QStringLiteral("plasma-keyboard-custom"),
                          i18n("Plasma Keyboard"),
                          QStringLiteral(PLASMA_KEYBOARD_VERSION_STRING),
                          i18n("An on-screen keyboard for Plasma"),
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
     aboutData.addAuthor(i18n("Aleix Pol Gonzalez"), i18n("Author"), QStringLiteral("aleixpol@kde.org"));
     aboutData.setOrganizationDomain("kde.org");
-    aboutData.setDesktopFileName(QStringLiteral("org.kde.plasma.keyboard"));
+    aboutData.setDesktopFileName(QStringLiteral("org.kde.plasma.keyboard.custom"));
     application.setWindowIcon(QIcon::fromTheme(QStringLiteral("input-keyboard-virtual")));
     aboutData.setProgramLogo(application.windowIcon());
 
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     // clang-format on
 
     // Expose the Ctrl/Alt latch state to the keyboard layouts.
-    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.lib", 1, 0, "Modifiers", KeyboardModifiers::instance());
+    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "Modifiers", KeyboardModifiers::instance());
 
     QQmlApplicationEngine view;
     KLocalization::setupLocalizedContext(&view);
@@ -100,14 +100,14 @@ int main(int argc, char **argv)
 
         if (!initSuccessful) {
             qCCritical(PlasmaKeyboard)
-                << "Cannot run plasma-keyboard standalone. You can enable it in Plasma's System Settings app, on the “Virtual Keyboard” page.";
+                << "Cannot run plasma-keyboard-custom standalone. You can enable it in Plasma's System Settings app, on the “Virtual Keyboard” page.";
             exit(1);
         }
 
         window->requestActivate();
         window->setVisible(true);
     });
-    view.load(QUrl(QStringLiteral("qrc:/qt/qml/org/kde/plasma/keyboard/main.qml")));
+    view.load(QUrl(QStringLiteral("qrc:/qt/qml/org/kde/plasma/keyboard/custom/main.qml")));
 
 #ifdef Q_OS_UNIX
     /**

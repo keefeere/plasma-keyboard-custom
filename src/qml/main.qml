@@ -6,11 +6,12 @@
 */
 
 import QtQuick
+import QtQuick.Layouts
 import QtQuick.VirtualKeyboard
 import QtQuick.VirtualKeyboard.Settings
 
-import org.kde.plasma.keyboard
-import org.kde.plasma.keyboard.lib as PlasmaKeyboard
+import org.kde.plasma.keyboard.custom
+import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
 
 import org.kde.kirigami as Kirigami
 
@@ -21,6 +22,10 @@ InputPanelWindow {
     color: 'transparent'
 
     onVisibleChanged: {
+        // While the keyboard is visible, intercept gamepad input so it does
+        // not also reach the game/Steam mapping.
+        gamepad.setActive(visible);
+
         if (!visible) {
             // Reset keyboard navigation when hidden
             // Note: keyboard property is internal Qt API
@@ -49,6 +54,34 @@ InputPanelWindow {
             // HACK: invoke the Qt VirtualKeyboard keyboard navigation feature ourselves
             inputPanel.InputContext.priv.navigationKeyReleased(key, false);
         }
+    }
+
+    // Gamepad support (via InputPlumber's dbus target on the system bus).
+    GamepadHandler {
+        id: gamepad
+        onNavigate: (key) => {
+            inputPanel.InputContext.priv.navigationKeyPressed(key, false);
+            inputPanel.InputContext.priv.navigationKeyReleased(key, false);
+        }
+        onActivate: {
+            inputPanel.InputContext.priv.navigationKeyPressed(Qt.Key_Return, false);
+            inputPanel.InputContext.priv.navigationKeyReleased(Qt.Key_Return, false);
+        }
+        onBackspace: thing.sendKeyEvent(Qt.Key_Backspace, "")
+        onSpace: thing.sendKeyEvent(Qt.Key_Space, " ")
+        onEnter: thing.sendKeyEvent(Qt.Key_Return, "\n")
+        onToggleShift: inputPanel.InputContext.priv.shiftHandler.toggleShift()
+        onToggleSymbols: inputPanel.keyboard.symbolMode = !inputPanel.keyboard.symbolMode
+        onSwitchLanguage: inputPanel.keyboard.changeInputLanguage(false)
+        onHideKeyboard: inputPanel.InputContext.priv.hideInputPanel()
+    }
+
+    // Let the key panels know a gamepad is available, so they can show
+    // the button glyphs directly on the relevant keys.
+    Binding {
+        target: PlasmaKeyboard.Modifiers
+        property: "gamepadAvailable"
+        value: gamepad.available
     }
 
     // Unified overlay system for diacritics, emoji, text expansion, etc.
@@ -148,7 +181,37 @@ InputPanelWindow {
 
             Component.onCompleted: {
                 VirtualKeyboardSettings.styleName = "PlasmaBreeze";
+                // Enable Qt Virtual Keyboard's arrow-key navigation so the
+                // gamepad can move the highlight and activate keys.
+                VirtualKeyboardSettings.arrowKeyNavigationEnabled = true;
                 inputPanel.updateLocales();
+            }
+        }
+    }
+
+    // Steam-like button prompt on the key that is currently focused.
+    Item {
+        id: gamepadKeyPrompt
+        readonly property Item activeKey: inputPanel.keyboard ? inputPanel.keyboard.activeKey : null
+        visible: gamepad.available && inputPanel.keyboard.navigationModeActive && activeKey !== null
+        width: 24
+        height: 24
+        x: activeKey ? activeKey.mapToItem(root, activeKey.width - width - 3, activeKey.height - height - 3).x : 0
+        y: activeKey ? activeKey.mapToItem(root, activeKey.width - width - 3, activeKey.height - height - 3).y : 0
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: "#2e7d32"
+            border.color: "white"
+            border.width: 1
+
+            Text {
+                anchors.centerIn: parent
+                text: "A"
+                color: "white"
+                font.bold: true
+                font.pixelSize: 15
             }
         }
     }

@@ -31,6 +31,8 @@ class KeyboardModifiers : public QObject
     Q_OBJECT
     Q_PROPERTY(bool ctrl READ ctrl WRITE setCtrl NOTIFY ctrlChanged)
     Q_PROPERTY(bool alt READ alt WRITE setAlt NOTIFY altChanged)
+    //! True while a gamepad is available, so key panels can show button hints.
+    Q_PROPERTY(bool gamepadAvailable READ gamepadAvailable WRITE setGamepadAvailable NOTIFY gamepadAvailableChanged)
 
 public:
     static KeyboardModifiers *instance();
@@ -41,17 +43,22 @@ public:
     bool alt() const;
     void setAlt(bool alt);
 
+    bool gamepadAvailable() const;
+    void setGamepadAvailable(bool available);
+
     Q_INVOKABLE void reset();
 
 Q_SIGNALS:
     void ctrlChanged();
     void altChanged();
+    void gamepadAvailableChanged();
 
 private:
     explicit KeyboardModifiers(QObject *parent = nullptr);
 
     bool m_ctrl = false;
     bool m_alt = false;
+    bool m_gamepadAvailable = false;
 };
 
 class InputListenerItem : public QQuickItem
@@ -79,6 +86,12 @@ public:
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
     void inputMethodEvent(QInputMethodEvent *event) override;
+
+    /**
+     * Synthesizes a key press/release pair, as if it came from the virtual
+     * keyboard. Used by the gamepad handler to emit e.g. Backspace/Space.
+     */
+    Q_INVOKABLE void sendKeyEvent(int key, const QString &text);
 
     /**
      * Get the overlay controller.

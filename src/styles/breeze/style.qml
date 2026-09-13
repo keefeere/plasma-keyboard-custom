@@ -12,8 +12,8 @@ import QtQuick.Effects
 
 import org.kde.kirigami as Kirigami
 
-import org.kde.plasma.keyboard
-import org.kde.plasma.keyboard.lib as PlasmaKeyboard
+import org.kde.plasma.keyboard.custom
+import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
 
 KeyboardStyle {
     id: currentStyle
@@ -26,6 +26,28 @@ KeyboardStyle {
     }
 
     property var theme: PlasmaKeyboard.BreezeConstants
+
+    // Small gamepad button glyph shown on keys that are mapped to a controller
+    // button. Only visible while a gamepad is available.
+    component GamepadBadge: Rectangle {
+        property string glyph
+        property color badgeColor: "#37474f"
+        width: 20
+        height: 20
+        radius: width / 2
+        color: badgeColor
+        border.color: "white"
+        border.width: 1
+        visible: PlasmaKeyboard.Modifiers.gamepadAvailable
+        z: 2
+        Text {
+            anchors.centerIn: parent
+            text: parent.glyph
+            color: "white"
+            font.bold: true
+            font.pixelSize: parent.glyph.length > 1 ? 9 : 12
+        }
+    }
 
     Kirigami.Theme.inherit: false
     Kirigami.Theme.colorSet: Kirigami.Theme.Window
@@ -174,6 +196,13 @@ KeyboardStyle {
         id: backspaceKeyPanel
 
         Item {
+            GamepadBadge {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 4
+                glyph: "X"
+                badgeColor: "#1565c0"
+            }
             Kirigami.Icon {
                 id: backspaceKeyIcon
                 anchors.centerIn: parent
@@ -203,6 +232,13 @@ KeyboardStyle {
         id: languageKeyPanel
 
         Item {
+            GamepadBadge {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 4
+                glyph: "RB"
+                badgeColor: "#455a64"
+            }
             Kirigami.Icon {
                 id: languageKeyIcon
                 anchors.centerIn: parent
@@ -232,6 +268,15 @@ KeyboardStyle {
 
         Item {
             id: enterKeyBackground
+
+            GamepadBadge {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 4
+                glyph: "RT"
+                badgeColor: "#455a64"
+            }
+
             Kirigami.Icon {
                 id: enterKeyIcon
                 visible: enterKeyText.text.length === 0
@@ -336,6 +381,13 @@ KeyboardStyle {
         id: shiftKeyPanel
 
         Item {
+            GamepadBadge {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 4
+                glyph: "LT"
+                badgeColor: "#455a64"
+            }
             Kirigami.Icon {
                 id: shiftKeyIcon
                 anchors.centerIn: parent
@@ -379,6 +431,13 @@ KeyboardStyle {
         id: spaceKeyPanel
 
         Item {
+            GamepadBadge {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 4
+                glyph: "Y"
+                badgeColor: "#f9a825"
+            }
             QQC2.Label {
                 id: spaceKeyText
                 anchors.centerIn: parent
@@ -410,6 +469,14 @@ KeyboardStyle {
         id: symbolKeyPanel
 
         Item {
+            GamepadBadge {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 4
+                glyph: "LB"
+                badgeColor: "#455a64"
+            }
+
             QQC2.Label {
                 id: symbolKeyText
                 anchors.centerIn: parent
