@@ -95,6 +95,12 @@ GamepadHandler::GamepadHandler(QObject *parent)
     // which is more reliable than the window visibility of this process.
     QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.KWin"),
                                           QStringLiteral("/VirtualKeyboard"),
+                                          QStringLiteral("org.kde.kwin.VirtualKeyboard"),
+                                          QStringLiteral("visibleChanged"),
+                                          this,
+                                          SLOT(refreshFromKWin()));
+    QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.KWin"),
+                                          QStringLiteral("/VirtualKeyboard"),
                                           QStringLiteral("org.freedesktop.DBus.Properties"),
                                           QStringLiteral("PropertiesChanged"),
                                           this,

@@ -74,12 +74,12 @@ Q_SIGNALS:
 private Q_SLOTS:
     void onInputEvent(const QString &event, double value);
     void onKWinPropertiesChanged(const QString &interfaceName, const QVariantMap &changed, const QStringList &invalidated);
+    void refreshFromKWin();
 
 private:
     void handleDirection(int key, bool pressed);
     uint interceptMode() const;
     void setInterceptMode(uint mode);
-    void refreshFromKWin();
 
     bool m_available = false;
     QString m_compositePath;

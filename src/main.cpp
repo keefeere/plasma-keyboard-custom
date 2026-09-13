@@ -83,6 +83,12 @@ public:
     {
         QDBusConnection::sessionBus().connect(QLatin1String(s_kwinService),
                                               QLatin1String(s_kwinPath),
+                                              QLatin1String(s_kwinIface),
+                                              QStringLiteral("visibleChanged"),
+                                              this,
+                                              SLOT(restoreModeIfHidden()));
+        QDBusConnection::sessionBus().connect(QLatin1String(s_kwinService),
+                                              QLatin1String(s_kwinPath),
                                               QLatin1String(s_kwinPropertiesIface),
                                               QStringLiteral("PropertiesChanged"),
                                               this,
