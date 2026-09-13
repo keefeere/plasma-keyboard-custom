@@ -14,6 +14,13 @@ KeyboardLayout {
     readonly property real functionKeyWidth: mapFromItem(normalKey, normalKey.width / 2, 0).x
     KeyboardRow {
         Key {
+            key: Qt.Key_Escape
+            displayText: "Esc"
+            noModifier: true
+            functionKey: true
+            highlighted: true
+        }
+        Key {
             text: "`"
             alternativeKeys: "`~"
             smallText: "~"

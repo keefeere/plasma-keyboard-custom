@@ -13,6 +13,13 @@ KeyboardLayout {
 
     KeyboardRow {
         Key {
+            key: Qt.Key_Escape
+            displayText: "Esc"
+            noModifier: true
+            functionKey: true
+            highlighted: true
+        }
+        Key {
             key: Qt.Key_QuoteLeft
             text: "`"
             alternativeKeys: "`~"
