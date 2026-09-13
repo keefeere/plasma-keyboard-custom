@@ -16,10 +16,14 @@
 #include <KAboutData>
 #include <KConfigWatcher>
 #include <KCrash>
+#include <KGlobalAccel>
 #include <KLocalizedQmlContext>
 #include <KLocalizedString>
 
+#include <QAction>
 #include <QCommandLineParser>
+#include <QDBusConnection>
+#include <QDBusMessage>
 #include <QDir>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -58,6 +62,25 @@ int main(int argc, char **argv)
     aboutData.setProgramLogo(application.windowIcon());
 
     KAboutData::setApplicationData(aboutData);
+
+    // Global shortcut to open the keyboard. It is configurable in
+    // System Settings -> Shortcuts -> Plasma Keyboard (custom).
+    auto *showAction = new QAction(&application);
+    showAction->setObjectName(QStringLiteral("show-virtual-keyboard"));
+    showAction->setText(i18n("Show Virtual Keyboard"));
+    showAction->setProperty("componentName", QStringLiteral("org.kde.plasma.keyboard.custom"));
+    showAction->setProperty("componentDisplayName", i18n("Plasma Keyboard (custom)"));
+    const QList<QKeySequence> defaultShortcut{QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_K)};
+    KGlobalAccel::self()->setDefaultShortcut(showAction, defaultShortcut, KGlobalAccel::NoAutoloading);
+    KGlobalAccel::self()->setShortcut(showAction, defaultShortcut, KGlobalAccel::NoAutoloading);
+    QObject::connect(showAction, &QAction::triggered, &application, [] {
+        qCDebug(PlasmaKeyboard) << "Show-virtual-keyboard shortcut triggered";
+        QDBusMessage msg = QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),
+                                                          QStringLiteral("/VirtualKeyboard"),
+                                                          QStringLiteral("org.kde.kwin.VirtualKeyboard"),
+                                                          QStringLiteral("forceActivate"));
+        QDBusConnection::sessionBus().call(msg, QDBus::NoBlock);
+    });
 
     KCrash::initialize();
 

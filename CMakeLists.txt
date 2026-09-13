@@ -53,6 +53,7 @@ find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
     KCMUtils
     Config
     Crash
+    GlobalAccel
 )
 
 find_package(PlasmaQuick ${PROJECT_DEP_VERSION} REQUIRED)
