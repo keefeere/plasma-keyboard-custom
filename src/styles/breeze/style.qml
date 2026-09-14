@@ -450,7 +450,11 @@ KeyboardStyle {
             QQC2.Label {
                 id: spaceKeyText
                 anchors.centerIn: parent
-                text: Qt.locale(InputContext.locale).nativeLanguageName
+                // Always start the language name with a capital letter.
+                text: {
+                    const name = Qt.locale(InputContext.locale).nativeLanguageName;
+                    return name.length > 0 ? name.charAt(0).toUpperCase() + name.slice(1) : name;
+                }
                 color: theme.keyTextColor
                 opacity: inputLocaleIndicatorOpacity
                 Behavior on opacity { PropertyAnimation { duration: 250 } }
