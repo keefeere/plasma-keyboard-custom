@@ -22,6 +22,7 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(bool showOnMouseFocus READ showOnMouseFocus WRITE setShowOnMouseFocus NOTIFY showOnMouseFocusChanged)
     Q_PROPERTY(
         bool hidePanelWhenKeyboardVisible READ hidePanelWhenKeyboardVisible WRITE setHidePanelWhenKeyboardVisible NOTIFY hidePanelWhenKeyboardVisibleChanged)
+    Q_PROPERTY(QString keyboardFontFamily READ keyboardFontFamily WRITE setKeyboardFontFamily NOTIFY keyboardFontFamilyChanged)
     Q_PROPERTY(int keyboardHeightPercent READ keyboardHeightPercent WRITE setKeyboardHeightPercent NOTIFY keyboardHeightPercentChanged)
     Q_PROPERTY(bool diacriticsPopupEnabled READ diacriticsPopupEnabled WRITE setDiacriticsPopupEnabled NOTIFY diacriticsPopupEnabledChanged)
     Q_PROPERTY(int diacriticsHoldThresholdMs READ diacriticsHoldThresholdMs WRITE setDiacriticsHoldThresholdMs NOTIFY diacriticsHoldThresholdMsChanged)
@@ -52,6 +53,9 @@ public:
     bool hidePanelWhenKeyboardVisible() const;
     void setHidePanelWhenKeyboardVisible(bool hide);
 
+    QString keyboardFontFamily() const;
+    void setKeyboardFontFamily(const QString &family);
+
     int keyboardHeightPercent() const;
     void setKeyboardHeightPercent(int percent);
 
@@ -75,6 +79,7 @@ Q_SIGNALS:
     void autoCapitalizationEnabledChanged();
     void showOnMouseFocusChanged();
     void hidePanelWhenKeyboardVisibleChanged();
+    void keyboardFontFamilyChanged();
     void keyboardHeightPercentChanged();
     void diacriticsPopupEnabledChanged();
     void diacriticsHoldThresholdMsChanged();
@@ -86,6 +91,7 @@ private:
     bool m_autoCapitalizationEnabled = true;
     bool m_showOnMouseFocus = false;
     bool m_hidePanelWhenKeyboardVisible = true;
+    QString m_keyboardFontFamily;
     int m_keyboardHeightPercent = 42;
     bool m_diacriticsPopupEnabled = true;
     int m_diacriticsHoldThresholdMs = 600;

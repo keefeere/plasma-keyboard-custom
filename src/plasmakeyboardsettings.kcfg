@@ -47,6 +47,10 @@
             <label>Whether the Plasma panel is hidden while the keyboard is visible, so the keyboard reaches the bottom of the screen.</label>
             <default>true</default>
         </entry>
+        <entry key="keyboardFontFamily" type="String">
+            <label>Font family used to render the keyboard keys. An empty value uses the default font.</label>
+            <default></default>
+        </entry>
         <entry key="diacriticsPopupEnabled" type="Bool">
             <label>Whether holding a physical key shows diacritic options.</label>
             <default>true</default>

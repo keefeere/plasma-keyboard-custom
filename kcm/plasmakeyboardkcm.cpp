@@ -161,6 +161,23 @@ void PlasmaKeyboardKcm::setHidePanelWhenKeyboardVisible(bool hide)
     setNeedsSave(true);
 }
 
+QString PlasmaKeyboardKcm::keyboardFontFamily() const
+{
+    return m_keyboardFontFamily;
+}
+
+void PlasmaKeyboardKcm::setKeyboardFontFamily(const QString &family)
+{
+    if (family == m_keyboardFontFamily) {
+        return;
+    }
+
+    m_keyboardFontFamily = family;
+    Q_EMIT keyboardFontFamilyChanged();
+
+    setNeedsSave(true);
+}
+
 int PlasmaKeyboardKcm::keyboardHeightPercent() const
 {
     return m_keyboardHeightPercent;
@@ -228,6 +245,7 @@ void PlasmaKeyboardKcm::load()
     setAutoCapitalizationEnabled(PlasmaKeyboardSettings::self()->autoCapitalizationEnabled());
     setShowOnMouseFocus(PlasmaKeyboardSettings::self()->showOnMouseFocus());
     setHidePanelWhenKeyboardVisible(PlasmaKeyboardSettings::self()->hidePanelWhenKeyboardVisible());
+    setKeyboardFontFamily(PlasmaKeyboardSettings::self()->keyboardFontFamily());
     setKeyboardHeightPercent(PlasmaKeyboardSettings::self()->keyboardHeightPercent());
     setDiacriticsPopupEnabled(PlasmaKeyboardSettings::self()->diacriticsPopupEnabled());
     setDiacriticsHoldThresholdMs(PlasmaKeyboardSettings::self()->diacriticsHoldThresholdMs());
@@ -244,6 +262,7 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setAutoCapitalizationEnabled(m_autoCapitalizationEnabled);
     PlasmaKeyboardSettings::self()->setShowOnMouseFocus(m_showOnMouseFocus);
     PlasmaKeyboardSettings::self()->setHidePanelWhenKeyboardVisible(m_hidePanelWhenKeyboardVisible);
+    PlasmaKeyboardSettings::self()->setKeyboardFontFamily(m_keyboardFontFamily);
     PlasmaKeyboardSettings::self()->setKeyboardHeightPercent(m_keyboardHeightPercent);
     PlasmaKeyboardSettings::self()->setDiacriticsPopupEnabled(m_diacriticsPopupEnabled);
     PlasmaKeyboardSettings::self()->setDiacriticsHoldThresholdMs(m_diacriticsHoldThresholdMs);

@@ -4,6 +4,7 @@
 import QtQuick
 
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.keyboard.custom
 
 pragma Singleton
 
@@ -11,7 +12,7 @@ QtObject {
     // Filled in by the style
     property real scaleHint
 
-    readonly property string fontFamily: Kirigami.Theme.defaultFont.family
+    readonly property string fontFamily: PlasmaKeyboardSettings.keyboardFontFamily.length > 0 ? PlasmaKeyboardSettings.keyboardFontFamily : Kirigami.Theme.defaultFont.family
     readonly property real keyBackgroundMargin: Math.round(8 * scaleHint)
     readonly property real keyContentMargin: Math.round(40 * scaleHint)
     readonly property real keyIconScale: scaleHint * 0.8

@@ -7,6 +7,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
+import QtQuick.Dialogs
 
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
@@ -150,6 +151,21 @@ KCM.SimpleKCM {
                 value: kcm.keyboardHeightPercent
                 onValueChanged: kcm.keyboardHeightPercent = value
             }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormButtonDelegate {
+                text: i18n("Keyboard font")
+                description: kcm.keyboardFontFamily.length > 0 ? kcm.keyboardFontFamily : i18n("Default")
+
+                onClicked: fontDialog.open()
+            }
         }
+    }
+
+    FontDialog {
+        id: fontDialog
+        title: i18n("Select Keyboard Font")
+        onAccepted: kcm.keyboardFontFamily = fontDialog.selectedFont.family
     }
 }

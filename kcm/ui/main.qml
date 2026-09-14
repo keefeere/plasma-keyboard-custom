@@ -8,6 +8,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
+import QtQuick.Dialogs
 
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
@@ -160,5 +161,28 @@ KCM.ScrollViewKCM {
                 value = Qt.binding(() => kcm.keyboardHeightPercent);
             }
         }
+
+        RowLayout {
+            Kirigami.FormData.label: i18n("Keyboard font:")
+
+            QQC2.Button {
+                id: keyboardFontButton
+                Layout.fillWidth: true
+                text: kcm.keyboardFontFamily.length > 0 ? kcm.keyboardFontFamily : i18n("Default")
+                onClicked: fontDialog.open()
+            }
+
+            QQC2.Button {
+                text: i18n("Reset")
+                enabled: kcm.keyboardFontFamily.length > 0
+                onClicked: kcm.keyboardFontFamily = ""
+            }
+        }
+    }
+
+    FontDialog {
+        id: fontDialog
+        title: i18n("Select Keyboard Font")
+        onAccepted: kcm.keyboardFontFamily = fontDialog.selectedFont.family
     }
 }

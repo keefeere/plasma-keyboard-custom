@@ -8,6 +8,7 @@ import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
+import QtQuick.Dialogs
 
 import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
@@ -122,9 +123,22 @@ KCM.SimpleKCM {
             }
         }
 
+        Bigscreen.ButtonDelegate {
+            id: keyboardFontButton
+            text: i18n("Keyboard font: %1", kcm.keyboardFontFamily.length > 0 ? kcm.keyboardFontFamily : i18n("Default"))
+            KeyNavigation.up: autoCapitalizationButton
+            onClicked: fontDialog.open()
+        }
+
         LocaleSelectorSidebar {
             id: localeSelectorSidebar
             onClosed: changeLanguagesButton.forceActiveFocus()
         }
+    }
+
+    FontDialog {
+        id: fontDialog
+        title: i18n("Select Keyboard Font")
+        onAccepted: kcm.keyboardFontFamily = fontDialog.selectedFont.family
     }
 }
