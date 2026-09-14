@@ -461,7 +461,7 @@ KeyboardStyle {
                 font {
                     family: theme.fontFamily
                     weight: Font.Light
-                    pixelSize: 35 * scaleHint
+                    pixelSize: 26 * scaleHint
                 }
             }
         }
