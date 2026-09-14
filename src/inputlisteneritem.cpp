@@ -407,7 +407,9 @@ bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
         return false;
     }
 
-    const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0);
+    // Shift can take part in the combination (e.g. Ctrl+Shift+key).
+    const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0)
+        | ((event->modifiers() & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
 
     if (press) {
         // Set the modifier state before pressing the key so the compositor
@@ -477,9 +479,18 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
         return;
     }
 
+    auto *modifiers = KeyboardModifiers::instance();
+    const bool wasLatched = modifiers->ctrl() || modifiers->alt();
+
     if (handleModifiedKey(event, false)) {
         event->accept();
         return;
+    }
+
+    if (wasLatched) {
+        // The combination completes on release; clear the latch even if the key
+        // could not be mapped, so the modifier never gets stuck.
+        modifiers->reset();
     }
 
     const QList<xkb_keysym_t> keys = QXkbCommon::toKeysym(event);

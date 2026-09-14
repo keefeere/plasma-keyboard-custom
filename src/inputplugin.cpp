@@ -142,6 +142,11 @@ uint32_t InputPlugin::altMask() const
     return m_keyboard ? m_keyboard->modifierMask(XKB_MOD_NAME_ALT) : 0;
 }
 
+uint32_t InputPlugin::shiftMask() const
+{
+    return m_keyboard ? m_keyboard->modifierMask(XKB_MOD_NAME_SHIFT) : 0;
+}
+
 InputPlugin::ContentHint InputPlugin::contentHint() const
 {
     if (!m_context) {

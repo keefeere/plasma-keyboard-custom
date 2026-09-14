@@ -96,6 +96,7 @@ public:
      */
     uint32_t controlMask() const;
     uint32_t altMask() const;
+    uint32_t shiftMask() const;
 
     ContentHint contentHint() const;
     ContentPurpose contentPurpose() const;
