@@ -114,6 +114,20 @@ KCM.SimpleKCM {
             FormCard.FormDelegateSeparator {}
 
             FormCard.FormSwitchDelegate {
+                id: hidePanelWhenKeyboardVisible
+                text: i18n("Hide the panel while the keyboard is visible")
+                description: i18n("The keyboard reaches the bottom of the screen")
+
+                checked: kcm.hidePanelWhenKeyboardVisible
+                onCheckedChanged: {
+                    kcm.hidePanelWhenKeyboardVisible = checked;
+                    checked = Qt.binding(() => kcm.hidePanelWhenKeyboardVisible)
+                }
+            }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormSwitchDelegate {
                 id: autoCapitalizationEnabled
                 text: i18n("Auto-capitalization")
                 description: i18n("Automatically capitalize the first letter of sentences")

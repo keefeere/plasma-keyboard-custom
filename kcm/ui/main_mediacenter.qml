@@ -99,9 +99,21 @@ KCM.SimpleKCM {
         }
 
         Bigscreen.SwitchDelegate {
+            id: hidePanelWhenKeyboardVisibleButton
+            text: i18n("Hide the panel while the keyboard is visible")
+            KeyNavigation.up: showOnMouseFocusButton
+
+            checked: kcm.hidePanelWhenKeyboardVisible
+            onCheckedChanged: {
+                kcm.hidePanelWhenKeyboardVisible = checked;
+                checked = Qt.binding(() => kcm.hidePanelWhenKeyboardVisible);
+            }
+        }
+
+        Bigscreen.SwitchDelegate {
             id: autoCapitalizationButton
             text: i18n("Auto-capitalization")
-            KeyNavigation.up: showOnMouseFocusButton
+            KeyNavigation.up: hidePanelWhenKeyboardVisibleButton
 
             checked: kcm.autoCapitalizationEnabled
             onCheckedChanged: {

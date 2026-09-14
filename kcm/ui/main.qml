@@ -76,6 +76,17 @@ KCM.ScrollViewKCM {
         }
 
         QQC2.CheckBox {
+            id: hidePanelWhenKeyboardVisible
+            text: i18n("Hide the panel while the keyboard is visible")
+
+            checked: kcm.hidePanelWhenKeyboardVisible
+            onCheckedChanged: {
+                kcm.hidePanelWhenKeyboardVisible = checked;
+                checked = Qt.binding(() => kcm.hidePanelWhenKeyboardVisible);
+            }
+        }
+
+        QQC2.CheckBox {
             id: autoCapitalizationEnabled
             text: i18n("Auto-capitalization")
 

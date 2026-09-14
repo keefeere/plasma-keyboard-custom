@@ -14,6 +14,8 @@
 #include <plasma_keyboard_version.h>
 
 #include <KAboutData>
+#include <KConfig>
+#include <KConfigGroup>
 #include <KConfigWatcher>
 #include <KCrash>
 #include <KGlobalAccel>
@@ -27,8 +29,12 @@
 #include <QDBusVariant>
 #include <QDir>
 #include <QGuiApplication>
+#include <QHash>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include <QStandardPaths>
 #include <QTimer>
 #include <QVariantMap>
 #include <QWindow>
@@ -79,6 +85,44 @@ void activateKwinKeyboard()
         QDBusMessage::createMethodCall(QLatin1String(s_kwinService), QLatin1String(s_kwinPath), QLatin1String(s_kwinIface), QStringLiteral("forceActivate"));
     QDBusConnection::sessionBus().call(msg, QDBus::NoBlock);
 }
+
+// Runs JavaScript inside plasmashell (used to control the Plasma panels).
+void evaluatePlasmaScript(const QString &script, bool blocking = false)
+{
+    QDBusMessage msg = QDBusMessage::createMethodCall(QStringLiteral("org.kde.plasmashell"),
+                                                      QStringLiteral("/PlasmaShell"),
+                                                      QStringLiteral("org.kde.PlasmaShell"),
+                                                      QStringLiteral("evaluateScript"));
+    msg << script;
+    if (blocking) {
+        QDBusConnection::sessionBus().call(msg, QDBus::Block, 1000);
+    } else {
+        QDBusConnection::sessionBus().call(msg, QDBus::NoBlock);
+    }
+}
+
+// Panel containment ids mapped to their configured hiding mode, read from the
+// Plasma config so the user's setting can be restored after hiding the panel.
+QHash<int, QString> configuredPanelHidingModes()
+{
+    QHash<int, QString> modes;
+    KConfig config(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QStringLiteral("/plasma-org.kde.plasma.desktop-appletsrc"),
+                   KConfig::SimpleConfig);
+    const KConfigGroup containments = config.group(QStringLiteral("Containments"));
+    const QStringList ids = containments.groupList();
+    for (const QString &id : ids) {
+        const KConfigGroup containment = containments.group(id);
+        if (containment.readEntry(QStringLiteral("plugin")) != QLatin1String("org.kde.panel")) {
+            continue;
+        }
+        bool ok = false;
+        const int panelId = id.toInt(&ok);
+        if (ok) {
+            modes.insert(panelId, containment.readEntry(QStringLiteral("hiding"), QStringLiteral("none")));
+        }
+    }
+    return modes;
+}
 } // namespace
 
 /**
@@ -93,12 +137,20 @@ public:
     explicit KeyboardHotkeyController(QObject *parent = nullptr)
         : QObject(parent)
     {
+        m_panelHidingModes = configuredPanelHidingModes();
+
         QDBusConnection::sessionBus().connect(QLatin1String(s_kwinService),
                                               QLatin1String(s_kwinPath),
                                               QLatin1String(s_kwinIface),
                                               QStringLiteral("visibleChanged"),
                                               this,
                                               SLOT(restoreModeIfHidden()));
+        QDBusConnection::sessionBus().connect(QLatin1String(s_kwinService),
+                                              QLatin1String(s_kwinPath),
+                                              QLatin1String(s_kwinIface),
+                                              QStringLiteral("visibleChanged"),
+                                              this,
+                                              SLOT(updatePanelVisibility()));
         QDBusConnection::sessionBus().connect(QLatin1String(s_kwinService),
                                               QLatin1String(s_kwinPath),
                                               QLatin1String(s_kwinPropertiesIface),
@@ -110,6 +162,7 @@ public:
         auto *pollTimer = new QTimer(this);
         pollTimer->setInterval(1000);
         connect(pollTimer, &QTimer::timeout, this, &KeyboardHotkeyController::restoreModeIfHidden);
+        connect(pollTimer, &QTimer::timeout, this, &KeyboardHotkeyController::updatePanelVisibility);
         pollTimer->start();
 
         // Apply the configured input mode on startup and when it changes.
@@ -117,8 +170,15 @@ public:
         connect(m_settingsWatcher.get(), &KConfigWatcher::configChanged, this, [this](const KConfigGroup &, const QByteArrayList &) {
             PlasmaKeyboardSettings::self()->load();
             applyConfiguredMode();
+            updatePanelVisibility();
         });
         applyConfiguredMode();
+        updatePanelVisibility();
+
+        // Never leave the panel hidden behind us if we are killed.
+        connect(qApp, &QCoreApplication::aboutToQuit, this, [this]() {
+            restorePanels(true);
+        });
     }
 
 public Q_SLOTS:
@@ -140,6 +200,17 @@ public Q_SLOTS:
     {
         if (!kwinVisible()) {
             applyConfiguredMode();
+        }
+    }
+
+    // Hide the Plasma panel(s) while the keyboard is visible, so the keyboard
+    // reaches the bottom of the screen, and restore them afterwards.
+    void updatePanelVisibility()
+    {
+        if (PlasmaKeyboardSettings::self()->hidePanelWhenKeyboardVisible() && kwinVisible()) {
+            hidePanels();
+        } else {
+            restorePanels();
         }
     }
 
@@ -172,7 +243,34 @@ private:
         }
     }
 
+    void hidePanels()
+    {
+        if (m_panelsHidden) {
+            return;
+        }
+        m_panelsHidden = true;
+        evaluatePlasmaScript(QStringLiteral("panelIds.forEach(function(id){var p=panelById(id);if(p.hiding!==\"autohide\"){p.hiding=\"autohide\";}});"));
+    }
+
+    void restorePanels(bool blocking = false)
+    {
+        if (!m_panelsHidden) {
+            return;
+        }
+        m_panelsHidden = false;
+        QJsonObject modes;
+        for (auto it = m_panelHidingModes.constBegin(); it != m_panelHidingModes.constEnd(); ++it) {
+            modes.insert(QString::number(it.key()), it.value());
+        }
+        const QString modesJson = QString::fromUtf8(QJsonDocument(modes).toJson(QJsonDocument::Compact));
+        evaluatePlasmaScript(
+            QStringLiteral("var m=%1;panelIds.forEach(function(id){var p=panelById(id);p.hiding=(m[id]!==undefined?m[id]:\"none\");});").arg(modesJson),
+            blocking);
+    }
+
     KConfigWatcher::Ptr m_settingsWatcher;
+    QHash<int, QString> m_panelHidingModes;
+    bool m_panelsHidden = false;
 };
 
 // signal handler for SIGINT & SIGTERM
