@@ -23,6 +23,10 @@ KeyPanel {
     property color color: {
         if (control && control.latched) {
             return BreezeConstants.latchedKeyBackgroundColor;
+        } else if (control && control.keyType === QtVirtualKeyboard.KeyType.ShiftKey
+                   && (InputContext.shiftActive || InputContext.capsLockActive)) {
+            // Show the shift key as latched while shift/caps is active.
+            return BreezeConstants.latchedKeyBackgroundColor;
         } else if (control && control.pressed) {
             return BreezeConstants.normalKeyPressedBackgroundColor;
         } else if (control && control.highlighted) {
