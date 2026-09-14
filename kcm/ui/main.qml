@@ -8,7 +8,6 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
-import QtQuick.Dialogs
 
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
@@ -162,27 +161,17 @@ KCM.ScrollViewKCM {
             }
         }
 
-        RowLayout {
+        QQC2.ComboBox {
+            id: keyboardFontComboBox
             Kirigami.FormData.label: i18n("Keyboard font:")
+            Layout.preferredWidth: Kirigami.Units.gridUnit * 16
 
-            QQC2.Button {
-                id: keyboardFontButton
-                Layout.fillWidth: true
-                text: kcm.keyboardFontFamily.length > 0 ? kcm.keyboardFontFamily : i18n("Default")
-                onClicked: fontDialog.open()
-            }
+            model: [i18n("Default")].concat(Qt.fontFamilies())
+            currentIndex: Math.max(0, model.indexOf(kcm.keyboardFontFamily))
 
-            QQC2.Button {
-                text: i18n("Reset")
-                enabled: kcm.keyboardFontFamily.length > 0
-                onClicked: kcm.keyboardFontFamily = ""
+            onActivated: (index) => {
+                kcm.keyboardFontFamily = index === 0 ? "" : model[index];
             }
         }
-    }
-
-    FontDialog {
-        id: fontDialog
-        title: i18n("Select Keyboard Font")
-        onAccepted: kcm.keyboardFontFamily = fontDialog.selectedFont.family
     }
 }
