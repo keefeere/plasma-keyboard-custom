@@ -1,0 +1,56 @@
+# Maintainer: mops1k <https://github.com/mops1k>
+pkgname=plasma-keyboard-custom
+pkgver=6.7.90
+pkgrel=1
+pkgdesc="Virtual keyboard for Qt based desktops (custom fork with gamepad support)"
+arch=('x86_64')
+url="https://github.com/mops1k/plasma-keyboard-custom"
+license=('GPL-2.0-or-later')
+depends=(
+  'glibc'
+  'kcmutils'
+  'kconfig'
+  'kcoreaddons'
+  'kcrash'
+  'kglobalaccel'
+  'ki18n'
+  'kirigami'
+  'kirigami-addons'
+  'kitemmodels'
+  'libplasma'
+  'libstdc++'
+  'libxkbcommon'
+  'qt6-base'
+  'qt6-declarative'
+  'qt6-virtualkeyboard'
+  'qt6-wayland'
+  'wayland'
+)
+makedepends=(
+  'cmake'
+  'extra-cmake-modules'
+  'ninja'
+  'plasma-wayland-protocols'
+  'pkgconf'
+  'qt6-wayland'
+  'wayland-protocols'
+)
+# Deliberately no conflicts/replaces/provides: this package installs only
+# custom-named files so it can be installed next to the official
+# plasma-keyboard package. Choose it in System Settings -> Virtual Keyboard.
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cmake -B build -S "$pkgname-$pkgver" -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DKDE_INSTALL_USE_QT_SYS_PATHS=ON \
+    -DKDE_INSTALL_LIBDIR=lib \
+    -DBUILD_TESTING=OFF
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

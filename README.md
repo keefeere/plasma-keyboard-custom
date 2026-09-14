@@ -11,6 +11,22 @@ It wraps Qt Virtual Keyboard in a window, and uses the input-method-v1 Wayland p
 
 ## plasma-keyboard-custom (fork)
 
+### Install the latest release
+
+Download the newest `plasma-keyboard-custom-*-x86_64.pkg.tar.zst` from the
+[Releases page](https://github.com/mops1k/plasma-keyboard-custom/releases/latest) and install it:
+
+```sh
+sudo pacman -U plasma-keyboard-custom-*-x86_64.pkg.tar.zst
+```
+
+Then pick **plasma-keyboard-custom** in **System Settings → Virtual Keyboard**; its own settings are under
+**System Settings → Plasma Keyboard (custom)**. It installs next to the official `plasma-keyboard` package.
+
+To build the package yourself: `bash packaging/build.sh`.
+
+### About
+
 This is a **fork of [KDE plasma-keyboard](https://invent.kde.org/plasma/plasma-keyboard)** (based on the 6.7.90 sources) with
 extra functionality for handheld / gamepad-driven use, primarily tested on an MSI Claw running CachyOS + KDE Plasma 6 Wayland.
 

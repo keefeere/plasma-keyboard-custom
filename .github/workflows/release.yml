@@ -1,0 +1,64 @@
+# Build the Arch package and (on tags) publish a GitHub release.
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build package
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:base-devel
+    steps:
+      - name: Install git
+        run: pacman -Sy --noconfirm --needed git
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        run: |
+          pacman -S --noconfirm --needed \
+            cmake extra-cmake-modules ninja plasma-wayland-protocols \
+            qt6-wayland wayland-protocols pkgconf \
+            kcmutils kconfig kcoreaddons kcrash kglobalaccel ki18n \
+            kirigami kirigami-addons kitemmodels libplasma \
+            qt6-base qt6-declarative qt6-virtualkeyboard
+
+      - name: Build package
+        run: |
+          useradd -m builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          su builder -c "bash $GITHUB_WORKSPACE/packaging/build.sh"
+
+      - name: Create checksums
+        run: |
+          cd packaging
+          sha256sum *.pkg.tar.zst > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: plasma-keyboard-custom
+          path: |
+            packaging/*.pkg.tar.zst
+            packaging/SHA256SUMS
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            packaging/*.pkg.tar.zst
+            packaging/SHA256SUMS
