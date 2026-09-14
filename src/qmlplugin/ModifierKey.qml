@@ -11,7 +11,7 @@ import QtQuick.VirtualKeyboard.Components
  * It emits a plain Control/Alt key event; InputListenerItem turns that into a
  * latch toggle, so it works the same for touch and gamepad activation. Tap to
  * enable, tap again (or press a key, which completes the combination) to clear.
- * The latched state is shown by highlighting the key and a dot in the corner.
+ * The latched state is shown by a lighter key background.
  */
 Key {
     id: root
@@ -19,13 +19,10 @@ Key {
     /** Which modifier this key controls: "ctrl" or "alt". */
     property string modifier: "ctrl"
 
-    /** True while the modifier is latched. */
+    /** True while the modifier is latched; the key panel uses it for its color. */
     readonly property bool latched: root.modifier === "alt" ? Modifiers.alt : Modifiers.ctrl
 
     key: root.modifier === "alt" ? Qt.Key_Alt : Qt.Key_Control
     functionKey: true
     noModifier: true
-    highlighted: root.latched
-    smallText: root.latched ? "\u25cf" : ""
-    smallTextVisible: root.latched
 }

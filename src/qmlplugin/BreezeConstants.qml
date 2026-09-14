@@ -29,6 +29,8 @@ QtObject {
     property color normalKeyBackgroundColor: primaryLightColor
     property color normalKeyPressedBackgroundColor: primaryDarkColor
     property color highlightedKeyBackgroundColor: primaryLightColor
+    // Latched (toggled) modifier keys, e.g. Ctrl/Alt.
+    property color latchedKeyBackgroundColor: Qt.lighter(normalKeyBackgroundColor, 1.6)
     property color capsLockKeyAccentColor: secondaryColor
     property color modeKeyAccentColor: textOnPrimaryColor
     property color keyTextColor: textOnPrimaryColor

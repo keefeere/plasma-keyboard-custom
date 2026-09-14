@@ -21,7 +21,9 @@ KeyPanel {
     property real radius: BreezeConstants.buttonRadius
 
     property color color: {
-        if (control && control.pressed) {
+        if (control && control.latched) {
+            return BreezeConstants.latchedKeyBackgroundColor;
+        } else if (control && control.pressed) {
             return BreezeConstants.normalKeyPressedBackgroundColor;
         } else if (control && control.highlighted) {
             return BreezeConstants.highlightedKeyBackgroundColor;
