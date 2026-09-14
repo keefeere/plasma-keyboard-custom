@@ -138,7 +138,7 @@ KeyboardStyle {
                     family: theme.fontFamily
                     weight: Font.Light
                     pixelSize: 30 * scaleHint
-                    capitalization: control.uppercased ? Font.AllUppercase : Font.MixedCase
+                    capitalization: Font.MixedCase
                 }
             }
             Loader {
@@ -159,6 +159,7 @@ KeyboardStyle {
                     // Modifier and function keys (Ctrl, Alt, Tab, Del, arrows, ...) are bold
                     weight: control.functionKey ? Font.Bold : Font.Light
                     pixelSize: 60 * scaleHint
+                    // Letters become uppercase while shift is active; other labels stay as authored.
                     capitalization: control.uppercased ? Font.AllUppercase : Font.MixedCase
                 }
             }
