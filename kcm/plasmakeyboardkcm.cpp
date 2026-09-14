@@ -144,6 +144,23 @@ void PlasmaKeyboardKcm::setShowOnMouseFocus(bool showOnMouseFocus)
     setNeedsSave(true);
 }
 
+int PlasmaKeyboardKcm::keyboardHeightPercent() const
+{
+    return m_keyboardHeightPercent;
+}
+
+void PlasmaKeyboardKcm::setKeyboardHeightPercent(int percent)
+{
+    if (percent == m_keyboardHeightPercent) {
+        return;
+    }
+
+    m_keyboardHeightPercent = percent;
+    Q_EMIT keyboardHeightPercentChanged();
+
+    setNeedsSave(true);
+}
+
 bool PlasmaKeyboardKcm::diacriticsPopupEnabled() const
 {
     return m_diacriticsPopupEnabled;
@@ -193,6 +210,7 @@ void PlasmaKeyboardKcm::load()
     setKeyboardNavigationEnabled(PlasmaKeyboardSettings::self()->keyboardNavigationEnabled());
     setAutoCapitalizationEnabled(PlasmaKeyboardSettings::self()->autoCapitalizationEnabled());
     setShowOnMouseFocus(PlasmaKeyboardSettings::self()->showOnMouseFocus());
+    setKeyboardHeightPercent(PlasmaKeyboardSettings::self()->keyboardHeightPercent());
     setDiacriticsPopupEnabled(PlasmaKeyboardSettings::self()->diacriticsPopupEnabled());
     setDiacriticsHoldThresholdMs(PlasmaKeyboardSettings::self()->diacriticsHoldThresholdMs());
 
@@ -207,6 +225,7 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setKeyboardNavigationEnabled(m_keyboardNavigationEnabled);
     PlasmaKeyboardSettings::self()->setAutoCapitalizationEnabled(m_autoCapitalizationEnabled);
     PlasmaKeyboardSettings::self()->setShowOnMouseFocus(m_showOnMouseFocus);
+    PlasmaKeyboardSettings::self()->setKeyboardHeightPercent(m_keyboardHeightPercent);
     PlasmaKeyboardSettings::self()->setDiacriticsPopupEnabled(m_diacriticsPopupEnabled);
     PlasmaKeyboardSettings::self()->setDiacriticsHoldThresholdMs(m_diacriticsHoldThresholdMs);
     PlasmaKeyboardSettings::self()->save();

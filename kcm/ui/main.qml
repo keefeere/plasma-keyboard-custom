@@ -127,5 +127,27 @@ KCM.ScrollViewKCM {
                 value = Qt.binding(() => kcm.diacriticsHoldThresholdMs);
             }
         }
+
+        QQC2.SpinBox {
+            id: keyboardHeightSpinBox
+            Kirigami.FormData.label: i18n("Keyboard height:")
+            from: 20
+            to: 80
+            stepSize: 2
+            value: kcm.keyboardHeightPercent
+
+            textFromValue: function (value) {
+                return value + "%";
+            }
+            valueFromText: function (text) {
+                let number = parseInt(text);
+                return isNaN(number) ? kcm.keyboardHeightPercent : number;
+            }
+
+            onValueChanged: {
+                kcm.keyboardHeightPercent = value;
+                value = Qt.binding(() => kcm.keyboardHeightPercent);
+            }
+        }
     }
 }

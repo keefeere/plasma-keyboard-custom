@@ -20,6 +20,7 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(bool keyboardNavigationEnabled READ keyboardNavigationEnabled WRITE setKeyboardNavigationEnabled NOTIFY keyboardNavigationEnabledChanged)
     Q_PROPERTY(bool autoCapitalizationEnabled READ autoCapitalizationEnabled WRITE setAutoCapitalizationEnabled NOTIFY autoCapitalizationEnabledChanged)
     Q_PROPERTY(bool showOnMouseFocus READ showOnMouseFocus WRITE setShowOnMouseFocus NOTIFY showOnMouseFocusChanged)
+    Q_PROPERTY(int keyboardHeightPercent READ keyboardHeightPercent WRITE setKeyboardHeightPercent NOTIFY keyboardHeightPercentChanged)
     Q_PROPERTY(bool diacriticsPopupEnabled READ diacriticsPopupEnabled WRITE setDiacriticsPopupEnabled NOTIFY diacriticsPopupEnabledChanged)
     Q_PROPERTY(int diacriticsHoldThresholdMs READ diacriticsHoldThresholdMs WRITE setDiacriticsHoldThresholdMs NOTIFY diacriticsHoldThresholdMsChanged)
 
@@ -46,6 +47,9 @@ public:
     bool showOnMouseFocus() const;
     void setShowOnMouseFocus(bool showOnMouseFocus);
 
+    int keyboardHeightPercent() const;
+    void setKeyboardHeightPercent(int percent);
+
     bool diacriticsPopupEnabled() const;
     void setDiacriticsPopupEnabled(bool enabled);
 
@@ -65,6 +69,7 @@ Q_SIGNALS:
     void keyboardNavigationEnabledChanged();
     void autoCapitalizationEnabledChanged();
     void showOnMouseFocusChanged();
+    void keyboardHeightPercentChanged();
     void diacriticsPopupEnabledChanged();
     void diacriticsHoldThresholdMsChanged();
 
@@ -74,6 +79,7 @@ private:
     bool m_keyboardNavigationEnabled = false;
     bool m_autoCapitalizationEnabled = true;
     bool m_showOnMouseFocus = false;
+    int m_keyboardHeightPercent = 42;
     bool m_diacriticsPopupEnabled = true;
     int m_diacriticsHoldThresholdMs = 600;
 

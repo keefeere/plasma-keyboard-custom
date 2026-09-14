@@ -124,6 +124,18 @@ KCM.SimpleKCM {
                     checked = Qt.binding(() => kcm.autoCapitalizationEnabled)
                 }
             }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormSpinBoxDelegate {
+                label: i18n("Keyboard height (%)")
+                description: i18n("Percentage of the screen height")
+                from: 20
+                to: 80
+                stepSize: 2
+                value: kcm.keyboardHeightPercent
+                onValueChanged: kcm.keyboardHeightPercent = value
+            }
         }
     }
 }
