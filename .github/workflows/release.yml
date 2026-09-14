@@ -1,14 +1,16 @@
 # Build the Arch package and publish a GitHub release.
 # Run it manually from the Actions tab ("Run workflow").
+#
+# The version is set automatically for every run:
+#   pkgver = PROJECT_VERSION from CMakeLists.txt (e.g. 6.7.90)
+#   pkgrel = workflow run number (monotonically increasing, so pacman
+#            always sees an upgrade)
+#   tag    = v<pkgver>-custom-r<pkgrel> (e.g. v6.7.90-custom-r12)
 name: Build and Release
 
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Release tag (created if it does not exist). Empty -> v<version>-custom'
-        required: false
-        default: ''
       prerelease:
         description: 'Mark the release as a pre-release'
         type: boolean
@@ -33,16 +35,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine version and tag
+      - name: Determine version
         id: ver
         run: |
-          version="$(sed -n 's/^set(PROJECT_VERSION "\(.*\)")$/\1/p' CMakeLists.txt | head -n1)"
-          tag="${{ github.event.inputs.tag }}"
-          if [ -z "$tag" ]; then
-            tag="v${version}-custom"
+          base="$(sed -n 's/^set(PROJECT_VERSION "\(.*\)")$/\1/p' CMakeLists.txt | head -n1)"
+          if [ -z "$base" ]; then
+            echo "Could not determine project version" >&2
+            exit 1
           fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          pkgrel="${{ github.run_number }}"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "pkgrel=$pkgrel" >> "$GITHUB_OUTPUT"
+          echo "version=$base-$pkgrel" >> "$GITHUB_OUTPUT"
+          echo "tag=v${base}-custom-r${pkgrel}" >> "$GITHUB_OUTPUT"
 
       - name: Install build dependencies
         run: |
@@ -57,7 +62,7 @@ jobs:
         run: |
           useradd -m builder
           chown -R builder:builder "$GITHUB_WORKSPACE"
-          su builder -c "bash $GITHUB_WORKSPACE/packaging/build.sh"
+          su builder -c "pkgrel=${{ steps.ver.outputs.pkgrel }} bash $GITHUB_WORKSPACE/packaging/build.sh"
 
       - name: Create checksums
         run: |
