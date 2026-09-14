@@ -26,6 +26,7 @@ target_sources(plasma-keyboard-custom PRIVATE
     inputpanelwindow.cpp
     inputpanelwindow.h
     inputplugin.cpp
+    touchholdwatcher.cpp
     inputplugin.h
     qwaylandinputpanelshellintegration.cpp
     qwaylandinputpanelshellintegration_p.h
@@ -66,6 +67,9 @@ if(PLASMA_KEYBOARD_SOUND_ENABLED)
         soundresources.qrc
     )
 endif()
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../data/70-plasma-keyboard-touchscreen.rules
+        DESTINATION ${KDE_INSTALL_LIBDIR}/udev/rules.d)
 
 ecm_qt_declare_logging_category(plasma-keyboard-custom
     HEADER logging.h

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "touchholdwatcher.h"
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QVirtualKeyboardInputEngine>
@@ -114,5 +115,6 @@ private:
 
     InputPlugin m_input;
     OverlayController *m_overlayController = nullptr;
+    TouchHoldWatcher m_touchHold;
     bool m_keyboardNavigationActive = false;
 };

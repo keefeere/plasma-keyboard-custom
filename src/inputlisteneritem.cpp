@@ -10,6 +10,7 @@
 #include "inputmethod_p.h"
 #include "logging.h"
 #include "plasmakeyboardsettings.h"
+#include "touchholdwatcher.h"
 
 #include "overlay/longpresstrigger.h"
 #include "overlay/overlaycontroller.h"
@@ -128,7 +129,15 @@ InputListenerItem::InputListenerItem()
 
         if (hasContext) {
             QGuiApplication::inputMethod()->update(Qt::ImQueryAll);
-            QGuiApplication::inputMethod()->show();
+            // In long-press mode the keyboard stays hidden until a touch is
+            // held on the screen long enough; fall back to the immediate
+            // show when no touchscreen can be watched.
+            const bool longTapSetting = PlasmaKeyboardSettings::self()->showOnLongTap();
+            const bool armed = longTapSetting && m_touchHold.arm(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs());
+            qCDebug(PlasmaKeyboard) << "contextChanged hasContext=" << hasContext << "showOnLongTap=" << longTapSetting << "armed=" << armed;
+            if (!armed) {
+                QGuiApplication::inputMethod()->show();
+            }
         } else {
             QGuiApplication::inputMethod()->setVisible(false);
         }
@@ -145,7 +154,7 @@ InputListenerItem::InputListenerItem()
 
         if (m_input.hasContext()) {
             // Re-activate when text input activates, and there is context
-            if (!window()->isVisible()) {
+            if (!m_touchHold.isArmed() && !window()->isVisible()) {
                 QGuiApplication::inputMethod()->setVisible(true);
             }
 
@@ -156,8 +165,14 @@ InputListenerItem::InputListenerItem()
         }
     });
     connect(&m_input, &InputPlugin::deactivate, this, [this] {
+        m_touchHold.disarm();
         QGuiApplication::inputMethod()->setVisible(false);
         QGuiApplication::inputMethod()->reset();
+    });
+
+    connect(&m_touchHold, &TouchHoldWatcher::longPress, this, [this] {
+        qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: long press detected, showing keyboard";
+        QGuiApplication::inputMethod()->show();
     });
     connect(&m_input, &InputPlugin::resetRequested, this, [] {
         QGuiApplication::inputMethod()->reset();

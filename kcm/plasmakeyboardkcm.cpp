@@ -144,6 +144,40 @@ void PlasmaKeyboardKcm::setShowOnMouseFocus(bool showOnMouseFocus)
     setNeedsSave(true);
 }
 
+bool PlasmaKeyboardKcm::showOnLongTap() const
+{
+    return m_showOnLongTap;
+}
+
+void PlasmaKeyboardKcm::setShowOnLongTap(bool showOnLongTap)
+{
+    if (showOnLongTap == m_showOnLongTap) {
+        return;
+    }
+
+    m_showOnLongTap = showOnLongTap;
+    Q_EMIT showOnLongTapChanged();
+
+    setNeedsSave(true);
+}
+
+int PlasmaKeyboardKcm::showOnLongTapThresholdMs() const
+{
+    return m_showOnLongTapThresholdMs;
+}
+
+void PlasmaKeyboardKcm::setShowOnLongTapThresholdMs(int showOnLongTapThresholdMs)
+{
+    if (showOnLongTapThresholdMs == m_showOnLongTapThresholdMs) {
+        return;
+    }
+
+    m_showOnLongTapThresholdMs = showOnLongTapThresholdMs;
+    Q_EMIT showOnLongTapThresholdMsChanged();
+
+    setNeedsSave(true);
+}
+
 bool PlasmaKeyboardKcm::hidePanelWhenKeyboardVisible() const
 {
     return m_hidePanelWhenKeyboardVisible;
@@ -244,6 +278,8 @@ void PlasmaKeyboardKcm::load()
     setKeyboardNavigationEnabled(PlasmaKeyboardSettings::self()->keyboardNavigationEnabled());
     setAutoCapitalizationEnabled(PlasmaKeyboardSettings::self()->autoCapitalizationEnabled());
     setShowOnMouseFocus(PlasmaKeyboardSettings::self()->showOnMouseFocus());
+    setShowOnLongTap(PlasmaKeyboardSettings::self()->showOnLongTap());
+    setShowOnLongTapThresholdMs(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs());
     setHidePanelWhenKeyboardVisible(PlasmaKeyboardSettings::self()->hidePanelWhenKeyboardVisible());
     setKeyboardFontFamily(PlasmaKeyboardSettings::self()->keyboardFontFamily());
     setKeyboardHeightPercent(PlasmaKeyboardSettings::self()->keyboardHeightPercent());
@@ -261,6 +297,8 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setKeyboardNavigationEnabled(m_keyboardNavigationEnabled);
     PlasmaKeyboardSettings::self()->setAutoCapitalizationEnabled(m_autoCapitalizationEnabled);
     PlasmaKeyboardSettings::self()->setShowOnMouseFocus(m_showOnMouseFocus);
+    PlasmaKeyboardSettings::self()->setShowOnLongTap(m_showOnLongTap);
+    PlasmaKeyboardSettings::self()->setShowOnLongTapThresholdMs(m_showOnLongTapThresholdMs);
     PlasmaKeyboardSettings::self()->setHidePanelWhenKeyboardVisible(m_hidePanelWhenKeyboardVisible);
     PlasmaKeyboardSettings::self()->setKeyboardFontFamily(m_keyboardFontFamily);
     PlasmaKeyboardSettings::self()->setKeyboardHeightPercent(m_keyboardHeightPercent);

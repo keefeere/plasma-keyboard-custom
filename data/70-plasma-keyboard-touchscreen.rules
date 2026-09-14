@@ -1,0 +1,3 @@
+# Allow the active user session to read touchscreen input, so the keyboard
+# can detect long presses on the touchscreen to show itself.
+SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_TOUCHSCREEN}=="1", TAG+="uaccess"

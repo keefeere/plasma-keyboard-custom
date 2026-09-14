@@ -76,6 +76,33 @@ KCM.ScrollViewKCM {
         }
 
         QQC2.CheckBox {
+            id: showOnLongTap
+            Kirigami.FormData.label: i18n("Open on long press:")
+            text: i18n("Instead of opening immediately when a text field is touched")
+
+            checked: kcm.showOnLongTap
+            onCheckedChanged: {
+                kcm.showOnLongTap = checked;
+                checked = Qt.binding(() => kcm.showOnLongTap);
+            }
+        }
+
+        QQC2.SpinBox {
+            id: showOnLongTapThreshold
+            Kirigami.FormData.label: i18n("Long press duration:")
+            from: 100
+            to: 5000
+            stepSize: 100
+            editable: true
+
+            value: kcm.showOnLongTapThresholdMs
+            onValueModified: {
+                kcm.showOnLongTapThresholdMs = value;
+                value = Qt.binding(() => kcm.showOnLongTapThresholdMs);
+            }
+        }
+
+        QQC2.CheckBox {
             id: hidePanelWhenKeyboardVisible
             text: i18n("Hide the panel while the keyboard is visible")
 

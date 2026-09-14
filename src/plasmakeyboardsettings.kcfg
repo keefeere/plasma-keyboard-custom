@@ -43,6 +43,16 @@
             <label>Whether the keyboard opens when a text field is focused with a mouse. When disabled it only opens on touch input or via the shortcut.</label>
             <default>false</default>
         </entry>
+        <entry key="showOnLongTap" type="Bool">
+            <label>Whether the keyboard opens only after a touch is held long enough, instead of opening immediately when a text field is focused.</label>
+            <default>false</default>
+        </entry>
+        <entry key="showOnLongTapThresholdMs" type="Int">
+            <label>How long a touch must be held for the keyboard to open, when showOnLongTap is enabled.</label>
+            <min>100</min>
+            <max>5000</max>
+            <default>600</default>
+        </entry>
         <entry key="hidePanelWhenKeyboardVisible" type="Bool">
             <label>Whether the Plasma panel is hidden while the keyboard is visible, so the keyboard reaches the bottom of the screen.</label>
             <default>true</default>

@@ -20,6 +20,8 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(bool keyboardNavigationEnabled READ keyboardNavigationEnabled WRITE setKeyboardNavigationEnabled NOTIFY keyboardNavigationEnabledChanged)
     Q_PROPERTY(bool autoCapitalizationEnabled READ autoCapitalizationEnabled WRITE setAutoCapitalizationEnabled NOTIFY autoCapitalizationEnabledChanged)
     Q_PROPERTY(bool showOnMouseFocus READ showOnMouseFocus WRITE setShowOnMouseFocus NOTIFY showOnMouseFocusChanged)
+    Q_PROPERTY(bool showOnLongTap READ showOnLongTap WRITE setShowOnLongTap NOTIFY showOnLongTapChanged)
+    Q_PROPERTY(int showOnLongTapThresholdMs READ showOnLongTapThresholdMs WRITE setShowOnLongTapThresholdMs NOTIFY showOnLongTapThresholdMsChanged)
     Q_PROPERTY(
         bool hidePanelWhenKeyboardVisible READ hidePanelWhenKeyboardVisible WRITE setHidePanelWhenKeyboardVisible NOTIFY hidePanelWhenKeyboardVisibleChanged)
     Q_PROPERTY(QString keyboardFontFamily READ keyboardFontFamily WRITE setKeyboardFontFamily NOTIFY keyboardFontFamilyChanged)
@@ -50,6 +52,12 @@ public:
     bool showOnMouseFocus() const;
     void setShowOnMouseFocus(bool showOnMouseFocus);
 
+    bool showOnLongTap() const;
+    void setShowOnLongTap(bool showOnLongTap);
+
+    int showOnLongTapThresholdMs() const;
+    void setShowOnLongTapThresholdMs(int showOnLongTapThresholdMs);
+
     bool hidePanelWhenKeyboardVisible() const;
     void setHidePanelWhenKeyboardVisible(bool hide);
 
@@ -78,6 +86,8 @@ Q_SIGNALS:
     void keyboardNavigationEnabledChanged();
     void autoCapitalizationEnabledChanged();
     void showOnMouseFocusChanged();
+    void showOnLongTapChanged();
+    void showOnLongTapThresholdMsChanged();
     void hidePanelWhenKeyboardVisibleChanged();
     void keyboardFontFamilyChanged();
     void keyboardHeightPercentChanged();
@@ -90,6 +100,8 @@ private:
     bool m_keyboardNavigationEnabled = false;
     bool m_autoCapitalizationEnabled = true;
     bool m_showOnMouseFocus = false;
+    bool m_showOnLongTap = false;
+    int m_showOnLongTapThresholdMs = 600;
     bool m_hidePanelWhenKeyboardVisible = true;
     QString m_keyboardFontFamily;
     int m_keyboardHeightPercent = 42;
