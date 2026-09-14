@@ -64,6 +64,18 @@ KCM.ScrollViewKCM {
         }
 
         QQC2.CheckBox {
+            id: showOnMouseFocus
+            Kirigami.FormData.label: i18n("Open on focus:")
+            text: i18n("When a text field is focused with a mouse")
+
+            checked: kcm.showOnMouseFocus
+            onCheckedChanged: {
+                kcm.showOnMouseFocus = checked;
+                checked = Qt.binding(() => kcm.showOnMouseFocus);
+            }
+        }
+
+        QQC2.CheckBox {
             id: autoCapitalizationEnabled
             text: i18n("Auto-capitalization")
 

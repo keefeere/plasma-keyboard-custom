@@ -100,6 +100,20 @@ KCM.SimpleKCM {
             FormCard.FormDelegateSeparator {}
 
             FormCard.FormSwitchDelegate {
+                id: showOnMouseFocus
+                text: i18n("Open when focused with a mouse")
+                description: i18n("Otherwise it only opens on touch input or via the shortcut")
+
+                checked: kcm.showOnMouseFocus
+                onCheckedChanged: {
+                    kcm.showOnMouseFocus = checked;
+                    checked = Qt.binding(() => kcm.showOnMouseFocus)
+                }
+            }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormSwitchDelegate {
                 id: autoCapitalizationEnabled
                 text: i18n("Auto-capitalization")
                 description: i18n("Automatically capitalize the first letter of sentences")

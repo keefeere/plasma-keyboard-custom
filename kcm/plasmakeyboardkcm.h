@@ -19,6 +19,7 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(QStringList enabledLocales READ enabledLocales NOTIFY enabledLocalesChanged)
     Q_PROPERTY(bool keyboardNavigationEnabled READ keyboardNavigationEnabled WRITE setKeyboardNavigationEnabled NOTIFY keyboardNavigationEnabledChanged)
     Q_PROPERTY(bool autoCapitalizationEnabled READ autoCapitalizationEnabled WRITE setAutoCapitalizationEnabled NOTIFY autoCapitalizationEnabledChanged)
+    Q_PROPERTY(bool showOnMouseFocus READ showOnMouseFocus WRITE setShowOnMouseFocus NOTIFY showOnMouseFocusChanged)
     Q_PROPERTY(bool diacriticsPopupEnabled READ diacriticsPopupEnabled WRITE setDiacriticsPopupEnabled NOTIFY diacriticsPopupEnabledChanged)
     Q_PROPERTY(int diacriticsHoldThresholdMs READ diacriticsHoldThresholdMs WRITE setDiacriticsHoldThresholdMs NOTIFY diacriticsHoldThresholdMsChanged)
 
@@ -42,6 +43,9 @@ public:
     bool autoCapitalizationEnabled() const;
     void setAutoCapitalizationEnabled(bool autoCapitalizationEnabled);
 
+    bool showOnMouseFocus() const;
+    void setShowOnMouseFocus(bool showOnMouseFocus);
+
     bool diacriticsPopupEnabled() const;
     void setDiacriticsPopupEnabled(bool enabled);
 
@@ -60,6 +64,7 @@ Q_SIGNALS:
     void enabledLocalesChanged();
     void keyboardNavigationEnabledChanged();
     void autoCapitalizationEnabledChanged();
+    void showOnMouseFocusChanged();
     void diacriticsPopupEnabledChanged();
     void diacriticsHoldThresholdMsChanged();
 
@@ -68,6 +73,7 @@ private:
     bool m_vibrationEnabled = true;
     bool m_keyboardNavigationEnabled = false;
     bool m_autoCapitalizationEnabled = true;
+    bool m_showOnMouseFocus = false;
     bool m_diacriticsPopupEnabled = true;
     int m_diacriticsHoldThresholdMs = 600;
 

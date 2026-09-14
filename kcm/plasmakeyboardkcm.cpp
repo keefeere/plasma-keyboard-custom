@@ -127,6 +127,23 @@ void PlasmaKeyboardKcm::setAutoCapitalizationEnabled(bool autoCapitalizationEnab
     setNeedsSave(true);
 }
 
+bool PlasmaKeyboardKcm::showOnMouseFocus() const
+{
+    return m_showOnMouseFocus;
+}
+
+void PlasmaKeyboardKcm::setShowOnMouseFocus(bool showOnMouseFocus)
+{
+    if (showOnMouseFocus == m_showOnMouseFocus) {
+        return;
+    }
+
+    m_showOnMouseFocus = showOnMouseFocus;
+    Q_EMIT showOnMouseFocusChanged();
+
+    setNeedsSave(true);
+}
+
 bool PlasmaKeyboardKcm::diacriticsPopupEnabled() const
 {
     return m_diacriticsPopupEnabled;
@@ -175,6 +192,7 @@ void PlasmaKeyboardKcm::load()
     Q_EMIT enabledLocalesChanged();
     setKeyboardNavigationEnabled(PlasmaKeyboardSettings::self()->keyboardNavigationEnabled());
     setAutoCapitalizationEnabled(PlasmaKeyboardSettings::self()->autoCapitalizationEnabled());
+    setShowOnMouseFocus(PlasmaKeyboardSettings::self()->showOnMouseFocus());
     setDiacriticsPopupEnabled(PlasmaKeyboardSettings::self()->diacriticsPopupEnabled());
     setDiacriticsHoldThresholdMs(PlasmaKeyboardSettings::self()->diacriticsHoldThresholdMs());
 
@@ -188,6 +206,7 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setEnabledLocales(m_enabledLocales);
     PlasmaKeyboardSettings::self()->setKeyboardNavigationEnabled(m_keyboardNavigationEnabled);
     PlasmaKeyboardSettings::self()->setAutoCapitalizationEnabled(m_autoCapitalizationEnabled);
+    PlasmaKeyboardSettings::self()->setShowOnMouseFocus(m_showOnMouseFocus);
     PlasmaKeyboardSettings::self()->setDiacriticsPopupEnabled(m_diacriticsPopupEnabled);
     PlasmaKeyboardSettings::self()->setDiacriticsHoldThresholdMs(m_diacriticsHoldThresholdMs);
     PlasmaKeyboardSettings::self()->save();

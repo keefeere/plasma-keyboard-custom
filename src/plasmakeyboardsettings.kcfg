@@ -33,6 +33,10 @@
             <label>Whether the keyboard panel fills the screen width.</label>
             <default>true</default>
         </entry>
+        <entry key="showOnMouseFocus" type="Bool">
+            <label>Whether the keyboard opens when a text field is focused with a mouse. When disabled it only opens on touch input or via the shortcut.</label>
+            <default>false</default>
+        </entry>
         <entry key="diacriticsPopupEnabled" type="Bool">
             <label>Whether holding a physical key shows diacritic options.</label>
             <default>true</default>

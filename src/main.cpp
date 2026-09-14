@@ -111,6 +111,14 @@ public:
         pollTimer->setInterval(1000);
         connect(pollTimer, &QTimer::timeout, this, &KeyboardHotkeyController::restoreModeIfHidden);
         pollTimer->start();
+
+        // Apply the configured input mode on startup and when it changes.
+        m_settingsWatcher = KConfigWatcher::create(PlasmaKeyboardSettings::self()->sharedConfig());
+        connect(m_settingsWatcher.get(), &KConfigWatcher::configChanged, this, [this](const KConfigGroup &, const QByteArrayList &) {
+            PlasmaKeyboardSettings::self()->load();
+            applyConfiguredMode();
+        });
+        applyConfiguredMode();
     }
 
 public Q_SLOTS:
@@ -122,32 +130,16 @@ public Q_SLOTS:
             QGuiApplication::inputMethod()->hide();
             return;
         }
-        if (m_savedMode < 0) {
-            m_savedMode = kwinMode();
-        }
-        if (m_savedMode != 2) {
-            setKwinMode(2); // AnyInput
-        }
+        // AnyInput so the panel is shown regardless of the last input device.
+        setKwinMode(2);
         activateKwinKeyboard();
     }
 
+    // Restore the configured mode once the panel is hidden.
     void restoreModeIfHidden()
     {
-        if (m_savedMode < 0) {
-            return;
-        }
-        QDBusMessage msg = QDBusMessage::createMethodCall(QLatin1String(s_kwinService),
-                                                          QLatin1String(s_kwinPath),
-                                                          QLatin1String(s_kwinPropertiesIface),
-                                                          QStringLiteral("Get"));
-        msg << QLatin1String(s_kwinIface) << QStringLiteral("visible");
-        const QDBusMessage reply = QDBusConnection::sessionBus().call(msg);
-        if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty()) {
-            return;
-        }
-        if (!reply.arguments().first().value<QDBusVariant>().variant().toBool()) {
-            setKwinMode(m_savedMode);
-            m_savedMode = -1;
+        if (!kwinVisible()) {
+            applyConfiguredMode();
         }
     }
 
@@ -158,17 +150,29 @@ private Q_SLOTS:
         if (interfaceName != QLatin1String(s_kwinIface)) {
             return;
         }
-        if (!changed.contains(QStringLiteral("visible")) || changed.value(QStringLiteral("visible")).toBool()) {
-            return;
-        }
-        if (m_savedMode >= 0) {
-            setKwinMode(m_savedMode);
-            m_savedMode = -1;
+        if (changed.contains(QStringLiteral("visible")) && !changed.value(QStringLiteral("visible")).toBool()) {
+            applyConfiguredMode();
         }
     }
 
 private:
-    int m_savedMode = -1;
+    // NonMouseInput (1) unless the user wants the keyboard also on mouse focus.
+    static int configuredMode()
+    {
+        return PlasmaKeyboardSettings::self()->showOnMouseFocus() ? 2 : 1;
+    }
+
+    void applyConfiguredMode()
+    {
+        if (kwinVisible()) {
+            return;
+        }
+        if (kwinMode() != configuredMode()) {
+            setKwinMode(configuredMode());
+        }
+    }
+
+    KConfigWatcher::Ptr m_settingsWatcher;
 };
 
 // signal handler for SIGINT & SIGTERM

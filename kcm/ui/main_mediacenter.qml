@@ -87,9 +87,21 @@ KCM.SimpleKCM {
         }
 
         Bigscreen.SwitchDelegate {
+            id: showOnMouseFocusButton
+            text: i18n("Open when focused with a mouse")
+            KeyNavigation.up: vibrationOnKeypressButton
+
+            checked: kcm.showOnMouseFocus
+            onCheckedChanged: {
+                kcm.showOnMouseFocus = checked;
+                checked = Qt.binding(() => kcm.showOnMouseFocus);
+            }
+        }
+
+        Bigscreen.SwitchDelegate {
             id: autoCapitalizationButton
             text: i18n("Auto-capitalization")
-            KeyNavigation.up: vibrationOnKeypressButton
+            KeyNavigation.up: showOnMouseFocusButton
 
             checked: kcm.autoCapitalizationEnabled
             onCheckedChanged: {
