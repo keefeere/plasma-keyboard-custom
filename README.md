@@ -9,6 +9,45 @@ The plasma-keyboard is a virtual keyboard based on [Qt Virtual Keyboard](https:/
 
 It wraps Qt Virtual Keyboard in a window, and uses the input-method-v1 Wayland protocol to communicate with the compositor to function as an input method.
 
+## plasma-keyboard-custom (fork)
+
+This is a **fork of [KDE plasma-keyboard](https://invent.kde.org/plasma/plasma-keyboard)** (based on the 6.7.90 sources) with
+extra functionality for handheld / gamepad-driven use, primarily tested on an MSI Claw running CachyOS + KDE Plasma 6 Wayland.
+
+It installs next to the official package and does not replace it: everything is renamed
+(`plasma-keyboard-custom` binary, `org.kde.plasma.keyboard.custom*` QML modules, `kcm_plasmakeyboardcustom`, layouts in
+`share/plasma/keyboard-custom`, style `PlasmaBreeze`), so both the stock and the custom keyboard show up under
+**System Settings → Virtual Keyboard** and can be selected there.
+
+### What is different from upstream
+
+- **Gamepad support** via InputPlumber's system D-Bus target (`org.shadowblip.Input.DBusDevice`):
+  - D-pad / left stick navigate, **A** selects, **B** closes, **X** backspace, **Y** space, **LT** shift, **RT** enter,
+    **LB** symbols, **RB** switches the layout.
+  - Button glyphs are shown directly on the mapped keys (X, RT, LT, LB, RB, Y, B) plus an **A** badge on the focused key.
+  - While the keyboard is visible the gamepad is intercepted (InputPlumber `InterceptMode = GAMEPAD_ONLY`) so input
+    does not leak into the game or Steam's mapping; the previous mode is restored on hide/exit.
+- **Latching Ctrl / Alt / Shift**: tapping a modifier latches it (shown by a lighter key background), it applies to the
+  next key and then clears; tapping again unlatches. Works the same for touch, key navigation and the gamepad. Shift
+  takes part in combinations (e.g. `Ctrl+Shift+key`).
+- **Layout key**: a single tap switches to the next layout, a long press opens the language popup (plus Settings).
+- **Rewritten layouts** (`fallback`/English, `ru_RU`, `lv_LV`) in a PC style: `Esc` and a hide-keyboard key, `Ctrl`/`Alt`,
+  physical inverted-T arrow cluster, `Del`/`Shift`/`&123` sized like `Tab`, no right Shift, and Latvian long-press
+  diacritics.
+- **Breeze style**: installed as `PlasmaBreeze` (so it is not shadowed by the system one), configurable keyboard height,
+  bold function/modifier keys, monochrome globe for the language key, capitalized language name on the space key.
+- **Settings page** (`plasma-keyboard-custom` in System Settings):
+  - keyboard height as a percentage of the screen (20–80%),
+  - whether the keyboard opens when a text field is focused with a mouse (otherwise it only opens on touch or via the shortcut),
+  - plus the upstream settings (locales, sound, vibration, navigation, diacritics, …).
+- **Global shortcut** to show/hide the keyboard (default `Meta+Shift+K`, configurable in
+  System Settings → Shortcuts → Plasma Keyboard (custom)).
+- **Build/packaging**: a `PKGBUILD` for Arch-based systems that installs only custom-named files (no file conflicts with
+  the official package). Translations (`.mo`) are intentionally not installed to avoid conflicts; the "plasma-keyboard"
+  translation domain from the official package is reused when present.
+
+License and copyright remain those of the upstream project (see `LICENSES/` and the SPDX headers in each file).
+
 ## Install using the flatpak nightly repository
 
 https://cdn.kde.org/flatpak/plasma-keyboard-nightly/org.kde.plasma.keyboard.flatpakref
