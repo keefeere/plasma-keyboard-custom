@@ -60,17 +60,6 @@ InputPanelWindow {
             inputPanel.InputContext.priv.navigationKeyReleased(key, false);
         }
         onActivate: {
-            // Ctrl/Alt are latching toggles; toggle them directly instead of
-            // "pressing" the key, so a gamepad does not need to keep a button held.
-            const activeKey = inputPanel.keyboard.activeKey;
-            if (activeKey && activeKey.modifier !== undefined) {
-                if (activeKey.modifier === "alt") {
-                    PlasmaKeyboard.Modifiers.alt = !PlasmaKeyboard.Modifiers.alt;
-                } else {
-                    PlasmaKeyboard.Modifiers.ctrl = !PlasmaKeyboard.Modifiers.ctrl;
-                }
-                return;
-            }
             inputPanel.InputContext.priv.navigationKeyPressed(Qt.Key_Return, false);
             inputPanel.InputContext.priv.navigationKeyReleased(Qt.Key_Return, false);
         }

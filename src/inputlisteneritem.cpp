@@ -437,6 +437,20 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
         return;
     }
 
+    // The on-screen Ctrl/Alt keys emit a plain Control/Alt event; use it to
+    // toggle the latch (works the same for touch and gamepad activation).
+    auto *modifiers = KeyboardModifiers::instance();
+    if (event->key() == Qt::Key_Control) {
+        modifiers->setCtrl(!modifiers->ctrl());
+        event->accept();
+        return;
+    }
+    if (event->key() == Qt::Key_Alt) {
+        modifiers->setAlt(!modifiers->alt());
+        event->accept();
+        return;
+    }
+
     if (handleModifiedKey(event, true)) {
         event->accept();
         return;
@@ -454,6 +468,12 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
 void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
 {
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
+        return;
+    }
+
+    if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt) {
+        // The toggle happened on press; ignore the release.
+        event->accept();
         return;
     }
 

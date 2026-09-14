@@ -159,8 +159,8 @@ KeyboardStyle {
                     // Modifier and function keys (Ctrl, Alt, Tab, Del, arrows, ...) are bold
                     weight: control.functionKey ? Font.Bold : Font.Light
                     pixelSize: 60 * scaleHint
-                    // Letters become uppercase while shift is active; other labels stay as authored.
-                    capitalization: control.uppercased ? Font.AllUppercase : Font.MixedCase
+                    // Letters become uppercase while shift is active; function/modifier labels stay as authored.
+                    capitalization: control.uppercased && !control.functionKey ? Font.AllUppercase : Font.MixedCase
                 }
             }
             states: [
