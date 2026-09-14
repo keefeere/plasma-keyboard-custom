@@ -62,6 +62,13 @@ private:
     bool m_gamepadAvailable = false;
 };
 
+/**
+ * Requests the keyboard to be shown on the next input activation, bypassing
+ * the "open on long press" behaviour. Used by the global shortcut, which
+ * force-activates the input method and would otherwise be suppressed.
+ */
+void setInputPanelForceShowOnNextActivation();
+
 class InputListenerItem : public QQuickItem
 {
     Q_OBJECT

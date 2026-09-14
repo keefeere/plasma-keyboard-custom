@@ -20,12 +20,31 @@
 #include <QLoggingCategory>
 #include <QTextFormat>
 
+#include <atomic>
 #include <set>
 
 #include <QtWaylandClient/private/qwaylandwindow_p.h>
 #include <qpa/qwindowsysteminterface.h>
 
 Q_GLOBAL_STATIC(InputMethod, s_im)
+
+namespace
+{
+// Timestamp (ms since epoch) until which the next input activation must show
+// the keyboard immediately, bypassing the long-press mode.
+std::atomic<qint64> s_forceShowUntil{0};
+}
+
+void setInputPanelForceShowOnNextActivation()
+{
+    s_forceShowUntil.store(QDateTime::currentMSecsSinceEpoch() + 5000);
+
+    // KWin does not re-activate an already active input context, so the
+    // pending show must be applied right away in that case.
+    if (s_im->hasContext()) {
+        QGuiApplication::inputMethod()->show();
+    }
+}
 
 KeyboardModifiers::KeyboardModifiers(QObject *parent)
     : QObject(parent)
@@ -132,9 +151,17 @@ InputListenerItem::InputListenerItem()
             // In long-press mode the keyboard stays hidden until a touch is
             // held on the screen long enough; fall back to the immediate
             // show when no touchscreen can be watched.
+            // The global shortcut force-activates the input method; show
+            // immediately in that case instead of waiting for a long press.
+            const bool forceShow = s_forceShowUntil.load() > QDateTime::currentMSecsSinceEpoch();
+            if (forceShow) {
+                s_forceShowUntil.store(0);
+            }
+
             const bool longTapSetting = PlasmaKeyboardSettings::self()->showOnLongTap();
-            const bool armed = longTapSetting && m_touchHold.arm(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs());
-            qCDebug(PlasmaKeyboard) << "contextChanged hasContext=" << hasContext << "showOnLongTap=" << longTapSetting << "armed=" << armed;
+            const bool armed = !forceShow && longTapSetting && m_touchHold.arm(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs());
+            qCDebug(PlasmaKeyboard) << "contextChanged hasContext=" << hasContext << "showOnLongTap=" << longTapSetting << "forceShow=" << forceShow
+                                    << "armed=" << armed;
             if (!armed) {
                 QGuiApplication::inputMethod()->show();
             }

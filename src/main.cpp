@@ -191,6 +191,7 @@ public Q_SLOTS:
             return;
         }
         // AnyInput so the panel is shown regardless of the last input device.
+        setInputPanelForceShowOnNextActivation();
         setKwinMode(2);
         activateKwinKeyboard();
     }
