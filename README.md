@@ -3,7 +3,13 @@
   - SPDX-License-Identifier: CC0-1.0
 -->
 
-# Plasma Keyboard
+# Plasma Keyboard (custom fork)
+
+> **This branch/repository is `plasma-keyboard-custom`**, a fork of
+> [KDE plasma-keyboard](https://invent.kde.org/plasma/plasma-keyboard) with extra functionality for
+> handheld / gamepad-driven use (MSI Claw, CachyOS + KDE Plasma 6 Wayland). It installs **next to**
+> the official package and does not replace it — see
+> [plasma-keyboard-custom (fork)](#plasma-keyboard-custom-fork) below.
 
 The plasma-keyboard is a virtual keyboard based on [Qt Virtual Keyboard](https://doc.qt.io/qt-6/qtvirtualkeyboard-overview.html) designed to integrate in Plasma.
 
@@ -47,14 +53,23 @@ It installs next to the official package and does not replace it: everything is 
   next key and then clears; tapping again unlatches. Works the same for touch, key navigation and the gamepad. Shift
   takes part in combinations (e.g. `Ctrl+Shift+key`).
 - **Layout key**: a single tap switches to the next layout, a long press opens the language popup (plus Settings).
-- **Rewritten layouts** (`fallback`/English, `ru_RU`, `lv_LV`) in a PC style: `Esc` and a hide-keyboard key, `Ctrl`/`Alt`,
-  physical inverted-T arrow cluster, `Del`/`Shift`/`&123` sized like `Tab`, no right Shift, and Latvian long-press
-  diacritics.
+- **Rewritten layouts** in a PC style: all letter layouts (`fallback`/English, `ru_RU`, `lv_LV` plus the other Latin,
+  Cyrillic and Greek ones) use the same rows as `ru_RU` — `Esc` and a hide-keyboard key, `Ctrl`/`Alt`, a numeric row,
+  physical inverted-T arrow cluster, `Del`/`Shift`/`&123` sized like `Tab`, no right Shift; the Latvian layout keeps its
+  long-press diacritics. Multi-mode layouts (Japanese, Korean, Chinese, Thai, Arabic, Hebrew) are left as upstream.
 - **Breeze style**: installed as `PlasmaBreeze` (so it is not shadowed by the system one), configurable keyboard height,
   bold function/modifier keys, monochrome globe for the language key, capitalized language name on the space key.
+- **Open on long press**: instead of popping up as soon as a text field is focused, the keyboard can wait for a long
+  press on the touchscreen (configurable duration, 100–5000 ms). The screen is read directly through evdev
+  (`TouchHoldWatcher`), so a udev rule granting `uaccess` on the touchscreen is installed with the package
+  (`70-plasma-keyboard-touchscreen.rules`). The global shortcut still shows the keyboard immediately.
+- **Optional F1–F12 row** above the keyboard, sized and styled like the regular keys; the panel grows accordingly.
+- **Single instance**: a second process exits right away, so a stale instance can never keep an old panel around.
 - **Settings page** (`plasma-keyboard-custom` in System Settings):
   - keyboard height as a percentage of the screen (20–80%),
   - whether the keyboard opens when a text field is focused with a mouse (otherwise it only opens on touch or via the shortcut),
+  - open on long press with its threshold, the F1–F12 row, the keyboard font, hiding the Plasma panel while the
+    keyboard is visible,
   - plus the upstream settings (locales, sound, vibration, navigation, diacritics, …).
 - **Global shortcut** to show/hide the keyboard (default `Meta+Shift+K`, configurable in
   System Settings → Shortcuts → Plasma Keyboard (custom)).
