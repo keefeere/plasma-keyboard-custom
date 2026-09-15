@@ -32,6 +32,7 @@
 #include <QHash>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLockFile>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
 #include <QStandardPaths>
@@ -288,6 +289,15 @@ int main(int argc, char **argv)
     initLayoutsPath();
 
     QGuiApplication application(argc, argv);
+
+    // Only one instance may act as the input method; a stale instance would
+    // keep its own (possibly shown) panel around and confuse the compositor.
+    QLockFile instanceLock(QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + QStringLiteral("/plasma-keyboard-custom.lock"));
+    instanceLock.setStaleLockTime(0);
+    if (!instanceLock.tryLock(0)) {
+        qWarning() << "Another Plasma Keyboard instance is already running, exiting.";
+        return 1;
+    }
 
     KLocalizedString::setApplicationDomain("plasma-keyboard");
 
