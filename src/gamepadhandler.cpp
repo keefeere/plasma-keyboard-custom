@@ -19,6 +19,11 @@ constexpr auto s_service = "org.shadowblip.InputPlumber";
 constexpr auto s_interface = "org.shadowblip.Input.DBusDevice";
 constexpr auto s_signal = "InputEvent";
 
+// Turbo mode for the held backspace button: after this pause the deletion
+// repeats every s_backspaceRepeatMs, like a held key on a hardware keyboard.
+constexpr int s_backspaceInitialDelayMs = 350;
+constexpr int s_backspaceRepeatMs = 50;
+
 QString propertyStringList(const QString &path, const QString &interface, const QString &property, const QString &signature)
 {
     QDBusMessage msg = QDBusMessage::createMethodCall(QLatin1String(s_service), path, QStringLiteral("org.freedesktop.DBus.Properties"), QStringLiteral("Get"));
@@ -72,6 +77,18 @@ GamepadHandler::GamepadHandler(QObject *parent)
         if (m_repeatKey != 0) {
             Q_EMIT navigate(m_repeatKey);
         }
+    });
+
+    // X (backspace) keeps deleting while it is held; the first character is
+    // removed right away, then repeats start after a short delay.
+    m_backspaceTimer = new QTimer(this);
+    m_backspaceTimer->setSingleShot(true);
+    connect(m_backspaceTimer, &QTimer::timeout, this, [this] {
+        if (!m_backspaceHeld) {
+            return;
+        }
+        Q_EMIT backspace();
+        m_backspaceTimer->start(s_backspaceRepeatMs);
     });
 
     const QString path = findDbusDevicePath(&m_compositePath);
@@ -192,6 +209,12 @@ void GamepadHandler::setActive(bool active)
         setInterceptMode(3);
     } else {
         setInterceptMode(m_savedInterceptMode);
+        // No release events arrive once the gamepad is no longer intercepted.
+        m_backspaceHeld = false;
+        m_backspaceTimer->stop();
+        m_repeatKey = 0;
+        m_repeatTimer->stop();
+        m_pressedDirections.clear();
     }
     m_active = active;
     qCDebug(PlasmaKeyboard) << "GamepadHandler::setActive" << active << "saved mode" << m_savedInterceptMode << "now" << interceptMode();
@@ -221,6 +244,12 @@ void GamepadHandler::onInputEvent(const QString &event, double value)
         return;
     }
 
+    // X: backspace. While held it works like turbo mode and keeps deleting.
+    if (event == QLatin1String("ui_context")) {
+        handleBackspace(pressed);
+        return;
+    }
+
     // All remaining mappings trigger on press only.
     if (!pressed) {
         return;
@@ -232,9 +261,6 @@ void GamepadHandler::onInputEvent(const QString &event, double value)
     } else if (event == QLatin1String("ui_back")) {
         // B: close the keyboard.
         Q_EMIT hideKeyboard();
-    } else if (event == QLatin1String("ui_context")) {
-        // X: backspace.
-        Q_EMIT backspace();
     } else if (event == QLatin1String("ui_action")) {
         // Y: space.
         Q_EMIT space();
@@ -253,6 +279,21 @@ void GamepadHandler::onInputEvent(const QString &event, double value)
     } else if (event == QLatin1String("ui_option")) {
         // Start: close the keyboard.
         Q_EMIT hideKeyboard();
+    }
+}
+
+void GamepadHandler::handleBackspace(bool pressed)
+{
+    if (pressed) {
+        if (m_backspaceHeld) {
+            return;
+        }
+        m_backspaceHeld = true;
+        Q_EMIT backspace();
+        m_backspaceTimer->start(s_backspaceInitialDelayMs);
+    } else {
+        m_backspaceHeld = false;
+        m_backspaceTimer->stop();
     }
 }
 

@@ -78,6 +78,7 @@ private Q_SLOTS:
 
 private:
     void handleDirection(int key, bool pressed);
+    void handleBackspace(bool pressed);
     uint interceptMode() const;
     void setInterceptMode(uint mode);
 
@@ -87,6 +88,8 @@ private:
     uint m_savedInterceptMode = 0;
     QSet<int> m_pressedDirections;
     QTimer *m_repeatTimer = nullptr;
+    QTimer *m_backspaceTimer = nullptr;
     QTimer *m_kwinPollTimer = nullptr;
     int m_repeatKey = 0;
+    bool m_backspaceHeld = false;
 };
