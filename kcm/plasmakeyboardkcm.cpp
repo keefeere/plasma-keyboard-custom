@@ -64,6 +64,23 @@ void PlasmaKeyboardKcm::setVibrationEnabled(bool vibrationEnabled)
     setNeedsSave(true);
 }
 
+int PlasmaKeyboardKcm::vibrationStrength() const
+{
+    return m_vibrationStrength;
+}
+
+void PlasmaKeyboardKcm::setVibrationStrength(int vibrationStrength)
+{
+    if (vibrationStrength == m_vibrationStrength) {
+        return;
+    }
+
+    m_vibrationStrength = vibrationStrength;
+    Q_EMIT vibrationStrengthChanged();
+
+    setNeedsSave(true);
+}
+
 QStringList PlasmaKeyboardKcm::enabledLocales() const
 {
     return m_enabledLocales;
@@ -289,6 +306,7 @@ void PlasmaKeyboardKcm::load()
 {
     setSoundEnabled(PlasmaKeyboardSettings::self()->soundEnabled());
     setVibrationEnabled(PlasmaKeyboardSettings::self()->vibrationEnabled());
+    setVibrationStrength(PlasmaKeyboardSettings::self()->vibrationStrength());
 
     m_enabledLocales = PlasmaKeyboardSettings::self()->enabledLocales();
     Q_EMIT enabledLocalesChanged();
@@ -311,6 +329,7 @@ void PlasmaKeyboardKcm::save()
 {
     PlasmaKeyboardSettings::self()->setSoundEnabled(m_soundEnabled);
     PlasmaKeyboardSettings::self()->setVibrationEnabled(m_vibrationEnabled);
+    PlasmaKeyboardSettings::self()->setVibrationStrength(m_vibrationStrength);
     PlasmaKeyboardSettings::self()->setEnabledLocales(m_enabledLocales);
     PlasmaKeyboardSettings::self()->setKeyboardNavigationEnabled(m_keyboardNavigationEnabled);
     PlasmaKeyboardSettings::self()->setAutoCapitalizationEnabled(m_autoCapitalizationEnabled);

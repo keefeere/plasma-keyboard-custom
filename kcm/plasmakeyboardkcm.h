@@ -16,6 +16,7 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_OBJECT
     Q_PROPERTY(bool soundEnabled READ soundEnabled WRITE setSoundEnabled NOTIFY soundEnabledChanged)
     Q_PROPERTY(bool vibrationEnabled READ vibrationEnabled WRITE setVibrationEnabled NOTIFY vibrationEnabledChanged)
+    Q_PROPERTY(int vibrationStrength READ vibrationStrength WRITE setVibrationStrength NOTIFY vibrationStrengthChanged)
     Q_PROPERTY(QStringList enabledLocales READ enabledLocales NOTIFY enabledLocalesChanged)
     Q_PROPERTY(bool keyboardNavigationEnabled READ keyboardNavigationEnabled WRITE setKeyboardNavigationEnabled NOTIFY keyboardNavigationEnabledChanged)
     Q_PROPERTY(bool autoCapitalizationEnabled READ autoCapitalizationEnabled WRITE setAutoCapitalizationEnabled NOTIFY autoCapitalizationEnabledChanged)
@@ -38,6 +39,9 @@ public:
 
     bool vibrationEnabled() const;
     void setVibrationEnabled(bool vibrationEnabled);
+
+    int vibrationStrength() const;
+    void setVibrationStrength(int vibrationStrength);
 
     QStringList enabledLocales() const;
 
@@ -86,6 +90,7 @@ public Q_SLOTS:
 Q_SIGNALS:
     void soundEnabledChanged();
     void vibrationEnabledChanged();
+    void vibrationStrengthChanged();
     void enabledLocalesChanged();
     void keyboardNavigationEnabledChanged();
     void autoCapitalizationEnabledChanged();
@@ -102,6 +107,7 @@ Q_SIGNALS:
 private:
     bool m_soundEnabled = false;
     bool m_vibrationEnabled = true;
+    int m_vibrationStrength = 75;
     bool m_keyboardNavigationEnabled = false;
     bool m_autoCapitalizationEnabled = true;
     bool m_showOnMouseFocus = false;

@@ -307,3 +307,20 @@ msgstr "%1%"
 msgctxt "@title:group"
 msgid "Typing"
 msgstr "Ввод"
+
+#: main_handset.qml:243
+msgid "Percentage of the maximum vibration"
+msgstr "В процентах от максимальной силы"
+
+#: main_handset.qml:242
+msgid "Vibration strength"
+msgstr "Сила вибрации"
+
+#: main.qml:229
+msgid "Vibration strength:"
+msgstr "Сила вибрации:"
+
+#: main.qml:237 main_handset.qml:252
+msgctxt "vibration strength in percent"
+msgid "%1%"
+msgstr "%1%"

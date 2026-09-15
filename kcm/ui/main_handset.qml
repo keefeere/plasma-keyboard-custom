@@ -238,6 +238,23 @@ KCM.SimpleKCM {
 
             FormCard.FormDelegateSeparator {}
 
+            FormCard.FormSpinBoxDelegate {
+                label: i18n("Vibration strength")
+                description: i18n("Percentage of the maximum vibration")
+                from: 0
+                to: 100
+                stepSize: 5
+                enabled: vibrationEnabled.checked
+                value: kcm.vibrationStrength
+                onValueChanged: kcm.vibrationStrength = value
+
+                textFromValue: function (value) {
+                    return i18nc("vibration strength in percent", "%1%", value);
+                }
+            }
+
+            FormCard.FormDelegateSeparator {}
+
             FormCard.FormSwitchDelegate {
                 id: keyboardNavigationEnabled
                 text: i18n("Keyboard navigation")

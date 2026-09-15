@@ -224,6 +224,29 @@ KCM.AbstractKCM {
                 }
             }
 
+            QQC2.SpinBox {
+                id: vibrationStrengthSpinBox
+                Kirigami.FormData.label: i18n("Vibration strength:")
+                from: 0
+                to: 100
+                stepSize: 5
+                enabled: vibrationEnabled.checked
+                value: kcm.vibrationStrength
+
+                textFromValue: function (value) {
+                    return i18nc("vibration strength in percent", "%1%", value);
+                }
+                valueFromText: function (text) {
+                    const number = parseInt(text);
+                    return isNaN(number) ? kcm.vibrationStrength : number;
+                }
+
+                onValueChanged: {
+                    kcm.vibrationStrength = value;
+                    value = Qt.binding(() => kcm.vibrationStrength);
+                }
+            }
+
             QQC2.CheckBox {
                 id: keyboardNavigationEnabled
                 Kirigami.FormData.label: i18n("Navigation:")

@@ -58,7 +58,7 @@ KeyPanel {
         target: root.control
         function onPressedChanged() {
             if (root.control.pressed && PlasmaKeyboardSettings.vibrationEnabled) {
-                Vibration.vibrate(PlasmaKeyboardSettings.vibrationMs);
+                Vibration.vibrate(PlasmaKeyboardSettings.vibrationMs, PlasmaKeyboardSettings.vibrationStrength);
             }
         }
     }

@@ -19,6 +19,12 @@
         <entry key="vibrationMs" type="Int">
             <default>10</default>
         </entry>
+        <entry key="vibrationStrength" type="Int">
+            <label>Strength of the vibration, in percent.</label>
+            <default>75</default>
+            <min>0</min>
+            <max>100</max>
+        </entry>
         <entry key="enabledLocales" type="StringList">
             <default></default>
         </entry>
