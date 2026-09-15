@@ -78,13 +78,51 @@ jobs:
             packaging/*.pkg.tar.zst
             packaging/SHA256SUMS
 
+      - name: Generate release notes
+        id: notes
+        run: |
+          set -euo pipefail
+          # The tag of this run does not exist yet, so the newest matching tag is
+          # the previous release. Fall back to the older tag scheme / first commit.
+          prev="$(git tag --list 'v*-custom-r*' --sort=-v:refname | head -n1)"
+          if [ -z "$prev" ]; then
+            prev="$(git tag --list 'v*-custom' --sort=-v:refname | head -n1)"
+          fi
+          if [ -z "$prev" ]; then
+            prev="$(git rev-list --max-parents=0 HEAD)"
+          fi
+          echo "previous=$prev" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "Arch package for **plasma-keyboard-custom ${{ steps.ver.outputs.version }}**"
+            echo "(fork of the KDE Plasma Keyboard, based on the ${{ steps.ver.outputs.base }} sources)."
+            echo
+            echo "### Install"
+            echo
+            echo '```sh'
+            echo "sudo pacman -U plasma-keyboard-custom-*.pkg.tar.zst"
+            echo '```'
+            echo
+            echo "### Changes since \`${prev}\`"
+            echo
+            if [ "$(git rev-list --count "$prev..HEAD")" -eq 0 ]; then
+              echo "- No changes, rebuilt only."
+            else
+              git log --no-merges --pretty='- %s (%h)' "$prev..HEAD"
+            fi
+            echo
+            echo "**Full changelog**: https://github.com/${{ github.repository }}/compare/${prev}...${{ steps.ver.outputs.tag }}"
+          } > release-notes.md
+
+          cat release-notes.md
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: plasma-keyboard-custom ${{ steps.ver.outputs.version }}
           prerelease: ${{ github.event.inputs.prerelease == 'true' }}
-          generate_release_notes: true
+          body_path: release-notes.md
           files: |
             packaging/*.pkg.tar.zst
             packaging/SHA256SUMS
