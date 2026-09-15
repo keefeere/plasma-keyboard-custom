@@ -16,7 +16,7 @@ import org.kde.bigscreen as Bigscreen
 KCM.SimpleKCM {
     id: keyboardSettingsView
 
-    title: ("On-Screen Keyboard")
+    title: i18n("On-Screen Keyboard")
     background: null
 
     leftPadding: Kirigami.Units.smallSpacing
@@ -44,7 +44,7 @@ KCM.SimpleKCM {
 
         QQC2.Label {
             id: keyPressFeedbackLabel
-            text: i18n("Key press feedback")
+            text: i18n("Feedback")
             font.pixelSize: 22
             font.weight: Font.Normal
             Layout.topMargin: Kirigami.Units.smallSpacing
@@ -53,7 +53,7 @@ KCM.SimpleKCM {
 
         Bigscreen.SwitchDelegate {
             id: soundOnKeypressButton
-            text: "Sound"
+            text: i18n("Sound")
             KeyNavigation.up: changeLanguagesButton
             KeyNavigation.down: vibrationOnKeypressButton
 
@@ -66,7 +66,7 @@ KCM.SimpleKCM {
 
         Bigscreen.SwitchDelegate {
             id: vibrationOnKeypressButton
-            text: "Vibration"
+            text: i18n("Vibration")
             KeyNavigation.up: soundOnKeypressButton
             KeyNavigation.down: autoCapitalizationButton
 
@@ -79,7 +79,7 @@ KCM.SimpleKCM {
 
         QQC2.Label {
             id: generalLabel
-            text: i18n("General")
+            text: i18n("Opening the keyboard")
             font.pixelSize: 22
             font.weight: Font.Normal
             Layout.topMargin: Kirigami.Units.smallSpacing
@@ -87,9 +87,23 @@ KCM.SimpleKCM {
         }
 
         Bigscreen.SwitchDelegate {
+            id: showOnLongTapButton
+            text: i18n("Open on long press")
+            KeyNavigation.up: vibrationOnKeypressButton
+            KeyNavigation.down: showOnMouseFocusButton
+
+            checked: kcm.showOnLongTap
+            onCheckedChanged: {
+                kcm.showOnLongTap = checked;
+                checked = Qt.binding(() => kcm.showOnLongTap);
+            }
+        }
+
+        Bigscreen.SwitchDelegate {
             id: showOnMouseFocusButton
             text: i18n("Open when focused with a mouse")
-            KeyNavigation.up: vibrationOnKeypressButton
+            KeyNavigation.up: showOnLongTapButton
+            KeyNavigation.down: hidePanelWhenKeyboardVisibleButton
 
             checked: kcm.showOnMouseFocus
             onCheckedChanged: {
@@ -100,8 +114,9 @@ KCM.SimpleKCM {
 
         Bigscreen.SwitchDelegate {
             id: hidePanelWhenKeyboardVisibleButton
-            text: i18n("Hide the panel while the keyboard is visible")
+            text: i18n("Hide the panel while the keyboard is open")
             KeyNavigation.up: showOnMouseFocusButton
+            KeyNavigation.down: showFunctionKeyRowButton
 
             checked: kcm.hidePanelWhenKeyboardVisible
             onCheckedChanged: {
@@ -110,10 +125,56 @@ KCM.SimpleKCM {
             }
         }
 
+        QQC2.Label {
+            id: appearanceLabel
+            text: i18n("Appearance")
+            font.pixelSize: 22
+            font.weight: Font.Normal
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            Layout.bottomMargin: Kirigami.Units.smallSpacing
+        }
+
+        Bigscreen.SwitchDelegate {
+            id: showFunctionKeyRowButton
+            text: i18n("Function keys")
+            KeyNavigation.up: hidePanelWhenKeyboardVisibleButton
+            KeyNavigation.down: autoCapitalizationButton
+
+            checked: kcm.showFunctionKeyRow
+            onCheckedChanged: {
+                kcm.showFunctionKeyRow = checked;
+                checked = Qt.binding(() => kcm.showFunctionKeyRow);
+            }
+        }
+
+        QQC2.ComboBox {
+            id: keyboardFontComboBox
+            Layout.preferredWidth: column.width
+            KeyNavigation.up: showFunctionKeyRowButton
+            KeyNavigation.down: autoCapitalizationButton
+
+            model: [i18n("Default")].concat(Qt.fontFamilies())
+            currentIndex: Math.max(0, model.indexOf(kcm.keyboardFontFamily))
+
+            onActivated: (index) => {
+                kcm.keyboardFontFamily = index === 0 ? "" : model[index];
+            }
+        }
+
+        QQC2.Label {
+            id: typingLabel
+            text: i18n("Typing")
+            font.pixelSize: 22
+            font.weight: Font.Normal
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            Layout.bottomMargin: Kirigami.Units.smallSpacing
+        }
+
         Bigscreen.SwitchDelegate {
             id: autoCapitalizationButton
-            text: i18n("Auto-capitalization")
-            KeyNavigation.up: hidePanelWhenKeyboardVisibleButton
+            text: i18n("Automatic capitalization")
+            KeyNavigation.up: keyboardFontComboBox
+            KeyNavigation.down: diacriticsButton
 
             checked: kcm.autoCapitalizationEnabled
             onCheckedChanged: {
@@ -122,16 +183,15 @@ KCM.SimpleKCM {
             }
         }
 
-        QQC2.ComboBox {
-            id: keyboardFontComboBox
-            Layout.preferredWidth: column.width
+        Bigscreen.SwitchDelegate {
+            id: diacriticsButton
+            text: i18n("Alternate characters")
             KeyNavigation.up: autoCapitalizationButton
 
-            model: [i18n("Default")].concat(Qt.fontFamilies())
-            currentIndex: Math.max(0, model.indexOf(kcm.keyboardFontFamily))
-
-            onActivated: (index) => {
-                kcm.keyboardFontFamily = index === 0 ? "" : model[index];
+            checked: kcm.diacriticsPopupEnabled
+            onCheckedChanged: {
+                kcm.diacriticsPopupEnabled = checked;
+                checked = Qt.binding(() => kcm.diacriticsPopupEnabled);
             }
         }
 

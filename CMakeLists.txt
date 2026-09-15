@@ -77,12 +77,34 @@ if(BUILD_TESTING)
     add_subdirectory(autotests)
 endif()
 
-# Translations are intentionally NOT installed: this is a parallel build of
-# plasma-keyboard that coexists with the official package, and installing the
-# same <locale>/LC_MESSAGES/*.mo files would conflict with it. The application
-# keeps using the "plasma-keyboard" translation domain provided by the official
-# package when it is present.
-# ki18n_install(po)
+# Translations: this is a parallel build of plasma-keyboard that coexists with
+# the official package, so ki18n_install(po) (which compiles and installs every
+# po file) cannot be used: the upstream "plasma-keyboard" and
+# "kcm_plasmakeyboard" .mo files would conflict with the official package.
+# Instead only our own KCM domain ("kcm_plasmakeyboardcustom", the plugin id of
+# the renamed KCM) is installed. The application itself keeps using the
+# "plasma-keyboard" domain shipped by the official package.
+find_package(Gettext REQUIRED)
+set(_kcm_translation_domain kcm_plasmakeyboardcustom)
+file(GLOB _kcm_po_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/po" "po/*/${_kcm_translation_domain}.po")
+set(_kcm_mo_files)
+foreach (_po_file IN LISTS _kcm_po_files)
+    get_filename_component(_lang "${_po_file}" DIRECTORY)
+    set(_mo_file "${CMAKE_CURRENT_BINARY_DIR}/${_lang}/LC_MESSAGES/${_kcm_translation_domain}.mo")
+    add_custom_command(
+        OUTPUT "${_mo_file}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${_lang}/LC_MESSAGES"
+        COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} -o "${_mo_file}" "${CMAKE_CURRENT_SOURCE_DIR}/po/${_po_file}"
+        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/po/${_po_file}"
+        COMMENT "Generating ${_kcm_translation_domain} translation for ${_lang}"
+        VERBATIM
+    )
+    install(FILES "${_mo_file}" DESTINATION "${KDE_INSTALL_LOCALEDIR}/${_lang}/LC_MESSAGES")
+    list(APPEND _kcm_mo_files "${_mo_file}")
+endforeach ()
+if (_kcm_mo_files)
+    add_custom_target(plasmakeyboard-custom-translations ALL DEPENDS ${_kcm_mo_files})
+endif ()
 
 file(GLOB_RECURSE ALL_CLANG_FORMAT_SOURCE_FILES *.cpp *.h *.c)
 kde_clang_format(${ALL_CLANG_FORMAT_SOURCE_FILES})

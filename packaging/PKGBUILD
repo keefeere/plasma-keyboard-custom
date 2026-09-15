@@ -29,6 +29,7 @@ depends=(
 makedepends=(
   'cmake'
   'extra-cmake-modules'
+  'gettext'
   'ninja'
   'plasma-wayland-protocols'
   'pkgconf'

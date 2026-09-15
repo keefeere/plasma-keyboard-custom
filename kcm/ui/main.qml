@@ -12,204 +12,236 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
-KCM.ScrollViewKCM {
+KCM.AbstractKCM {
     id: root
 
-    view: LocaleSelectorListView {
-        id: list
+    header: QQC2.TabBar {
+        id: tabBar
 
-        Kirigami.Separator {
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
+        QQC2.TabButton {
+            text: i18n("Layouts")
+        }
+
+        QQC2.TabButton {
+            text: i18nc("@title:tab", "Opening")
+        }
+
+        QQC2.TabButton {
+            text: i18n("Appearance")
+        }
+
+        QQC2.TabButton {
+            text: i18n("Typing")
         }
     }
 
-    footer: Kirigami.FormLayout {
-        id: formLayout
+    StackLayout {
+        anchors.fill: parent
+        currentIndex: tabBar.currentIndex
 
-        QQC2.CheckBox {
-            id: soundsEnabled
-            Kirigami.FormData.label: i18n("Key press feedback:")
-            text: i18n("Sound")
-
-            checked: kcm.soundEnabled
-            onCheckedChanged: {
-                kcm.soundEnabled = checked;
-                checked = Qt.binding(() => kcm.soundEnabled);
-            }
+        LocaleSelectorListView {
+            id: list
         }
 
-        QQC2.CheckBox {
-            id: vibrationEnabled
-            text: i18n("Vibration")
+        SettingsFormPage {
+            QQC2.CheckBox {
+                id: showOnLongTap
+                Kirigami.FormData.label: i18n("Open on long press:")
+                text: i18n("Hold a finger on a text field")
 
-            checked: kcm.vibrationEnabled
-            onCheckedChanged: {
-                kcm.vibrationEnabled = checked;
-                checked = Qt.binding(() => kcm.vibrationEnabled);
-            }
-        }
-
-        QQC2.CheckBox {
-            id: keyboardNavigationEnabled
-            Kirigami.FormData.label: i18n("General:")
-            text: i18n("Keyboard navigation")
-
-            checked: kcm.keyboardNavigationEnabled
-            onCheckedChanged: {
-                kcm.keyboardNavigationEnabled = checked;
-                checked = Qt.binding(() => kcm.keyboardNavigationEnabled);
-            }
-        }
-
-        QQC2.CheckBox {
-            id: showOnMouseFocus
-            Kirigami.FormData.label: i18n("Open on focus:")
-            text: i18n("When a text field is focused with a mouse")
-
-            checked: kcm.showOnMouseFocus
-            onCheckedChanged: {
-                kcm.showOnMouseFocus = checked;
-                checked = Qt.binding(() => kcm.showOnMouseFocus);
-            }
-        }
-
-        QQC2.CheckBox {
-            id: showOnLongTap
-            Kirigami.FormData.label: i18n("Open on long press:")
-            text: i18n("Instead of opening immediately when a text field is touched")
-
-            checked: kcm.showOnLongTap
-            onCheckedChanged: {
-                kcm.showOnLongTap = checked;
-                checked = Qt.binding(() => kcm.showOnLongTap);
-            }
-        }
-
-        QQC2.SpinBox {
-            id: showOnLongTapThreshold
-            Kirigami.FormData.label: i18n("Long press duration:")
-            from: 100
-            to: 5000
-            stepSize: 100
-            editable: true
-
-            value: kcm.showOnLongTapThresholdMs
-            onValueModified: {
-                kcm.showOnLongTapThresholdMs = value;
-                value = Qt.binding(() => kcm.showOnLongTapThresholdMs);
-            }
-        }
-
-        QQC2.CheckBox {
-            id: showFunctionKeyRow
-            Kirigami.FormData.label: i18n("Function keys:")
-            text: i18n("Show an F1–F12 row above the keyboard")
-
-            checked: kcm.showFunctionKeyRow
-            onCheckedChanged: {
-                kcm.showFunctionKeyRow = checked;
-                checked = Qt.binding(() => kcm.showFunctionKeyRow);
-            }
-        }
-
-        QQC2.CheckBox {
-            id: hidePanelWhenKeyboardVisible
-            text: i18n("Hide the panel while the keyboard is visible")
-
-            checked: kcm.hidePanelWhenKeyboardVisible
-            onCheckedChanged: {
-                kcm.hidePanelWhenKeyboardVisible = checked;
-                checked = Qt.binding(() => kcm.hidePanelWhenKeyboardVisible);
-            }
-        }
-
-        QQC2.CheckBox {
-            id: autoCapitalizationEnabled
-            text: i18n("Auto-capitalization")
-
-            checked: kcm.autoCapitalizationEnabled
-            onCheckedChanged: {
-                kcm.autoCapitalizationEnabled = checked;
-                checked = Qt.binding(() => kcm.autoCapitalizationEnabled);
-            }
-        }
-
-        QQC2.CheckBox {
-            id: diacriticsCheckbox
-            Kirigami.FormData.label: i18n("Alternate characters:")
-            text: i18n("Show popup when holding a key")
-
-            checked: kcm.diacriticsPopupEnabled
-            onCheckedChanged: {
-                kcm.diacriticsPopupEnabled = checked;
-                checked = Qt.binding(() => kcm.diacriticsPopupEnabled);
-            }
-        }
-
-        QQC2.SpinBox {
-            id: diacriticsDelaySpinBox
-            Kirigami.FormData.label: i18n("Hold delay:")
-            from: 100
-            to: 1500
-            stepSize: 50
-
-            enabled: diacriticsCheckbox.checked
-            value: kcm.diacriticsHoldThresholdMs
-
-            // Include the `milliseconds` suffix in the spinbox instead of the label
-            textFromValue: function (value) {
-                return value + " " + i18n("milliseconds");
-            }
-
-            // Parse the integer value from the spinbox text, ignoring the suffix
-            valueFromText: function (text) {
-                let number = parseInt(text);
-                if (isNaN(number)) {
-                    return kcm.diacriticsHoldThresholdMs; // Fallback to current value if parsing fails
+                checked: kcm.showOnLongTap
+                onCheckedChanged: {
+                    kcm.showOnLongTap = checked;
+                    checked = Qt.binding(() => kcm.showOnLongTap);
                 }
-                return number;
             }
 
-            onValueChanged: {
-                kcm.diacriticsHoldThresholdMs = value;
-                value = Qt.binding(() => kcm.diacriticsHoldThresholdMs);
+            QQC2.SpinBox {
+                id: showOnLongTapThreshold
+                Kirigami.FormData.label: i18n("Long press delay:")
+                from: 100
+                to: 5000
+                stepSize: 100
+                editable: true
+                enabled: showOnLongTap.checked
+
+                value: kcm.showOnLongTapThresholdMs
+                onValueModified: {
+                    kcm.showOnLongTapThresholdMs = value;
+                    value = Qt.binding(() => kcm.showOnLongTapThresholdMs);
+                }
+
+                textFromValue: function (value) {
+                    return i18nc("duration in milliseconds", "%1 ms", value);
+                }
+                valueFromText: function (text) {
+                    const number = parseInt(text);
+                    return isNaN(number) ? kcm.showOnLongTapThresholdMs : number;
+                }
+            }
+
+            QQC2.CheckBox {
+                id: showOnMouseFocus
+                Kirigami.FormData.label: i18n("Open on focus:")
+                text: i18n("When a text field is focused with a mouse")
+
+                checked: kcm.showOnMouseFocus
+                onCheckedChanged: {
+                    kcm.showOnMouseFocus = checked;
+                    checked = Qt.binding(() => kcm.showOnMouseFocus);
+                }
+            }
+
+            QQC2.CheckBox {
+                id: hidePanelWhenKeyboardVisible
+                text: i18n("Hide the panel while the keyboard is open")
+
+                checked: kcm.hidePanelWhenKeyboardVisible
+                onCheckedChanged: {
+                    kcm.hidePanelWhenKeyboardVisible = checked;
+                    checked = Qt.binding(() => kcm.hidePanelWhenKeyboardVisible);
+                }
             }
         }
 
-        QQC2.SpinBox {
-            id: keyboardHeightSpinBox
-            Kirigami.FormData.label: i18n("Keyboard height:")
-            from: 20
-            to: 80
-            stepSize: 2
-            value: kcm.keyboardHeightPercent
+        SettingsFormPage {
+            QQC2.SpinBox {
+                id: keyboardHeightSpinBox
+                Kirigami.FormData.label: i18n("Keyboard height:")
+                from: 20
+                to: 80
+                stepSize: 2
+                value: kcm.keyboardHeightPercent
 
-            textFromValue: function (value) {
-                return value + "%";
-            }
-            valueFromText: function (text) {
-                let number = parseInt(text);
-                return isNaN(number) ? kcm.keyboardHeightPercent : number;
+                textFromValue: function (value) {
+                    return i18nc("keyboard height in percent", "%1%", value);
+                }
+                valueFromText: function (text) {
+                    const number = parseInt(text);
+                    return isNaN(number) ? kcm.keyboardHeightPercent : number;
+                }
+
+                onValueChanged: {
+                    kcm.keyboardHeightPercent = value;
+                    value = Qt.binding(() => kcm.keyboardHeightPercent);
+                }
             }
 
-            onValueChanged: {
-                kcm.keyboardHeightPercent = value;
-                value = Qt.binding(() => kcm.keyboardHeightPercent);
+            QQC2.ComboBox {
+                id: keyboardFontComboBox
+                Kirigami.FormData.label: i18n("Keyboard font:")
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 16
+
+                model: [i18n("Default")].concat(Qt.fontFamilies())
+                currentIndex: Math.max(0, model.indexOf(kcm.keyboardFontFamily))
+
+                onActivated: (index) => {
+                    kcm.keyboardFontFamily = index === 0 ? "" : model[index];
+                }
+            }
+
+            QQC2.CheckBox {
+                id: showFunctionKeyRow
+                Kirigami.FormData.label: i18n("Function keys:")
+                text: i18n("Show an F1–F12 row above the keyboard")
+
+                checked: kcm.showFunctionKeyRow
+                onCheckedChanged: {
+                    kcm.showFunctionKeyRow = checked;
+                    checked = Qt.binding(() => kcm.showFunctionKeyRow);
+                }
             }
         }
 
-        QQC2.ComboBox {
-            id: keyboardFontComboBox
-            Kirigami.FormData.label: i18n("Keyboard font:")
-            Layout.preferredWidth: Kirigami.Units.gridUnit * 16
+        SettingsFormPage {
+            QQC2.CheckBox {
+                id: autoCapitalizationEnabled
+                Kirigami.FormData.label: i18n("Automatic capitalization:")
+                text: i18n("Capitalize the first letter of a sentence")
 
-            model: [i18n("Default")].concat(Qt.fontFamilies())
-            currentIndex: Math.max(0, model.indexOf(kcm.keyboardFontFamily))
+                checked: kcm.autoCapitalizationEnabled
+                onCheckedChanged: {
+                    kcm.autoCapitalizationEnabled = checked;
+                    checked = Qt.binding(() => kcm.autoCapitalizationEnabled);
+                }
+            }
 
-            onActivated: (index) => {
-                kcm.keyboardFontFamily = index === 0 ? "" : model[index];
+            QQC2.CheckBox {
+                id: diacriticsCheckbox
+                Kirigami.FormData.label: i18n("Alternate characters:")
+                text: i18n("Show a popup when holding a key")
+
+                checked: kcm.diacriticsPopupEnabled
+                onCheckedChanged: {
+                    kcm.diacriticsPopupEnabled = checked;
+                    checked = Qt.binding(() => kcm.diacriticsPopupEnabled);
+                }
+            }
+
+            QQC2.SpinBox {
+                id: diacriticsDelaySpinBox
+                Kirigami.FormData.label: i18n("Hold delay:")
+                from: 100
+                to: 1500
+                stepSize: 50
+                enabled: diacriticsCheckbox.checked
+                value: kcm.diacriticsHoldThresholdMs
+
+                textFromValue: function (value) {
+                    return i18nc("duration in milliseconds", "%1 ms", value);
+                }
+                valueFromText: function (text) {
+                    const number = parseInt(text);
+                    return isNaN(number) ? kcm.diacriticsHoldThresholdMs : number;
+                }
+
+                onValueChanged: {
+                    kcm.diacriticsHoldThresholdMs = value;
+                    value = Qt.binding(() => kcm.diacriticsHoldThresholdMs);
+                }
+            }
+
+            QQC2.CheckBox {
+                id: soundsEnabled
+                Kirigami.FormData.label: i18n("Key press feedback:")
+                text: i18n("Sound")
+
+                checked: kcm.soundEnabled
+                onCheckedChanged: {
+                    kcm.soundEnabled = checked;
+                    checked = Qt.binding(() => kcm.soundEnabled);
+                }
+            }
+
+            QQC2.CheckBox {
+                id: vibrationEnabled
+                text: i18n("Vibration")
+
+                checked: kcm.vibrationEnabled
+                onCheckedChanged: {
+                    kcm.vibrationEnabled = checked;
+                    checked = Qt.binding(() => kcm.vibrationEnabled);
+                }
+            }
+
+            QQC2.CheckBox {
+                id: keyboardNavigationEnabled
+                Kirigami.FormData.label: i18n("Navigation:")
+                text: i18n("Arrow keys move between the keys")
+
+                checked: kcm.keyboardNavigationEnabled
+                onCheckedChanged: {
+                    kcm.keyboardNavigationEnabled = checked;
+                    checked = Qt.binding(() => kcm.keyboardNavigationEnabled);
+                }
+            }
+
+            QQC2.TextField {
+                id: testField
+                Kirigami.FormData.label: i18n("Try it:")
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 20
+
+                placeholderText: i18n("Type here to see the keyboard")
             }
         }
     }

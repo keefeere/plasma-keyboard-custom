@@ -90,17 +90,22 @@ It installs next to the official package and does not replace it: everything is 
   (`70-plasma-keyboard-touchscreen.rules`). The global shortcut still shows the keyboard immediately.
 - **Optional F1–F12 row** above the keyboard, sized and styled like the regular keys; the panel grows accordingly.
 - **Single instance**: a second process exits right away, so a stale instance can never keep an old panel around.
-- **Settings page** (`plasma-keyboard-custom` in System Settings):
+- **Settings page** (`plasma-keyboard-custom` in System Settings), organised in tabs — *Layouts* (languages),
+  *Opening* (long press, mouse focus, hiding the Plasma panel), *Appearance* (height, font, F1–F12 row) and
+  *Typing* (auto-capitalization, alternate characters, sound, vibration, navigation, a test field):
   - keyboard height as a percentage of the screen (20–80%),
   - whether the keyboard opens when a text field is focused with a mouse (otherwise it only opens on touch or via the shortcut),
   - open on long press with its threshold, the F1–F12 row, the keyboard font, hiding the Plasma panel while the
     keyboard is visible,
+  - the page and its options are translated (the `kcm_plasmakeyboardcustom` translation domain is shipped with the
+    package, Russian included) instead of falling back to English,
   - plus the upstream settings (locales, sound, vibration, navigation, diacritics, …).
 - **Global shortcut** to show/hide the keyboard (default `Meta+Shift+K`, configurable in
   System Settings → Shortcuts → Plasma Keyboard (custom)).
 - **Build/packaging**: a `PKGBUILD` for Arch-based systems that installs only custom-named files (no file conflicts with
-  the official package). Translations (`.mo`) are intentionally not installed to avoid conflicts; the "plasma-keyboard"
-  translation domain from the official package is reused when present.
+  the official package). The KCM's own translations are installed under our own domain
+  (`/usr/share/locale/*/LC_MESSAGES/kcm_plasmakeyboardcustom.mo`); the application itself keeps using the
+  "plasma-keyboard" translation domain provided by the official package, as installing it ourselves would conflict.
 
 License and copyright remain those of the upstream project (see `LICENSES/` and the SPDX headers in each file).
 

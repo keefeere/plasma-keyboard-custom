@@ -1,0 +1,309 @@
+# Copyright (C) 2025 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+#
+# SPDX-FileCopyrightText: 2025, 2026 Alexander Yavorsky <kekcuha@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-04-03 20:00+0200\n"
+"Last-Translator: Alexander Yavorskiy <kekcuha@gmail.com>\n"
+"Language-Team: Russian <kde-russian@lists.kde.ru>\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=n==1 ? 3 : n%10==1 && n%100!=11 ? 0 : n"
+"%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Lokalize 25.12.3\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Фильтр языков…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Фильтр языков"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"Не выбран ни один язык. Будет использована раскладка клавиатуры, заданная в "
+"системе по умолчанию."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Языки"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Проверка нажатий:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "Звук"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Вибрация"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "Основное:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Управление с клавиатуры"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Автоматическое использование прописных букв"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Альтернативные символы:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Показывать всплывающее окно при удержании клавиши"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Задержка удержания:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "мс"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Проверить виртуальную клавиатуру…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Обратная связь"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Сопровождать нажатие клавиш звуком"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Сопровождать нажатие клавиш вибрацией"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Языки ввода"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "Общие"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "Использование клавиш со стрелками для управления с клавиатуры"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Автоматически писать первую букву предложений с заглавной буквы"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Проверка нажатий"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "Общие"
+
+# Translations added by the plasma-keyboard-custom fork
+
+#: main_handset.qml:180 main_mediacenter.qml:188
+msgid "Alternate characters"
+msgstr "Альтернативные символы"
+
+#: main.qml:30 main_mediacenter.qml:130
+msgid "Appearance"
+msgstr "Внешний вид"
+
+#: main.qml:230
+msgid "Arrow keys move between the keys"
+msgstr "Перемещение между клавишами стрелками"
+
+#: main_handset.qml:166 main_mediacenter.qml:175
+msgid "Automatic capitalization"
+msgstr "Автоматические заглавные"
+
+#: main.qml:159
+msgid "Automatic capitalization:"
+msgstr "Автоматические заглавные:"
+
+#: main.qml:160 main_handset.qml:167
+msgid "Capitalize the first letter of a sentence"
+msgstr "Писать первое слово предложения с заглавной буквы"
+
+#: main.qml:135 main_handset.qml:136 main_mediacenter.qml:156
+msgid "Default"
+msgstr "По умолчанию"
+
+#: main_mediacenter.qml:47
+msgid "Feedback"
+msgstr "Обратная связь"
+
+#: main_handset.qml:148 main_mediacenter.qml:139
+msgid "Function keys"
+msgstr "Функциональные клавиши"
+
+#: main.qml:145
+msgid "Function keys:"
+msgstr "Функциональные клавиши:"
+
+#: main.qml:97 main_handset.qml:104 main_mediacenter.qml:117
+msgid "Hide the panel while the keyboard is open"
+msgstr "Скрывать панель, пока клавиатура открыта"
+
+#: main.qml:50
+msgid "Hold a finger on a text field"
+msgstr "Удерживайте палец на текстовом поле"
+
+#: main_handset.qml:59
+msgid "Hold a finger on a text field to open the keyboard"
+msgstr "Удерживайте палец на текстовом поле, чтобы открыть клавиатуру"
+
+#: main_handset.qml:193
+msgid "Hold delay"
+msgstr "Задержка удержания"
+
+#: main_handset.qml:134
+msgid "Keyboard font"
+msgstr "Шрифт клавиатуры"
+
+#: main.qml:132
+msgid "Keyboard font:"
+msgstr "Шрифт клавиатуры:"
+
+#: main_handset.qml:121
+msgid "Keyboard height (%)"
+msgstr "Высота клавиатуры (%)"
+
+#: main.qml:110
+msgid "Keyboard height:"
+msgstr "Высота клавиатуры:"
+
+#: main.qml:22
+msgid "Layouts"
+msgstr "Раскладки"
+
+#: main_handset.qml:72
+msgid "Long press delay"
+msgstr "Задержка долгого нажатия"
+
+#: main.qml:61
+msgid "Long press delay:"
+msgstr "Задержка долгого нажатия:"
+
+#: main.qml:229
+msgid "Navigation:"
+msgstr "Навигация:"
+
+#: main_mediacenter.qml:19
+msgid "On-Screen Keyboard"
+msgstr "Экранная клавиатура"
+
+#: main.qml:85
+msgid "Open on focus:"
+msgstr "Открывать при фокусе:"
+
+#: main_handset.qml:58 main_mediacenter.qml:91
+msgid "Open on long press"
+msgstr "Открывать долгим нажатием"
+
+#: main.qml:49
+msgid "Open on long press:"
+msgstr "Открывать долгим нажатием:"
+
+#: main_handset.qml:90 main_mediacenter.qml:104
+msgid "Open when focused with a mouse"
+msgstr "Открывать при выборе мышью"
+
+#: main_mediacenter.qml:82
+msgid "Opening the keyboard"
+msgstr "Открытие клавиатуры"
+
+#: main_handset.qml:91
+msgid "Otherwise it only opens on touch input or via the shortcut"
+msgstr "Иначе клавиатура открывается только касанием или сочетанием клавиш"
+
+#: main_handset.qml:122
+msgid "Percentage of the screen height"
+msgstr "В процентах от высоты экрана"
+
+#: main.qml:172 main_handset.qml:181
+msgid "Show a popup when holding a key"
+msgstr "Показывать всплывающие символы при удержании клавиши"
+
+#: main.qml:146 main_handset.qml:149
+msgid "Show an F1–F12 row above the keyboard"
+msgstr "Показывать ряд F1–F12 над клавиатурой"
+
+#: main_handset.qml:105
+msgid "The keyboard reaches the bottom of the screen"
+msgstr "Клавиатура доходит до нижнего края экрана"
+
+#: main_handset.qml:73
+msgid "Time to hold a finger on the screen"
+msgstr "Сколько удерживать палец на экране"
+
+#: main_handset.qml:194
+msgid "Time to hold a key before the popup appears"
+msgstr "Сколько удерживать клавишу до появления всплывающих символов"
+
+#: main.qml:241
+msgid "Try it:"
+msgstr "Попробуйте:"
+
+#: main.qml:244
+msgid "Type here to see the keyboard"
+msgstr "Введите текст, чтобы увидеть клавиатуру"
+
+#: main.qml:34 main_mediacenter.qml:166
+msgid "Typing"
+msgstr "Ввод"
+
+#: main.qml:86
+msgid "When a text field is focused with a mouse"
+msgstr "Когда текстовое поле выбрано мышью"
+
+#: main_handset.qml:116
+msgctxt "@title:group"
+msgid "Appearance"
+msgstr "Внешний вид"
+
+#: main_handset.qml:52
+msgctxt "@title:group"
+msgid "Opening the keyboard"
+msgstr "Открытие клавиатуры"
+
+#: main.qml:26
+msgctxt "@title:tab"
+msgid "Opening"
+msgstr "Открытие"
+
+#: main.qml:191 main.qml:75 main_handset.qml:203 main_handset.qml:82
+msgctxt "duration in milliseconds"
+msgid "%1 ms"
+msgstr "%1 мс"
+
+#: main.qml:117
+msgctxt "keyboard height in percent"
+msgid "%1%"
+msgstr "%1%"
+
+msgctxt "@title:group"
+msgid "Typing"
+msgstr "Ввод"
