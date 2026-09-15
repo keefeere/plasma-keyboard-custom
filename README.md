@@ -20,10 +20,35 @@ It wraps Qt Virtual Keyboard in a window, and uses the input-method-v1 Wayland p
 ### Install the latest release
 
 Download the newest `plasma-keyboard-custom-*-x86_64.pkg.tar.zst` from the
-[Releases page](https://github.com/mops1k/plasma-keyboard-custom/releases/latest) and install it:
+[Releases page](https://github.com/mops1k/plasma-keyboard-custom/releases/latest):
 
 ```sh
-sudo pacman -U plasma-keyboard-custom-*-x86_64.pkg.tar.zst
+url=$(curl -fsSL https://api.github.com/repos/mops1k/plasma-keyboard-custom/releases/latest \
+      | grep -o 'https://[^"]*\.pkg\.tar\.zst' | head -n1)
+curl -fsSLo /tmp/plasma-keyboard-custom.pkg.tar.zst "$url"
+```
+
+Optionally check it against the published checksums:
+
+```sh
+curl -fsSLo /tmp/SHA256SUMS "${url%/*}/SHA256SUMS"
+(cd /tmp && sha256sum -c --ignore-missing SHA256SUMS)
+```
+
+Then install it:
+
+```sh
+sudo pacman -U /tmp/plasma-keyboard-custom.pkg.tar.zst
+```
+
+**To update**, run exactly the same commands — the package version (and `pkgrel`) grows with every
+release, so `pacman -U` upgrades the installed package in place. Then restart the keyboard so the new
+binary is picked up (or log out and back in):
+
+```sh
+pkill -f 'plasma-keyboard-custom'
+kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod ''
+kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod '/usr/share/applications/org.kde.plasma.keyboard.custom.desktop'
 ```
 
 Then pick **plasma-keyboard-custom** in **System Settings → Virtual Keyboard**; its own settings are under
