@@ -161,6 +161,23 @@ void PlasmaKeyboardKcm::setShowOnLongTap(bool showOnLongTap)
     setNeedsSave(true);
 }
 
+bool PlasmaKeyboardKcm::showFunctionKeyRow() const
+{
+    return m_showFunctionKeyRow;
+}
+
+void PlasmaKeyboardKcm::setShowFunctionKeyRow(bool showFunctionKeyRow)
+{
+    if (showFunctionKeyRow == m_showFunctionKeyRow) {
+        return;
+    }
+
+    m_showFunctionKeyRow = showFunctionKeyRow;
+    Q_EMIT showFunctionKeyRowChanged();
+
+    setNeedsSave(true);
+}
+
 int PlasmaKeyboardKcm::showOnLongTapThresholdMs() const
 {
     return m_showOnLongTapThresholdMs;
@@ -279,6 +296,7 @@ void PlasmaKeyboardKcm::load()
     setAutoCapitalizationEnabled(PlasmaKeyboardSettings::self()->autoCapitalizationEnabled());
     setShowOnMouseFocus(PlasmaKeyboardSettings::self()->showOnMouseFocus());
     setShowOnLongTap(PlasmaKeyboardSettings::self()->showOnLongTap());
+    setShowFunctionKeyRow(PlasmaKeyboardSettings::self()->showFunctionKeyRow());
     setShowOnLongTapThresholdMs(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs());
     setHidePanelWhenKeyboardVisible(PlasmaKeyboardSettings::self()->hidePanelWhenKeyboardVisible());
     setKeyboardFontFamily(PlasmaKeyboardSettings::self()->keyboardFontFamily());
@@ -298,6 +316,7 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setAutoCapitalizationEnabled(m_autoCapitalizationEnabled);
     PlasmaKeyboardSettings::self()->setShowOnMouseFocus(m_showOnMouseFocus);
     PlasmaKeyboardSettings::self()->setShowOnLongTap(m_showOnLongTap);
+    PlasmaKeyboardSettings::self()->setShowFunctionKeyRow(m_showFunctionKeyRow);
     PlasmaKeyboardSettings::self()->setShowOnLongTapThresholdMs(m_showOnLongTapThresholdMs);
     PlasmaKeyboardSettings::self()->setHidePanelWhenKeyboardVisible(m_hidePanelWhenKeyboardVisible);
     PlasmaKeyboardSettings::self()->setKeyboardFontFamily(m_keyboardFontFamily);

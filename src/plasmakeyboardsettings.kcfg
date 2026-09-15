@@ -53,6 +53,10 @@
             <max>5000</max>
             <default>600</default>
         </entry>
+        <entry key="showFunctionKeyRow" type="Bool">
+            <label>Whether a row with the F1-F12 function keys is shown above the keyboard.</label>
+            <default>false</default>
+        </entry>
         <entry key="hidePanelWhenKeyboardVisible" type="Bool">
             <label>Whether the Plasma panel is hidden while the keyboard is visible, so the keyboard reaches the bottom of the screen.</label>
             <default>true</default>

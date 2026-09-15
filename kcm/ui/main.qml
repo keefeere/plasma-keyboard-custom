@@ -103,6 +103,18 @@ KCM.ScrollViewKCM {
         }
 
         QQC2.CheckBox {
+            id: showFunctionKeyRow
+            Kirigami.FormData.label: i18n("Function keys:")
+            text: i18n("Show an F1–F12 row above the keyboard")
+
+            checked: kcm.showFunctionKeyRow
+            onCheckedChanged: {
+                kcm.showFunctionKeyRow = checked;
+                checked = Qt.binding(() => kcm.showFunctionKeyRow);
+            }
+        }
+
+        QQC2.CheckBox {
             id: hidePanelWhenKeyboardVisible
             text: i18n("Hide the panel while the keyboard is visible")
 

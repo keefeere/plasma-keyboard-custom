@@ -134,15 +134,78 @@ InputPanelWindow {
         // Padding for background corners and panel drag area
         readonly property real padding: isFullScreenWidth ? 0 : Kirigami.Units.largeSpacing
 
+        // Optional F1-F12 row above the keyboard. The panel grows by the row
+        // height when it is shown, the keyboard itself keeps its size.
+        Row {
+            id: functionKeyRow
+            visible: PlasmaKeyboardSettings.showFunctionKeyRow
+            // Match the keyboard geometry: five rows fill the keyboard height,
+            // and the visible key background is inset by keyBackgroundMargin.
+            readonly property var kbdStyle: inputPanel.keyboard.style
+            // Half the height of a normal keyboard row.
+            readonly property real normalRowHeight: kbdStyle ? kbdStyle.targetKeyboardHeight / 5 : Kirigami.Units.gridUnit * 2
+            readonly property real keyHeight: normalRowHeight / 2
+            // Key labels scale with the row height.
+            readonly property real fontScale: keyHeight / normalRowHeight
+            // Align the row with the keyboard keys below it: the keyboard
+            // itself keeps a cell margin of about half a key margin.
+            readonly property real sideMargin: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin / 2
+            anchors {
+                top: parent.top
+                topMargin: parent.padding
+                horizontalCenter: parent.horizontalCenter
+            }
+            width: inputPanel.width > 0 ? inputPanel.width - sideMargin * 2 : 100
+            height: visible ? keyHeight : 0
+
+            Repeater {
+                model: 12
+                delegate: Item {
+                    required property int index
+                    width: functionKeyRow.width / 12
+                    height: functionKeyRow.keyHeight
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
+                        radius: PlasmaKeyboard.BreezeConstants.buttonRadius
+                        color: pressHandler.pressed ? PlasmaKeyboard.BreezeConstants.primaryDarkColor : PlasmaKeyboard.BreezeConstants.normalKeyBackgroundColor
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "F" + (index + 1)
+                            color: PlasmaKeyboard.BreezeConstants.keyTextColor
+                            font {
+                                family: PlasmaKeyboard.BreezeConstants.fontFamily
+                                weight: Font.Bold
+                                // Keyboard label size, scaled with the row height.
+                                pixelSize: functionKeyRow.kbdStyle ? 60 * (functionKeyRow.kbdStyle.targetKeyboardHeight / functionKeyRow.kbdStyle.keyboardDesignHeight) * functionKeyRow.fontScale : Kirigami.Units.gridUnit
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: pressHandler
+                        anchors.fill: parent
+                        onClicked: thing.sendKeyEvent(Qt.Key_F1 + index, "")
+                    }
+                }
+            }
+        }
+
         // Never let width & height to be 0, otherwise it can cause problems for setting interactiveRegion
         width: inputPanel.width > 0 ? (inputPanel.width + padding * 2) : 100
-        height: inputPanel.height > 0 ? (inputPanel.height + padding * 2) : 100
+        height: inputPanel.height > 0
+            ? (inputPanel.height + padding * 2 + (functionKeyRow.visible ? functionKeyRow.height : 0))
+            : 100
 
         InputPanel {
             id: inputPanel
             anchors {
-                top: parent.top
-                topMargin: parent.padding
+                top: functionKeyRow.visible ? functionKeyRow.bottom : parent.top
+                // Keep the vertical rhythm of the keyboard rows when the F-key
+                // row is shown.
+                topMargin: functionKeyRow.visible ? -functionKeyRow.sideMargin : parent.padding
                 left: parent.left
                 leftMargin: parent.padding
             }

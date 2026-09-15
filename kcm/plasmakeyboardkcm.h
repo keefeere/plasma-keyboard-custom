@@ -21,6 +21,7 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(bool autoCapitalizationEnabled READ autoCapitalizationEnabled WRITE setAutoCapitalizationEnabled NOTIFY autoCapitalizationEnabledChanged)
     Q_PROPERTY(bool showOnMouseFocus READ showOnMouseFocus WRITE setShowOnMouseFocus NOTIFY showOnMouseFocusChanged)
     Q_PROPERTY(bool showOnLongTap READ showOnLongTap WRITE setShowOnLongTap NOTIFY showOnLongTapChanged)
+    Q_PROPERTY(bool showFunctionKeyRow READ showFunctionKeyRow WRITE setShowFunctionKeyRow NOTIFY showFunctionKeyRowChanged)
     Q_PROPERTY(int showOnLongTapThresholdMs READ showOnLongTapThresholdMs WRITE setShowOnLongTapThresholdMs NOTIFY showOnLongTapThresholdMsChanged)
     Q_PROPERTY(
         bool hidePanelWhenKeyboardVisible READ hidePanelWhenKeyboardVisible WRITE setHidePanelWhenKeyboardVisible NOTIFY hidePanelWhenKeyboardVisibleChanged)
@@ -55,6 +56,9 @@ public:
     bool showOnLongTap() const;
     void setShowOnLongTap(bool showOnLongTap);
 
+    bool showFunctionKeyRow() const;
+    void setShowFunctionKeyRow(bool showFunctionKeyRow);
+
     int showOnLongTapThresholdMs() const;
     void setShowOnLongTapThresholdMs(int showOnLongTapThresholdMs);
 
@@ -87,6 +91,7 @@ Q_SIGNALS:
     void autoCapitalizationEnabledChanged();
     void showOnMouseFocusChanged();
     void showOnLongTapChanged();
+    void showFunctionKeyRowChanged();
     void showOnLongTapThresholdMsChanged();
     void hidePanelWhenKeyboardVisibleChanged();
     void keyboardFontFamilyChanged();
@@ -101,6 +106,7 @@ private:
     bool m_autoCapitalizationEnabled = true;
     bool m_showOnMouseFocus = false;
     bool m_showOnLongTap = false;
+    bool m_showFunctionKeyRow = false;
     int m_showOnLongTapThresholdMs = 600;
     bool m_hidePanelWhenKeyboardVisible = true;
     QString m_keyboardFontFamily;
