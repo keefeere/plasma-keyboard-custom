@@ -28,7 +28,11 @@ jobs:
       image: archlinux:base-devel
     steps:
       - name: Install git
-        run: pacman -Sy --noconfirm --needed git
+        run: |
+          pacman -Sy --noconfirm --needed git
+          # The build step chowns the workspace to an unprivileged user, which
+          # makes git refuse to work here afterwards ("dubious ownership").
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Checkout
         uses: actions/checkout@v4
