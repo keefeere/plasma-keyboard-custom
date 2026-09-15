@@ -301,8 +301,8 @@ KeyboardLayout {
         Key {
             key: Qt.Key_Period
             text: "/"
-            alternativeKeys: "/!?.,"
-            smallText: "/!?.,"
+            alternativeKeys: "!?.,"
+            smallText: "!?.,"
             smallTextVisible: true
             highlighted: true
         }

@@ -5,13 +5,122 @@ import QtQuick
 import QtQuick.VirtualKeyboard
 import QtQuick.VirtualKeyboard.Components
 import QtQuick.Layouts
+import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
 
 KeyboardLayout {
+
     sharedLayouts: ['symbols']
     keyWeight: 160
     readonly property real normalKeyWidth: normalKey.width
     readonly property real functionKeyWidth: mapFromItem(normalKey, normalKey.width / 2, 0).x
+    
     KeyboardRow {
+        Key {
+            key: Qt.Key_Escape
+            displayText: "Esc"
+            noModifier: true
+            functionKey: true
+            highlighted: true
+        }
+        Key {
+            text: "`"
+            alternativeKeys: "`~"
+            smallText: "~"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_1
+            text: "1"
+            alternativeKeys: "1!"
+            smallText: "!"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_2
+            text: "2"
+            alternativeKeys: "2@"
+            smallText: "@"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_3
+            text: "3"
+            alternativeKeys: "3#"
+            smallText: "#"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_4
+            text: "4"
+            alternativeKeys: "4$"
+            smallText: "$"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_5
+            text: "5"
+            alternativeKeys: "5%"
+            smallText: "%"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_6
+            text: "6"
+            alternativeKeys: "6^"
+            smallText: "^"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_7
+            text: "7"
+            alternativeKeys: "7&"
+            smallText: "&"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_8
+            text: "8"
+            alternativeKeys: "8*"
+            smallText: "*"
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_9
+            text: "9"
+            alternativeKeys: "9("
+            smallText: "("
+            smallTextVisible: true
+        }
+        Key {
+            key: Qt.Key_0
+            text: "0"
+            alternativeKeys: "0)"
+            smallText: ")"
+            smallTextVisible: true
+        }
+        Key {
+            text: "-"
+            alternativeKeys: "-_"
+            smallText: "_"
+            smallTextVisible: true
+        }
+        Key {
+            text: "+"
+            alternativeKeys: "+="
+            smallText: "="
+            smallTextVisible: true
+        }
+        BackspaceKey {
+        }
+    }
+    KeyboardRow {
+        Key {
+            key: Qt.Key_Tab
+            displayText: "Tab"
+            noModifier: true
+            functionKey: true
+            highlighted: true
+        }
         Key {
             text: "й"
         }
@@ -49,18 +158,27 @@ KeyboardLayout {
         Key {
             text: "ї"
         }
+        Key {
+            text: "\\"
+            alternativeKeys: "\\|/"
+            smallText: "|/"
+            smallTextVisible: true
+        }
     }
     KeyboardRow {
-        KeyboardRow {
-            Layout.preferredWidth: functionKeyWidth
+        Key {
+            key: Qt.Key_Delete
+            displayText: "Del"
+            noModifier: true
+            functionKey: true
+            highlighted: true
+            Layout.preferredWidth: normalKeyWidth
             Layout.fillWidth: false
-            FillerKey {
-            }
-            Key {
-                text: "ф"
-                weight: normalKeyWidth
-                Layout.fillWidth: false
-            }
+        }
+        Key {
+            text: "ф"
+            weight: normalKeyWidth
+            Layout.fillWidth: false
         }
         Key {
             text: "і"
@@ -89,20 +207,20 @@ KeyboardLayout {
         Key {
             text: "ж"
         }
-        KeyboardRow {
-            Layout.preferredWidth: functionKeyWidth
+        Key {
+            text: "є"
+            weight: normalKeyWidth
             Layout.fillWidth: false
-            Key {
-                text: "є"
-                weight: normalKeyWidth
-                Layout.fillWidth: false
-            }
-            FillerKey {
-            }
+        }
+        EnterKey {
+            weight: normalKeyWidth * 2
+            Layout.fillWidth: false
         }
     }
     KeyboardRow {
         ShiftKey {
+            weight: normalKeyWidth
+            Layout.fillWidth: false
         }
         Key {
             text: "ґ"
@@ -136,18 +254,6 @@ KeyboardLayout {
         Key {
             text: "ю"
         }
-        BackspaceKey {
-        }
-    }
-    KeyboardRow {
-        SymbolModeKey {
-            weight: functionKeyWidth
-            Layout.fillWidth: false
-        }
-        ChangeLanguageKey {
-            weight: normalKeyWidth
-            Layout.fillWidth: false
-        }
         Key {
             key: Qt.Key_Comma
             weight: normalKeyWidth
@@ -156,8 +262,6 @@ KeyboardLayout {
             smallText: "\u2699"
             smallTextVisible: keyboard.isFunctionPopupListAvailable()
             highlighted: true
-        }
-        SpaceKey {
         }
         Key {
             key: Qt.Key_Period
@@ -169,13 +273,78 @@ KeyboardLayout {
             smallTextVisible: true
             highlighted: true
         }
-        HideKeyboardKey {
+        FillerKey {
             weight: normalKeyWidth
             Layout.fillWidth: false
         }
-        EnterKey {
-            weight: functionKeyWidth
+        Key {
+            key: Qt.Key_Up
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+            displayText: "\u2191"
+            repeat: true
+            noModifier: true
+            functionKey: true
+            highlighted: true
+        }
+        PlasmaKeyboard.HideKey {
+            weight: normalKeyWidth
             Layout.fillWidth: false
         }
     }
+    KeyboardRow {
+        PlasmaKeyboard.ModifierKey {
+            modifier: "ctrl"
+            displayText: "Ctrl"
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+        }
+        SymbolModeKey {
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+        }
+        PlasmaKeyboard.LanguageKey {
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+        }
+        SpaceKey {
+        }
+        PlasmaKeyboard.ModifierKey {
+            modifier: "alt"
+            displayText: "Alt"
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+        }
+        Key {
+            key: Qt.Key_Left
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+            displayText: "\u2190"
+            repeat: true
+            noModifier: true
+            functionKey: true
+            highlighted: true
+        }
+        Key {
+            key: Qt.Key_Down
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+            displayText: "\u2193"
+            repeat: true
+            noModifier: true
+            functionKey: true
+            highlighted: true
+        }
+        Key {
+            key: Qt.Key_Right
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+            displayText: "\u2192"
+            repeat: true
+            noModifier: true
+            functionKey: true
+            highlighted: true
+        }
+    }
+
 }
