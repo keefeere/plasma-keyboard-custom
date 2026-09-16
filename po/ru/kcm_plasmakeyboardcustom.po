@@ -324,3 +324,15 @@ msgstr "Сила вибрации:"
 msgctxt "vibration strength in percent"
 msgid "%1%"
 msgstr "%1%"
+
+#: ui/main.qml:157
+msgid "Clipboard:"
+msgstr "Буфер обмена:"
+
+#: ui/main.qml:158
+msgid "Show recent clipboard entries above the keyboard"
+msgstr "Показывать недавние записи буфера обмена над клавиатурой"
+
+#: ui/main_handset.qml:162
+msgid "Clipboard"
+msgstr "Буфер обмена"
