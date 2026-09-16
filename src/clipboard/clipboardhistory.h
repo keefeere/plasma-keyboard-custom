@@ -7,8 +7,6 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <QDateTime>
-#include <QFileInfo>
 #include <QStringList>
 #include <QTimer>
 #include <qqmlintegration.h>
@@ -17,10 +15,9 @@
  * Recent clipboard entries, shown in a row above the keyboard.
  *
  * The keyboard window is never focused, so it cannot read the Wayland
- * selection itself. The entries are read read-only from the history database
- * of the Plasma clipboard manager instead (the same one the clipboard applet
- * fills), and the file is only touched while the feature is enabled in the
- * settings.
+ * selection itself. The entries are asked for over D-Bus instead, from the
+ * clipboard manager of the desktop (org.kde.klipper, i.e. the clipboard widget
+ * in the Plasma panel), which keeps the history and tells us when it changes.
  */
 class ClipboardHistory : public QAbstractListModel
 {
@@ -47,26 +44,23 @@ public:
     //! Text of the entry at @p row, or an empty string when out of range.
     Q_INVOKABLE QString textAt(int row) const;
 
+    //! Forgets the whole history (the clipboard manager does the same).
+    Q_INVOKABLE void clear();
+
 Q_SIGNALS:
     void countChanged();
 
-private:
-    //! Starts or stops following the database, depending on the setting.
-    void updateEnabled();
-
-    //! Re-reads the entries, if the database is there and readable.
+private Q_SLOTS:
+    //! Re-reads the entries from the clipboard manager.
     void refresh();
 
-    /**
-     * Newest modification time of the database and its write-ahead log files.
-     *
-     * The clipboard database runs in WAL mode, so changes usually only touch
-     * the -wal file and leave the database itself untouched.
-     */
-    QDateTime lastModified() const;
+private:
+    //! Starts or stops following the clipboard, depending on the setting.
+    void updateEnabled();
+
+    //! The entry at @p index, or an empty string when there is none.
+    static QString historyItem(int index);
 
     QTimer m_pollTimer;
-    QFileInfo m_databaseFile;
     QStringList m_entries;
-    QDateTime m_lastModified;
 };

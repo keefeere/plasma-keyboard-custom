@@ -9,34 +9,48 @@
 #include "logging.h"
 #include "plasmakeyboardsettings.h"
 
-#include <QSqlDatabase>
-#include <QSqlQuery>
-#include <QStandardPaths>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusVariant>
 
 namespace
 {
-//! Connection name for the read-only access to the clipboard database.
-const QString s_connectionName = QStringLiteral("plasma-keyboard-clipboard");
+//! The clipboard manager of the desktop, as used by the Plasma clipboard widget.
+constexpr auto s_service = "org.kde.klipper";
+constexpr auto s_path = "/klipper";
+constexpr auto s_interface = "org.kde.klipper.klipper";
 
-//! Schema version of the history database this knows how to read.
-constexpr int s_knownDatabaseVersion = 3;
+//! Safety limit: the entries are fetched one by one until one comes back empty.
+constexpr int s_maxEntries = 50;
 
-//! How often the database file is checked for changes, in milliseconds.
-constexpr int s_pollIntervalMs = 1500;
+//! How often the history is checked in case a signal got lost, in milliseconds.
+constexpr int s_pollIntervalMs = 2000;
+
+QVariant call(const QString &method, const QVariantList &arguments = {})
+{
+    QDBusMessage message = QDBusMessage::createMethodCall(QLatin1String(s_service), QLatin1String(s_path), QLatin1String(s_interface), method);
+    if (!arguments.isEmpty()) {
+        message.setArguments(arguments);
+    }
+
+    const QDBusMessage reply = QDBusConnection::sessionBus().call(message);
+    if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty()) {
+        return {};
+    }
+
+    return reply.arguments().first();
+}
 }
 
 ClipboardHistory::ClipboardHistory(QObject *parent)
     : QAbstractListModel(parent)
 {
-    m_databaseFile = QFileInfo(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/klipper/history3.sqlite"));
+    // The clipboard widget tells us right away when the history changes.
+    QDBusConnection::sessionBus()
+        .connect(QLatin1String(s_service), QLatin1String(s_path), QLatin1String(s_interface), QStringLiteral("clipboardHistoryUpdated"), this, SLOT(refresh()));
 
     m_pollTimer.setInterval(s_pollIntervalMs);
-    connect(&m_pollTimer, &QTimer::timeout, this, [this] {
-        const QDateTime modified = lastModified();
-        if (modified.isValid() && modified != m_lastModified) {
-            refresh();
-        }
-    });
+    connect(&m_pollTimer, &QTimer::timeout, this, &ClipboardHistory::refresh);
 
     connect(PlasmaKeyboardSettings::self(), &PlasmaKeyboardSettings::clipboardEnabledChanged, this, &ClipboardHistory::updateEnabled);
     updateEnabled();
@@ -76,11 +90,38 @@ QString ClipboardHistory::textAt(int row) const
     return m_entries.value(row);
 }
 
+QString ClipboardHistory::historyItem(int index)
+{
+    const QVariant value = call(QStringLiteral("getClipboardHistoryItem"), {index});
+
+    // The entries are plain strings; a variant wrapper is unwrapped in case the
+    // service decides to send one.
+    if (value.metaType() == QMetaType::fromType<QDBusVariant>()) {
+        return value.value<QDBusVariant>().variant().toString();
+    }
+
+    return value.toString();
+}
+
+void ClipboardHistory::clear()
+{
+    call(QStringLiteral("clearClipboardHistory"));
+
+    // The clipboard manager reports the change as well, but empty the row right
+    // away instead of waiting for that round trip.
+    if (!m_entries.isEmpty()) {
+        qCDebug(PlasmaKeyboard) << "clipboard history cleared";
+        beginResetModel();
+        m_entries.clear();
+        endResetModel();
+        Q_EMIT countChanged();
+    }
+}
+
 void ClipboardHistory::updateEnabled()
 {
     if (!PlasmaKeyboardSettings::self()->clipboardEnabled()) {
         m_pollTimer.stop();
-        m_lastModified = QDateTime();
         if (!m_entries.isEmpty()) {
             beginResetModel();
             m_entries.clear();
@@ -94,53 +135,22 @@ void ClipboardHistory::updateEnabled()
     m_pollTimer.start();
 }
 
-QDateTime ClipboardHistory::lastModified() const
-{
-    QDateTime newest = m_databaseFile.lastModified();
-    for (const QString &suffix : {QStringLiteral("-wal"), QStringLiteral("-shm")}) {
-        const QDateTime modified = QFileInfo(m_databaseFile.absoluteFilePath() + suffix).lastModified();
-        if (modified > newest) {
-            newest = modified;
-        }
-    }
-    return newest;
-}
-
 void ClipboardHistory::refresh()
 {
     QStringList entries;
-
-    {
-        QSqlDatabase database = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), s_connectionName);
-        database.setConnectOptions(QStringLiteral("QSQLITE_OPEN_READONLY"));
-        database.setDatabaseName(m_databaseFile.absoluteFilePath());
-        if (database.open()) {
-            QSqlQuery query(database);
-            const bool knownVersion =
-                query.exec(QStringLiteral("SELECT db_version FROM version")) && query.next() && query.value(0).toInt() == s_knownDatabaseVersion;
-            // Same order as the Plasma clipboard applet, so both show the same
-            // most recently used entry first.
-            if (knownVersion
-                && query.exec(QStringLiteral("SELECT text FROM main WHERE text IS NOT NULL AND text <> '' ORDER BY last_used_time DESC, added_time DESC"))) {
-                while (query.next()) {
-                    const QString text = query.value(0).toString();
-                    if (!text.isEmpty()) {
-                        entries.append(text);
-                    }
-                }
-            }
-            database.close();
+    for (int index = 0; index < s_maxEntries; ++index) {
+        const QString entry = historyItem(index);
+        if (entry.isEmpty()) {
+            break;
         }
+        entries.append(entry);
     }
-    QSqlDatabase::removeDatabase(s_connectionName);
-
-    m_lastModified = lastModified();
-    qCDebug(PlasmaKeyboard) << "clipboard history entries:" << entries.count() << "from" << m_databaseFile.absoluteFilePath();
 
     if (entries == m_entries) {
         return;
     }
 
+    qCDebug(PlasmaKeyboard) << "clipboard history entries:" << entries.count();
     beginResetModel();
     m_entries = entries;
     endResetModel();

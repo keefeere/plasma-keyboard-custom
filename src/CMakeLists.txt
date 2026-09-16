@@ -123,7 +123,6 @@ target_link_libraries(plasma-keyboard-custom
     Qt::DBus
     Qt::Gui
     Qt::GuiPrivate
-    Qt::Sql
     Qt::VirtualKeyboard
     Qt::WaylandClient
     Qt::WaylandClientPrivate
