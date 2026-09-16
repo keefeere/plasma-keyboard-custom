@@ -24,6 +24,12 @@ constexpr auto s_signal = "InputEvent";
 constexpr int s_backspaceInitialDelayMs = 350;
 constexpr int s_backspaceRepeatMs = 50;
 
+// Intercept modes of InputPlumber (see "inputplumber device intercept set").
+// "none" leaves the gamepad to the system, i.e. to games and to Steam's
+// mapping; "gamepad-only" routes it to us over D-Bus.
+constexpr uint s_interceptNone = 0;
+constexpr uint s_interceptGamepadOnly = 3;
+
 QString propertyStringList(const QString &path, const QString &interface, const QString &property, const QString &signature)
 {
     QDBusMessage msg = QDBusMessage::createMethodCall(QLatin1String(s_service), path, QStringLiteral("org.freedesktop.DBus.Properties"), QStringLiteral("Get"));
@@ -153,7 +159,17 @@ void GamepadHandler::refreshFromKWin()
     if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty()) {
         return;
     }
-    setActive(reply.arguments().first().value<QDBusVariant>().variant().toBool());
+    const bool visible = reply.arguments().first().value<QDBusVariant>().variant().toBool();
+
+    // A previous instance may have died before it could give the gamepad back
+    // (a crash, or a kill while the keyboard was up), which leaves the gamepad
+    // intercepted forever: it would neither reach the game nor Steam again.
+    if (!visible && !m_active && interceptMode() == s_interceptGamepadOnly) {
+        qCDebug(PlasmaKeyboard) << "GamepadHandler: giving back a gamepad left intercepted by an earlier instance";
+        setInterceptMode(s_interceptNone);
+    }
+
+    setActive(visible);
 }
 
 GamepadHandler::~GamepadHandler()
@@ -204,9 +220,15 @@ void GamepadHandler::setActive(bool active)
 
     if (active) {
         m_savedInterceptMode = interceptMode();
-        // 3 = GAMEPAD_ONLY: gamepad input is routed over D-Bus and no longer
+        // Never remember an intercepted mode as the one to go back to: after a
+        // crash that left the gamepad intercepted, that would keep it grabbed
+        // for good.
+        if (m_savedInterceptMode == s_interceptGamepadOnly) {
+            m_savedInterceptMode = s_interceptNone;
+        }
+        // gamepad-only: gamepad input is routed over D-Bus and no longer
         // reaches the game (or Steam's mapping).
-        setInterceptMode(3);
+        setInterceptMode(s_interceptGamepadOnly);
     } else {
         setInterceptMode(m_savedInterceptMode);
         // No release events arrive once the gamepad is no longer intercepted.
@@ -222,6 +244,12 @@ void GamepadHandler::setActive(bool active)
 
 void GamepadHandler::onInputEvent(const QString &event, double value)
 {
+    // The gamepad only drives the keyboard while it is on screen: anything
+    // arriving while it is hidden belongs to the system (a game, Steam).
+    if (!m_active) {
+        return;
+    }
+
     qCDebug(PlasmaKeyboard) << "GamepadHandler: InputEvent" << event << value;
     const bool pressed = value >= 0.5;
 
