@@ -44,9 +44,6 @@ InputPanelWindow {
     // navigation of Qt Virtual Keyboard cannot reach them on its own.
     property int extraRowFocus: 0
     property int extraColumn: 0
-    //! True while the keyboard focus is being moved into place: the highlight
-    //! stays hidden so it does not appear on the wrong key on the way.
-    property bool navTransitioning: false
 
     //! Rows above the keyboard, listed from the keyboard upwards. Rebuilt
     //! whenever a row is shown or hidden, so the whole navigation follows this
@@ -103,8 +100,6 @@ InputPanelWindow {
 
     //! Moves the keyboard focus sideways to the column under the given fraction.
     function focusKeyboardColumn(ratio) {
-        root.navTransitioning = true;
-        navTransitionTimer.restart();
 
         const keyboard = inputPanel.keyboard;
         const highlight = keyboard.navigationHighlight;
@@ -127,8 +122,6 @@ InputPanelWindow {
     //! Moves the keyboard focus to the first or last row of keys, keeping the
     //! horizontal position under the given fraction.
     function focusKeyboardEdge(ratio, bottom) {
-        root.navTransitioning = true;
-        navTransitionTimer.restart();
 
         const keyboard = inputPanel.keyboard;
         const highlight = keyboard.navigationHighlight;
@@ -160,12 +153,6 @@ InputPanelWindow {
         focusKeyboardColumn(ratio);
     }
 
-    Timer {
-        id: navTransitionTimer
-        interval: 300
-        onTriggered: root.navTransitioning = false
-    }
-
     //! Activates the selected item of the focused row.
     function activateExtraRowItem() {
         if (extraRowFocus === zoneOf("clipboard")) {
@@ -178,6 +165,15 @@ InputPanelWindow {
         }
         if (extraRowFocus === zoneOf("fkeys")) {
             thing.sendKeyEvent(Qt.Key_F1 + extraColumn, "");
+        }
+    }
+
+    // While the focus is in the row right above the keyboard, keep the keyboard
+    // cursor under the selected item, so leaving downwards lands on the key
+    // that is below it.
+    onExtraColumnChanged: {
+        if (extraRowFocus === 1) {
+            focusKeyboardEdge((extraColumn + 0.5) / extraRowItemCount(1), false);
         }
     }
 
@@ -238,6 +234,12 @@ InputPanelWindow {
                 if (below !== 0) {
                     root.extraRowFocus = below;
                     root.extraColumn = root.columnForZone(below, ratio);
+                    // The row right above the keyboard: put its focus on the
+                    // first row of keys now, while the highlight is hidden, so
+                    // leaving downwards needs no movement at all.
+                    if (below === 1) {
+                        root.focusKeyboardEdge(ratio, false);
+                    }
                 } else {
                     // Back to the keyboard, on the key below the one that was
                     // selected in the row.
@@ -309,7 +311,18 @@ InputPanelWindow {
     }
 
     // Play the key click at full volume: the bundled sound is mastered quiet.
-    Component.onCompleted: VirtualKeyboardSettings.keySoundVolume = 100
+    Component.onCompleted: {
+        VirtualKeyboardSettings.keySoundVolume = 100;
+
+        // The navigation highlight of Qt Virtual Keyboard is animated, so while
+        // the focus is moved into place it appears to travel through the keys it
+        // passes. Without the animation it always shows the key that really has
+        // the focus.
+        if (inputPanel.keyboard.navigationHighlight) {
+            inputPanel.keyboard.navigationHighlight.moveDuration = 0;
+            inputPanel.keyboard.navigationHighlight.resizeDuration = 0;
+        }
+    }
 
     // Let the key panels know a gamepad is available, so they can show
     // the button glyphs directly on the relevant keys.
@@ -324,7 +337,7 @@ InputPanelWindow {
     Binding {
         target: PlasmaKeyboard.Modifiers
         property: "extraRowsFocused"
-        value: root.extraRowFocus !== 0 || root.navTransitioning
+        value: root.extraRowFocus !== 0
     }
 
     // Qt Virtual Keyboard's HideInputPanel only hides its internal panel; hide
