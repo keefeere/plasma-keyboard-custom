@@ -100,6 +100,10 @@ The settings page in System Settings:
   long-press diacritics. Multi-mode layouts (Japanese, Korean, Chinese, Thai, Arabic, Hebrew) are left as upstream.
 - **Breeze style**: installed as `PlasmaBreeze` (so it is not shadowed by the system one), configurable keyboard height,
   bold function/modifier keys, monochrome globe for the language key, capitalized language name on the space key.
+- **Working sound feedback**: upstream declares its CMake option as `PLASMA_KEYBOARD_SOUNDS_ENABLED` while everything
+  else looks for `PLASMA_KEYBOARD_SOUND_ENABLED`, so the key click was never compiled in and the setting was forced
+  off. The option is fixed here, the click plays at full volume and the bundled GPLv3 sound (from Qt Virtual Keyboard)
+  is amplified, because the upstream asset peaks at only −20.8 dB.
 - **Open on long press**: instead of popping up as soon as a text field is focused, the keyboard can wait for a long
   press on the touchscreen (configurable duration, 100–5000 ms). The screen is read directly through evdev
   (`TouchHoldWatcher`), so a udev rule granting `uaccess` on the touchscreen is installed with the package

@@ -72,6 +72,9 @@ InputPanelWindow {
         onHideKeyboard: Qt.inputMethod.hide()
     }
 
+    // Play the key click at full volume: the bundled sound is mastered quiet.
+    Component.onCompleted: VirtualKeyboardSettings.keySoundVolume = 100
+
     // Let the key panels know a gamepad is available, so they can show
     // the button glyphs directly on the relevant keys.
     Binding {

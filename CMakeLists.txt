@@ -33,7 +33,15 @@ include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(KDEGitCommitHooks)
 
-option(PLASMA_KEYBOARD_SOUNDS_ENABLED "Whether to enable sound effect support, requires GPLv3 compliance" ON)
+option(PLASMA_KEYBOARD_SOUND_ENABLED "Whether to enable sound effect support, requires GPLv3 compliance" ON)
+# Upstream spelled this option PLASMA_KEYBOARD_SOUNDS_ENABLED while everything
+# else (config-plasma-keyboard.h.cmake, the main.cpp check) uses the name below,
+# so with the old name the sounds were always compiled out and force-disabled.
+# Keep honouring it so builds passing -DPLASMA_KEYBOARD_SOUNDS_ENABLED=OFF still
+# end up without the GPLv3 sound asset.
+if(DEFINED PLASMA_KEYBOARD_SOUNDS_ENABLED)
+    set(PLASMA_KEYBOARD_SOUND_ENABLED "${PLASMA_KEYBOARD_SOUNDS_ENABLED}")
+endif()
 option(PLASMA_KEYBOARD_VIBRATION_ENABLED "Whether to enable haptic feedback via vibrations, requires GPLv3 compliance" ON)
 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
