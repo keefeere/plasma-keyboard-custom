@@ -79,7 +79,9 @@ sudo pacman -Sy plasma-keyboard-custom
 
 Restart the keyboard after an update exactly as described above. The repository is maintained
 automatically by [`.github/workflows/deploy-repo.yml`](.github/workflows/deploy-repo.yml) whenever a
-release is published; it can also be re-run by hand from the Actions tab with a release tag.
+release is published; the workflow can also be re-run by hand from the Actions tab — with a release
+tag it republishes that release, without one it re-indexes every published release (useful after a
+failed run, or if the branch was lost).
 
 ### About
 
