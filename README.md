@@ -5,6 +5,8 @@
 
 # Plasma Keyboard (custom fork)
 
+![Plasma Keyboard (custom) with the optional F1–F12 row and the gamepad glyphs on the mapped keys](docs/screenshots/keyboard-en.png)
+
 > **This branch/repository is `plasma-keyboard-custom`**, a fork of
 > [KDE plasma-keyboard](https://invent.kde.org/plasma/plasma-keyboard) with extra functionality for
 > handheld / gamepad-driven use (MSI Claw, CachyOS + KDE Plasma 6 Wayland). It installs **next to**
@@ -66,11 +68,25 @@ It installs next to the official package and does not replace it: everything is 
 `share/plasma/keyboard-custom`, style `PlasmaBreeze`), so both the stock and the custom keyboard show up under
 **System Settings → Virtual Keyboard** and can be selected there.
 
+### Screenshots
+
+The keyboard (the F1–F12 row is optional, the gamepad glyphs are drawn on the mapped keys):
+
+| English | Russian (PC-style layout) |
+| --- | --- |
+| ![English keyboard with the F1–F12 row](docs/screenshots/keyboard-en.png) | ![Russian keyboard](docs/screenshots/keyboard-ru.png) |
+
+The settings page in System Settings:
+
+| *Opening* | *Appearance* | *Typing* |
+| --- | --- | --- |
+| ![Opening settings](docs/screenshots/settings-opening.png) | ![Appearance settings](docs/screenshots/settings-appearance.png) | ![Typing settings](docs/screenshots/settings-typing.png) |
+
 ### What is different from upstream
 
 - **Gamepad support** via InputPlumber's system D-Bus target (`org.shadowblip.Input.DBusDevice`):
-  - D-pad / left stick navigate, **A** selects, **B** closes, **X** backspace, **Y** space, **LT** shift, **RT** enter,
-    **LB** symbols, **RB** switches the layout.
+  - D-pad / left stick navigate, **A** selects, **B** closes, **X** backspace (holding it keeps deleting, like a key on a
+    hardware keyboard), **Y** space, **LT** shift, **RT** enter, **LB** symbols, **RB** switches the layout.
   - Button glyphs are shown directly on the mapped keys (X, RT, LT, LB, RB, Y, B) plus an **A** badge on the focused key.
   - While the keyboard is visible the gamepad is intercepted (InputPlumber `InterceptMode = GAMEPAD_ONLY`) so input
     does not leak into the game or Steam's mapping; the previous mode is restored on hide/exit.
