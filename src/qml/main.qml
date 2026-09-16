@@ -44,6 +44,9 @@ InputPanelWindow {
     // navigation of Qt Virtual Keyboard cannot reach them on its own.
     property int extraRowFocus: 0
     property int extraColumn: 0
+    //! True while the keyboard focus is being moved into place: the highlight
+    //! stays hidden so it does not appear on the wrong key on the way.
+    property bool navTransitioning: false
 
     //! Rows above the keyboard, listed from the keyboard upwards. Rebuilt
     //! whenever a row is shown or hidden, so the whole navigation follows this
@@ -100,6 +103,9 @@ InputPanelWindow {
 
     //! Moves the keyboard focus sideways to the column under the given fraction.
     function focusKeyboardColumn(ratio) {
+        root.navTransitioning = true;
+        navTransitionTimer.restart();
+
         const keyboard = inputPanel.keyboard;
         const highlight = keyboard.navigationHighlight;
         const targetX = ratio * keyboard.width;
@@ -118,24 +124,46 @@ InputPanelWindow {
         }
     }
 
-    //! Moves the keyboard focus down to the bottom row of keys.
-    function focusKeyboardBottomRow(ratio) {
+    //! Moves the keyboard focus to the first or last row of keys, keeping the
+    //! horizontal position under the given fraction.
+    function focusKeyboardEdge(ratio, bottom) {
+        root.navTransitioning = true;
+        navTransitionTimer.restart();
+
         const keyboard = inputPanel.keyboard;
         const highlight = keyboard.navigationHighlight;
         const rowHeight = keyboard.style ? keyboard.style.targetKeyboardHeight / 5 : keyboard.height / 5;
+
+        // Nothing highlighted yet: one press starts the navigation and moves in
+        // the wanted direction.
+        if (!highlight || highlight.highlightItem === keyboard) {
+            const key = bottom ? Qt.Key_Down : Qt.Key_Up;
+            inputPanel.InputContext.priv.navigationKeyPressed(key, false);
+            inputPanel.InputContext.priv.navigationKeyReleased(key, false);
+        }
+
         for (let i = 0; i < 6; ++i) {
             const item = highlight ? highlight.highlightItem : null;
             if (!item || item === keyboard) {
                 break;
             }
             const centreY = keyboard.mapFromItem(item, 0, item.height / 2).y;
-            if (centreY > keyboard.height - rowHeight) {
+            const atEdge = bottom ? centreY > keyboard.height - rowHeight : centreY < rowHeight;
+            if (atEdge) {
                 break;
             }
-            inputPanel.InputContext.priv.navigationKeyPressed(Qt.Key_Down, false);
-            inputPanel.InputContext.priv.navigationKeyReleased(Qt.Key_Down, false);
+            const key = bottom ? Qt.Key_Down : Qt.Key_Up;
+            inputPanel.InputContext.priv.navigationKeyPressed(key, false);
+            inputPanel.InputContext.priv.navigationKeyReleased(key, false);
         }
+
         focusKeyboardColumn(ratio);
+    }
+
+    Timer {
+        id: navTransitionTimer
+        interval: 300
+        onTriggered: root.navTransitioning = false
     }
 
     //! Activates the selected item of the focused row.
@@ -200,7 +228,7 @@ InputPanelWindow {
                         // Top of the circle: continue on the bottom row.
                         root.extraRowFocus = 0;
                         root.extraColumn = 0;
-                        root.focusKeyboardBottomRow(ratio);
+                        root.focusKeyboardEdge(ratio, true);
                     }
                     return;
                 }
@@ -215,7 +243,7 @@ InputPanelWindow {
                     // selected in the row.
                     root.extraRowFocus = 0;
                     root.extraColumn = 0;
-                    root.focusKeyboardColumn(ratio);
+                    root.focusKeyboardEdge(ratio, false);
                 }
                 return;
             }
@@ -296,7 +324,7 @@ InputPanelWindow {
     Binding {
         target: PlasmaKeyboard.Modifiers
         property: "extraRowsFocused"
-        value: root.extraRowFocus !== 0
+        value: root.extraRowFocus !== 0 || root.navTransitioning
     }
 
     // Qt Virtual Keyboard's HideInputPanel only hides its internal panel; hide
