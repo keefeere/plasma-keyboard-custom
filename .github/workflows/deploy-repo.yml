@@ -1,0 +1,221 @@
+# Maintain the pacman repository on the gh-pages branch.
+#
+# Every published release gets added to the repository, so users can install
+# and upgrade the fork with pacman instead of downloading the package by hand:
+#
+#   [plasma-keyboard-custom]
+#   SigLevel = Optional TrustAll
+#   Server = https://<owner>.github.io/<repo>/$arch
+#
+# Enable it once under Settings -> Pages (Source: "Deploy from a branch",
+# Branch: gh-pages, Folder: / (root)).
+name: Update pacman repository
+
+on:
+  # Automatic run: fired by "Publish release" (and by any later manual publish
+  # of a draft), which is exactly when the package asset exists.
+  release:
+    types: [published]
+  # Manual run, mostly to repair the repository after a failed deployment:
+  # re-publishes an existing release tag. TAG is then the dispatching input.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to (re)publish into the repository'
+        required: true
+        type: string
+
+# The job pushes the updated database back to the same repository.
+permissions:
+  contents: write
+
+# Two releases must never write the pacman database at the same time: the
+# rebase below cannot merge the binary archives. Queued runs are kept instead
+# of cancelled, so no published release is silently dropped.
+concurrency:
+  group: pacman-repository-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Publish package to gh-pages
+    runs-on: ubuntu-latest
+    env:
+      # Tag of the release that carries the package (event) or the manual input.
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      # Base name of the package, and therefore of both pacman databases.
+      PKG: plasma-keyboard-custom
+      # gh and the git remote authenticate with the workflow token.
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Adopt the gh-pages branch
+        run: |
+          set -euo pipefail
+          # Deliberately no actions/checkout: this job only touches the package
+          # repository, and a fresh repository with gh-pages fetched into it
+          # keeps the database history without pulling the sources.
+          git init --initial-branch=gh-pages .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          # The branch may not exist yet (first release ever): then stay on the
+          # empty orphan branch, otherwise start from the published state.
+          if git fetch --depth=1 origin gh-pages; then
+            git reset --hard FETCH_HEAD
+            echo "Continuing from the published gh-pages branch."
+          else
+            echo "gh-pages does not exist yet, initialising an empty branch."
+          fi
+
+          # Author of the commits created below.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Download the package from the release
+        run: |
+          set -euo pipefail
+          # gh is preinstalled on the hosted runners; install it if that changes.
+          command -v gh >/dev/null || { sudo apt-get update && sudo apt-get install -y gh; }
+
+          mkdir -p repo/x86_64
+          # Only the package itself: the release also carries SHA256SUMS.
+          gh release download "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern '*.pkg.tar.zst' \
+            --dir repo/x86_64
+          ls -l repo/x86_64
+
+      - name: Verify the checksums
+        run: |
+          set -euo pipefail
+          # Releases built before the checksum asset existed are still accepted,
+          # hence the fallback instead of a hard failure.
+          if gh release download "$TAG" \
+               --repo "$GITHUB_REPOSITORY" \
+               --pattern 'SHA256SUMS' \
+               --clobber \
+               --dir repo/x86_64; then
+            ( cd repo/x86_64 && sha256sum -c --ignore-missing SHA256SUMS )
+            rm -f repo/x86_64/SHA256SUMS
+          else
+            echo "::warning::No SHA256SUMS asset in $TAG, skipping verification."
+          fi
+
+      - name: Update the pacman database
+        run: |
+          set -euo pipefail
+          # Exactly one package is expected in the release, otherwise the
+          # repository would silently publish something unexpected.
+          mapfile -t assets < <(find repo/x86_64 -maxdepth 1 -name '*.pkg.tar.zst')
+          if [ "${#assets[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one package in $TAG, found ${#assets[@]}."
+            exit 1
+          fi
+
+          # repo-add only exists on Arch, so run it in the official container.
+          #   -n  add the package unless that exact database entry already
+          #       exists (re-running a release is a no-op),
+          #   -R  remove the older entries of that package name together with
+          #       their package files, so one version per package name stays
+          #       and the branch does not grow forever.
+          docker run --rm \
+            -e PKG="$PKG" \
+            -v "$PWD/repo:/repo" \
+            -w /repo \
+            archlinux:latest \
+            bash -euo pipefail -c 'cd x86_64 && repo-add -n -R "${PKG}.db.tar.gz" ./*.pkg.tar.zst'
+
+          # repo-add runs as root inside the container.
+          sudo chown -R "$(id -u):$(id -g)" repo
+          ls -l repo/x86_64
+
+      - name: Drop packages that are no longer in the database
+        run: |
+          set -euo pipefail
+          cd repo/x86_64
+          # -R already removes the package files of the entries it drops; this
+          # pass is the safety net for anything else that ended up in the
+          # directory (a hand-uploaded file, a leftover from an interrupted
+          # run). Ask the database itself (%FILENAME% of every entry) which
+          # packages are still served and delete the rest, so the branch does
+          # not grow forever.
+          tar --wildcards -xzOf "${PKG}.db.tar.gz" '*/desc' \
+            | awk '/^%FILENAME%$/ { getline; print }' \
+            | sort -u > /tmp/keep
+          echo "Packages still referenced by the database:"; cat /tmp/keep
+
+          for pkg in *.pkg.tar.zst; do
+            [ -e "$pkg" ] || continue
+            if ! grep -qxF "$pkg" /tmp/keep; then
+              echo "Removing obsolete package $pkg"
+              rm -f "$pkg"
+            fi
+          done
+
+          # repo-add keeps the previous database around as *.old; pacman never
+          # downloads those, so do not carry them in the branch forever.
+          rm -f ./*.old
+          ls -l
+
+      - name: Ship real database files instead of symlinks
+        run: |
+          set -euo pipefail
+          cd repo/x86_64
+          # repo-add leaves plasma-keyboard-custom.db (and .files) as symlinks
+          # to the .tar.gz archives. GitHub Pages does not follow symlinks, so
+          # pacman would download the link target as plain text and fail.
+          # Ship copies under both names - pacman accepts either of them.
+          for db in "${PKG}.db" "${PKG}.files"; do
+            rm -f "$db"
+            cp "${db}.tar.gz" "$db"
+          done
+          ls -l
+
+      - name: Commit and push the repository
+        run: |
+          set -euo pipefail
+          # Pages would otherwise run Jekyll over the repository.
+          touch .nojekyll
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "The repository already contains $TAG, nothing to do."
+            exit 0
+          fi
+
+          git commit -m "Add ${PKG} ${TAG} to the package repository"
+
+          # The concurrency group keeps parallel deployments apart; this loop
+          # additionally survives a push that still loses the race (for example
+          # when someone pushes to gh-pages by hand).
+          for attempt in 1 2 3; do
+            if git push origin gh-pages; then
+              echo "Pushed the updated repository to gh-pages."
+              exit 0
+            fi
+            echo "Push rejected (attempt ${attempt}), rebasing onto origin/gh-pages."
+            git fetch --depth=1 origin gh-pages
+            if ! git rebase FETCH_HEAD; then
+              git rebase --abort || true
+              echo "::error::Conflict while rebasing on gh-pages, re-run the workflow."
+              exit 1
+            fi
+          done
+
+          echo "::error::Could not push the package repository to gh-pages."
+          exit 1
+
+      - name: Write the pacman configuration to the job summary
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "### pacman repository"
+            echo
+            echo "Release: \`${TAG}\`"
+            echo
+            echo '```ini'
+            echo "[plasma-keyboard-custom]"
+            echo "SigLevel = Optional TrustAll"
+            echo "Server = https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/\$arch"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
