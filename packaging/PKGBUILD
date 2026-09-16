@@ -6,6 +6,11 @@ pkgdesc="Virtual keyboard for Qt based desktops (custom fork with gamepad suppor
 arch=('x86_64')
 url="https://github.com/mops1k/plasma-keyboard-custom"
 license=('GPL-2.0-or-later')
+# Ship a single package: without this makepkg also produces a ~9 MB
+# plasma-keyboard-custom-debug package (the Arch default enables debug), which
+# only duplicates the symbols in every release asset and in the pacman
+# repository. The build no longer depends on the local makepkg.conf defaults.
+options=('!debug')
 depends=(
   'glibc'
   'kcmutils'

@@ -110,7 +110,11 @@ jobs:
             # Re-index: rebuild the repository from every published release,
             # oldest first, so that the newest package wins in the database
             # (the versions are compared with sort -V, which understands the
-            # v<version>-custom-r<run> tags).
+            # v<version>-custom-r<run> tags). Start from an empty directory so
+            # that the branch mirrors the releases: assets that a release no
+            # longer carries (say, a dropped -debug package) disappear with
+            # the database entry that pointed at them.
+            rm -f repo/x86_64/*.pkg.tar.zst
             while read -r tag; do
               [ -n "$tag" ] || continue
               echo "::group::Fetching $tag"
@@ -138,6 +142,14 @@ jobs:
           fi
           echo "Packages to index: ${#pkgs[@]}"
 
+          # A re-index (manual run without a tag) mirrors the releases, so its
+          # database is rebuilt from the packages that were just downloaded; a
+          # normal release only adds/replaces its own entries.
+          rebuild=0
+          if [ -z "$TAG" ]; then
+            rebuild=1
+          fi
+
           # repo-add only exists on Arch, so run it in the official container.
           # The packages are handed over in version order (sort -V) and:
           #   -n  add a package unless that exact database entry already
@@ -147,11 +159,15 @@ jobs:
           #       package and the branch does not grow forever.
           docker run --rm \
             -e PKG="$PKG" \
+            -e REBUILD="$rebuild" \
             -v "$PWD/repo:/repo" \
             -w /repo \
             archlinux:latest \
             bash -euo pipefail -c '
               cd x86_64
+              if [ "$REBUILD" = 1 ]; then
+                rm -f "${PKG}".db* "${PKG}".files*
+              fi
               mapfile -t pkgs < <(printf "%s\n" *.pkg.tar.zst | sort -V)
               repo-add -n -R "${PKG}.db.tar.gz" "${pkgs[@]}"
             '
