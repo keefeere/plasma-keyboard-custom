@@ -154,6 +154,20 @@ KCM.SimpleKCM {
                     checked = Qt.binding(() => kcm.showFunctionKeyRow)
                 }
             }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormSwitchDelegate {
+                id: clipboardEnabled
+                text: i18n("Clipboard")
+                description: i18n("Show recent clipboard entries above the keyboard")
+
+                checked: kcm.clipboardEnabled
+                onCheckedChanged: {
+                    kcm.clipboardEnabled = checked;
+                    checked = Qt.binding(() => kcm.clipboardEnabled)
+                }
+            }
         }
 
         FormCard.FormHeader {

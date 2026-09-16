@@ -17,6 +17,8 @@ target_sources(plasma-keyboard-custom PRIVATE
     inputpanelintegration.cpp
     inputpanelintegration.h
     inputpanelrole.h
+    clipboard/clipboardhistory.cpp
+    clipboard/clipboardhistory.h
     gamepadhandler.cpp
     gamepadhandler.h
     inputlisteneritem.cpp
@@ -103,6 +105,7 @@ target_include_directories(plasma-keyboard-custom PRIVATE
     ${CMAKE_BINARY_DIR}
     # Add directories to include path for QML type registration
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/clipboard
     ${CMAKE_CURRENT_SOURCE_DIR}/overlay
 )
 
@@ -120,6 +123,7 @@ target_link_libraries(plasma-keyboard-custom
     Qt::DBus
     Qt::Gui
     Qt::GuiPrivate
+    Qt::Sql
     Qt::VirtualKeyboard
     Qt::WaylandClient
     Qt::WaylandClientPrivate

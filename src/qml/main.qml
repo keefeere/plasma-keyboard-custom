@@ -137,6 +137,99 @@ InputPanelWindow {
         // Padding for background corners and panel drag area
         readonly property real padding: isFullScreenWidth ? 0 : Kirigami.Units.largeSpacing
 
+        // Recent clipboard entries, read from the clipboard history of the
+        // desktop while the feature is enabled in the settings. Tapping an
+        // entry inserts it into the focused field. The row hides itself when
+        // nothing has been copied yet.
+        Flickable {
+            id: clipboardRow
+
+            readonly property var kbdStyle: inputPanel.keyboard.style
+            // Half the height of a normal keyboard row, like the F-key row.
+            readonly property real normalRowHeight: kbdStyle ? kbdStyle.targetKeyboardHeight / 5 : Kirigami.Units.gridUnit * 2
+            readonly property real rowHeight: normalRowHeight / 2
+            readonly property real fontScale: rowHeight / normalRowHeight
+            readonly property real sideMargin: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin / 2
+            // How many entries fit on screen at once: all entries have the same
+            // width, longer texts are cut off.
+            readonly property int visibleChips: 3
+            readonly property real chipWidth: width / visibleChips
+
+            visible: PlasmaKeyboardSettings.clipboardEnabled && thing.clipboardHistory.count > 0
+
+            anchors {
+                top: parent.top
+                topMargin: parent.padding
+                horizontalCenter: parent.horizontalCenter
+            }
+
+            width: inputPanel.width > 0 ? inputPanel.width - sideMargin * 2 : 100
+            height: visible ? rowHeight : 0
+
+            contentWidth: chips.width
+            contentHeight: height
+            // The gaps between the chips are made by the key margins of the
+            // cells, exactly like between the keyboard keys.
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+
+            Row {
+                id: chips
+                height: clipboardRow.height
+                // Fewer entries than fit into the row: center them. More than
+                // fit: start at the left edge and let the row be flicked.
+                x: Math.max(0, (clipboardRow.width - width) / 2)
+
+                Repeater {
+                    model: thing.clipboardHistory
+
+                    delegate: Item {
+                        id: clipboardChip
+                        required property string text
+
+                        // A third of the row each, matching one third of the keyboard.
+                        width: clipboardRow.chipWidth
+                        height: clipboardRow.rowHeight
+
+                        Rectangle {
+                            id: chipBackground
+                            // Same margins as a keyboard key, so the row looks like
+                            // part of the keyboard.
+                            anchors.fill: parent
+                            anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
+                            radius: PlasmaKeyboard.BreezeConstants.buttonRadius
+
+                            color: chipHandler.pressed ? PlasmaKeyboard.BreezeConstants.primaryDarkColor : PlasmaKeyboard.BreezeConstants.normalKeyBackgroundColor
+
+                            Text {
+                                id: label
+                                anchors.fill: parent
+                                anchors.leftMargin: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin * 2
+                                anchors.rightMargin: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin * 2
+
+                                verticalAlignment: Text.AlignVCenter
+                                // Entries can be multi-line: show them as a single line.
+                                text: clipboardChip.text.replace(/\s+/g, " ")
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
+                                color: PlasmaKeyboard.BreezeConstants.keyTextColor
+                                font {
+                                    family: PlasmaKeyboard.BreezeConstants.fontFamily
+                                    pixelSize: clipboardRow.kbdStyle ? 60 * (clipboardRow.kbdStyle.targetKeyboardHeight / clipboardRow.kbdStyle.keyboardDesignHeight) * clipboardRow.fontScale : Kirigami.Units.gridUnit
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            id: chipHandler
+                            anchors.fill: parent
+                            onClicked: thing.commitText(clipboardChip.text)
+                        }
+                    }
+                }
+            }
+        }
+
         // Optional F1-F12 row above the keyboard. The panel grows by the row
         // height when it is shown, the keyboard itself keeps its size.
         Row {
@@ -154,7 +247,7 @@ InputPanelWindow {
             // itself keeps a cell margin of about half a key margin.
             readonly property real sideMargin: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin / 2
             anchors {
-                top: parent.top
+                top: clipboardRow.visible ? clipboardRow.bottom : parent.top
                 topMargin: parent.padding
                 horizontalCenter: parent.horizontalCenter
             }
@@ -199,13 +292,13 @@ InputPanelWindow {
         // Never let width & height to be 0, otherwise it can cause problems for setting interactiveRegion
         width: inputPanel.width > 0 ? (inputPanel.width + padding * 2) : 100
         height: inputPanel.height > 0
-            ? (inputPanel.height + padding * 2 + (functionKeyRow.visible ? functionKeyRow.height : 0))
+            ? (inputPanel.height + padding * 2 + (functionKeyRow.visible ? functionKeyRow.height : 0) + (clipboardRow.visible ? clipboardRow.height : 0))
             : 100
 
         InputPanel {
             id: inputPanel
             anchors {
-                top: functionKeyRow.visible ? functionKeyRow.bottom : parent.top
+                top: functionKeyRow.visible ? functionKeyRow.bottom : (clipboardRow.visible ? clipboardRow.bottom : parent.top)
                 // Keep the vertical rhythm of the keyboard rows when the F-key
                 // row is shown.
                 topMargin: functionKeyRow.visible ? -functionKeyRow.sideMargin : parent.padding

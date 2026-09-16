@@ -23,6 +23,7 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(bool showOnMouseFocus READ showOnMouseFocus WRITE setShowOnMouseFocus NOTIFY showOnMouseFocusChanged)
     Q_PROPERTY(bool showOnLongTap READ showOnLongTap WRITE setShowOnLongTap NOTIFY showOnLongTapChanged)
     Q_PROPERTY(bool showFunctionKeyRow READ showFunctionKeyRow WRITE setShowFunctionKeyRow NOTIFY showFunctionKeyRowChanged)
+    Q_PROPERTY(bool clipboardEnabled READ clipboardEnabled WRITE setClipboardEnabled NOTIFY clipboardEnabledChanged)
     Q_PROPERTY(int showOnLongTapThresholdMs READ showOnLongTapThresholdMs WRITE setShowOnLongTapThresholdMs NOTIFY showOnLongTapThresholdMsChanged)
     Q_PROPERTY(
         bool hidePanelWhenKeyboardVisible READ hidePanelWhenKeyboardVisible WRITE setHidePanelWhenKeyboardVisible NOTIFY hidePanelWhenKeyboardVisibleChanged)
@@ -63,6 +64,9 @@ public:
     bool showFunctionKeyRow() const;
     void setShowFunctionKeyRow(bool showFunctionKeyRow);
 
+    bool clipboardEnabled() const;
+    void setClipboardEnabled(bool clipboardEnabled);
+
     int showOnLongTapThresholdMs() const;
     void setShowOnLongTapThresholdMs(int showOnLongTapThresholdMs);
 
@@ -97,6 +101,7 @@ Q_SIGNALS:
     void showOnMouseFocusChanged();
     void showOnLongTapChanged();
     void showFunctionKeyRowChanged();
+    void clipboardEnabledChanged();
     void showOnLongTapThresholdMsChanged();
     void hidePanelWhenKeyboardVisibleChanged();
     void keyboardFontFamilyChanged();
@@ -113,6 +118,7 @@ private:
     bool m_showOnMouseFocus = false;
     bool m_showOnLongTap = false;
     bool m_showFunctionKeyRow = false;
+    bool m_clipboardEnabled = false;
     int m_showOnLongTapThresholdMs = 600;
     bool m_hidePanelWhenKeyboardVisible = true;
     QString m_keyboardFontFamily;

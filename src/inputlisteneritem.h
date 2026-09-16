@@ -18,6 +18,7 @@
 
 #include "inputplugin.h"
 
+class ClipboardHistory;
 class OverlayController;
 
 /**
@@ -84,6 +85,11 @@ class InputListenerItem : public QQuickItem
      */
     Q_PROPERTY(OverlayController *overlayController READ overlayController CONSTANT)
 
+    /**
+     * Recent clipboard entries, shown in a row above the keyboard.
+     */
+    Q_PROPERTY(ClipboardHistory *clipboardHistory READ clipboardHistory CONSTANT)
+
 public:
     InputListenerItem();
 
@@ -102,9 +108,20 @@ public:
     Q_INVOKABLE void sendKeyEvent(int key, const QString &text);
 
     /**
+     * Inserts @p text into the focused field, as if it had been typed.
+     * Used by the clipboard row to paste a copied text.
+     */
+    Q_INVOKABLE void commitText(const QString &text);
+
+    /**
      * Get the overlay controller.
      */
     OverlayController *overlayController() const;
+
+    /**
+     * Get the model of recent clipboard entries.
+     */
+    ClipboardHistory *clipboardHistory() const;
 
 Q_SIGNALS:
     void keyNavigationPressed(int key);
@@ -122,6 +139,7 @@ private:
 
     InputPlugin m_input;
     OverlayController *m_overlayController = nullptr;
+    ClipboardHistory *m_clipboardHistory = nullptr;
     TouchHoldWatcher m_touchHold;
     bool m_keyboardNavigationActive = false;
 };

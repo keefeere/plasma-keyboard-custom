@@ -7,6 +7,7 @@
 */
 
 #include "inputlisteneritem.h"
+#include "clipboard/clipboardhistory.h"
 #include "inputmethod_p.h"
 #include "logging.h"
 #include "plasmakeyboardsettings.h"
@@ -129,6 +130,7 @@ Q_GLOBAL_STATIC_WITH_ARGS(const QList<Qt::Key>, KEYBOARD_NAVIGATION_ACTIVE_CAPTU
 InputListenerItem::InputListenerItem()
     : m_input(&(*s_im))
     , m_overlayController(new OverlayController(&m_input, this))
+    , m_clipboardHistory(new ClipboardHistory(this))
 {
     // Grab and listen to physical keyboard input
     m_input.setGrabbing(true);
@@ -287,6 +289,20 @@ InputListenerItem::InputListenerItem()
 OverlayController *InputListenerItem::overlayController() const
 {
     return m_overlayController;
+}
+
+ClipboardHistory *InputListenerItem::clipboardHistory() const
+{
+    return m_clipboardHistory;
+}
+
+void InputListenerItem::commitText(const QString &text)
+{
+    if (text.isEmpty() || !m_input.hasContext()) {
+        return;
+    }
+
+    m_input.commit(text);
 }
 
 void InputListenerItem::setEngine(QVirtualKeyboardInputEngine * /*engine*/)

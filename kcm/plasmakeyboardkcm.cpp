@@ -263,6 +263,22 @@ void PlasmaKeyboardKcm::setKeyboardHeightPercent(int percent)
     setNeedsSave(true);
 }
 
+bool PlasmaKeyboardKcm::clipboardEnabled() const
+{
+    return m_clipboardEnabled;
+}
+
+void PlasmaKeyboardKcm::setClipboardEnabled(bool clipboardEnabled)
+{
+    if (clipboardEnabled == m_clipboardEnabled) {
+        return;
+    }
+
+    m_clipboardEnabled = clipboardEnabled;
+    setNeedsSave(true);
+    Q_EMIT clipboardEnabledChanged();
+}
+
 bool PlasmaKeyboardKcm::diacriticsPopupEnabled() const
 {
     return m_diacriticsPopupEnabled;
@@ -315,6 +331,7 @@ void PlasmaKeyboardKcm::load()
     setShowOnMouseFocus(PlasmaKeyboardSettings::self()->showOnMouseFocus());
     setShowOnLongTap(PlasmaKeyboardSettings::self()->showOnLongTap());
     setShowFunctionKeyRow(PlasmaKeyboardSettings::self()->showFunctionKeyRow());
+    setClipboardEnabled(PlasmaKeyboardSettings::self()->clipboardEnabled());
     setShowOnLongTapThresholdMs(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs());
     setHidePanelWhenKeyboardVisible(PlasmaKeyboardSettings::self()->hidePanelWhenKeyboardVisible());
     setKeyboardFontFamily(PlasmaKeyboardSettings::self()->keyboardFontFamily());
@@ -336,6 +353,7 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setShowOnMouseFocus(m_showOnMouseFocus);
     PlasmaKeyboardSettings::self()->setShowOnLongTap(m_showOnLongTap);
     PlasmaKeyboardSettings::self()->setShowFunctionKeyRow(m_showFunctionKeyRow);
+    PlasmaKeyboardSettings::self()->setClipboardEnabled(m_clipboardEnabled);
     PlasmaKeyboardSettings::self()->setShowOnLongTapThresholdMs(m_showOnLongTapThresholdMs);
     PlasmaKeyboardSettings::self()->setHidePanelWhenKeyboardVisible(m_hidePanelWhenKeyboardVisible);
     PlasmaKeyboardSettings::self()->setKeyboardFontFamily(m_keyboardFontFamily);

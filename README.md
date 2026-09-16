@@ -175,9 +175,13 @@ The settings page in System Settings:
   input method again (`kwinrc [Wayland] InputMethod` toggled), deferring the restart while the panel is visible but
   never for more than a couple of minutes — no manual restart after `pacman -Syu`.
 - **Optional F1–F12 row** above the keyboard, sized and styled like the regular keys; the panel grows accordingly.
+- **Clipboard row** above the keyboard (off by default): the recent entries of the desktop clipboard manager as three
+  equally sized chips, aligned with the keyboard and centred while there are fewer than three. Tapping a chip inserts
+  that text into the focused field (terminals included); long texts are shortened, and the row appears and disappears
+  with the clipboard itself.
 - **Single instance**: a second process exits right away, so a stale instance can never keep an old panel around.
 - **Settings page** (`plasma-keyboard-custom` in System Settings), organised in tabs — *Layouts* (languages),
-  *Opening* (long press, mouse focus, hiding the Plasma panel), *Appearance* (height, font, F1–F12 row) and
+  *Opening* (long press, mouse focus, hiding the Plasma panel),   *Appearance* (height, font, F1–F12 row, clipboard row) and
   *Typing* (auto-capitalization, alternate characters, sound, vibration, navigation, a test field):
   - keyboard height as a percentage of the screen (20–80%),
   - whether the keyboard opens when a text field is focused with a mouse (otherwise it only opens on touch or via the shortcut),

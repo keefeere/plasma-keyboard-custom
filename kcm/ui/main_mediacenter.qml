@@ -138,7 +138,7 @@ KCM.SimpleKCM {
             id: showFunctionKeyRowButton
             text: i18n("Function keys")
             KeyNavigation.up: hidePanelWhenKeyboardVisibleButton
-            KeyNavigation.down: autoCapitalizationButton
+            KeyNavigation.down: clipboardEnabledButton
 
             checked: kcm.showFunctionKeyRow
             onCheckedChanged: {
@@ -147,10 +147,23 @@ KCM.SimpleKCM {
             }
         }
 
+        Bigscreen.SwitchDelegate {
+            id: clipboardEnabledButton
+            text: i18n("Clipboard")
+            KeyNavigation.up: showFunctionKeyRowButton
+            KeyNavigation.down: autoCapitalizationButton
+
+            checked: kcm.clipboardEnabled
+            onCheckedChanged: {
+                kcm.clipboardEnabled = checked;
+                checked = Qt.binding(() => kcm.clipboardEnabled);
+            }
+        }
+
         QQC2.ComboBox {
             id: keyboardFontComboBox
             Layout.preferredWidth: column.width
-            KeyNavigation.up: showFunctionKeyRowButton
+            KeyNavigation.up: clipboardEnabledButton
             KeyNavigation.down: autoCapitalizationButton
 
             model: [i18n("Default")].concat(Qt.fontFamilies())

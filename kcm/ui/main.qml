@@ -151,6 +151,18 @@ KCM.AbstractKCM {
                     checked = Qt.binding(() => kcm.showFunctionKeyRow);
                 }
             }
+
+            QQC2.CheckBox {
+                id: clipboardEnabled
+                Kirigami.FormData.label: i18n("Clipboard:")
+                text: i18n("Show recent clipboard entries above the keyboard")
+
+                checked: kcm.clipboardEnabled
+                onCheckedChanged: {
+                    kcm.clipboardEnabled = checked;
+                    checked = Qt.binding(() => kcm.clipboardEnabled);
+                }
+            }
         }
 
         SettingsFormPage {
