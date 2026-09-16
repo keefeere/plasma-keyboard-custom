@@ -23,7 +23,7 @@ depends=(
   'kirigami-addons'
   'kitemmodels'
   'libplasma'
-  'libstdc++'
+  'gcc-libs'
   'libxkbcommon'
   'qt6-base'
   'qt6-declarative'
