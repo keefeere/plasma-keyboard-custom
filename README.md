@@ -21,12 +21,34 @@ It wraps Qt Virtual Keyboard in a window, and uses the input-method-v1 Wayland p
 
 ### Install the latest release
 
-Download the newest `plasma-keyboard-custom-*-x86_64.pkg.tar.zst` from the
+The quickest way is the [install script](install.sh): it takes the newest release, downloads the
+package, checks it against the published `SHA256SUMS`, installs it with `pacman -U` and restarts the
+keyboard, so no pacman repository has to be configured first (it only needs `curl` and `pacman`, since
+the packages are built for Arch-based systems):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mops1k/plasma-keyboard-custom/master/install.sh | sh
+```
+
+Options are passed through `sh -s --`:
+
+| Option | Meaning |
+| --- | --- |
+| `--tag <tag>` | install that release instead of the latest one |
+| `--overwrite` | let pacman replace files it does not track (e.g. after a manual `cmake --install`) |
+| `--no-restart` | do not restart a running keyboard |
+| `--dry-run` | download and verify the package, install nothing |
+| `-h`, `--help` | usage |
+
+Run it again for later updates, or add the [pacman repository](#install-from-the-pacman-repository)
+below and let `sudo pacman -Sy plasma-keyboard-custom` do that.
+
+By hand, the same thing: download the newest `plasma-keyboard-custom-*-x86_64.pkg.tar.zst` from the
 [Releases page](https://github.com/mops1k/plasma-keyboard-custom/releases/latest):
 
 ```sh
 url=$(curl -fsSL https://api.github.com/repos/mops1k/plasma-keyboard-custom/releases/latest \
-      | grep -o 'https://[^"]*\.pkg\.tar\.zst' | head -n1)
+      | grep -o 'https://[^"]*/plasma-keyboard-custom-[0-9][^"]*\.pkg\.tar\.zst' | head -n1)
 curl -fsSLo /tmp/plasma-keyboard-custom.pkg.tar.zst "$url"
 ```
 
@@ -43,14 +65,15 @@ Then install it:
 sudo pacman -U /tmp/plasma-keyboard-custom.pkg.tar.zst
 ```
 
-**To update**, run exactly the same commands — the package version (and `pkgrel`) grows with every
-release, so `pacman -U` upgrades the installed package in place. Then restart the keyboard so the new
-binary is picked up (or log out and back in):
+**To update**, run the same command (or the install script) again — the package version (and `pkgrel`)
+grows with every release, so pacman upgrades the installed package in place. The keyboard restarts
+itself and picks up the new binary; on a release without that, restart it by hand (or log out and back
+in):
 
 ```sh
-pkill -f 'plasma-keyboard-custom'
 kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod ''
-kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod '/usr/share/applications/org.kde.plasma.keyboard.custom.desktop'
+kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod \
+    '/usr/share/applications/org.kde.plasma.keyboard.custom.desktop'
 ```
 
 Then pick **plasma-keyboard-custom** in **System Settings → Virtual Keyboard**; its own settings are under
@@ -147,6 +170,10 @@ The settings page in System Settings:
   press on the touchscreen (configurable duration, 100–5000 ms). The screen is read directly through evdev
   (`TouchHoldWatcher`), so a udev rule granting `uaccess` on the touchscreen is installed with the package
   (`70-plasma-keyboard-touchscreen.rules`). The global shortcut still shows the keyboard immediately.
+- **Restarts itself after an update**: KWin keeps one keyboard process for the whole session, so an upgraded package
+  would only take effect after logging out. The running instance watches its own binary and asks KWin to start the
+  input method again (`kwinrc [Wayland] InputMethod` toggled), deferring the restart while the panel is visible but
+  never for more than a couple of minutes — no manual restart after `pacman -Syu`.
 - **Optional F1–F12 row** above the keyboard, sized and styled like the regular keys; the panel grows accordingly.
 - **Single instance**: a second process exits right away, so a stale instance can never keep an old panel around.
 - **Settings page** (`plasma-keyboard-custom` in System Settings), organised in tabs — *Layouts* (languages),
