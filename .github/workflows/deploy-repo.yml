@@ -89,6 +89,12 @@ jobs:
               echo "::warning::$1 carries no package, skipping it."
               return 0
             fi
+            # Debug packages are build artifacts for developers (about 9 MB of
+            # symbols per release), not something to install, so they never
+            # belong in the repository - the PKGBUILD no longer builds them
+            # either. Releases published before that still carry them, hence
+            # dropping the files here instead of relying on the asset names.
+            rm -f repo/x86_64/*-debug-*.pkg.tar.zst
             # Releases built before the checksum asset existed are accepted too.
             if gh release download "$1" \
                  --repo "$GITHUB_REPOSITORY" \
@@ -142,16 +148,10 @@ jobs:
           fi
           echo "Packages to index: ${#pkgs[@]}"
 
-          # A re-index (manual run without a tag) mirrors the releases, so its
-          # database is rebuilt from the packages that were just downloaded; a
-          # normal release only adds/replaces its own entries.
-          rebuild=0
-          if [ -z "$TAG" ]; then
-            rebuild=1
-          fi
-
           # repo-add only exists on Arch, so run it in the official container.
-          # The packages are handed over in version order (sort -V) and:
+          # The database is rebuilt from the packages that are on disk, so the
+          # two can never drift apart when a release stops shipping an asset
+          # (the former -debug packages, for instance). The flags:
           #   -n  add a package unless that exact database entry already
           #       exists (re-running a release is a no-op),
           #   -R  remove the older entries of that package name together with
@@ -159,15 +159,12 @@ jobs:
           #       package and the branch does not grow forever.
           docker run --rm \
             -e PKG="$PKG" \
-            -e REBUILD="$rebuild" \
             -v "$PWD/repo:/repo" \
             -w /repo \
             archlinux:latest \
             bash -euo pipefail -c '
               cd x86_64
-              if [ "$REBUILD" = 1 ]; then
-                rm -f "${PKG}".db* "${PKG}".files*
-              fi
+              rm -f "${PKG}".db* "${PKG}".files*
               mapfile -t pkgs < <(printf "%s\n" *.pkg.tar.zst | sort -V)
               repo-add -n -R "${PKG}.db.tar.gz" "${pkgs[@]}"
             '
