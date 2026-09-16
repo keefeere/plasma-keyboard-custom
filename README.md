@@ -65,6 +65,19 @@ Then install it:
 sudo pacman -U /tmp/plasma-keyboard-custom.pkg.tar.zst
 ```
 
+On SteamOS that fails on `libstdc++`: the package is built against the current Arch, where the C++
+runtime recently became a package of its own, while SteamOS carries a frozen snapshot in which
+`libstdc++.so.6` belongs to `gcc-libs` and no `libstdc++` package exists to download. The library
+itself is already there, so tell pacman to treat the dependency as satisfied:
+
+```sh
+sudo pacman -U --assume-installed libstdc++ /tmp/plasma-keyboard-custom.pkg.tar.zst
+```
+
+The [install script](install.sh) adds that flag by itself when the repositories have no `libstdc++`,
+and it works the same way for an install from the repository:
+`sudo pacman -S --assume-installed libstdc++ plasma-keyboard-custom`.
+
 **To update**, run the same command (or the install script) again — the package version (and `pkgrel`)
 grows with every release, so pacman upgrades the installed package in place. The keyboard restarts
 itself and picks up the new binary; on a release without that, restart it by hand (or log out and back
@@ -98,6 +111,12 @@ Then install it, and simply run `pacman -Sy plasma-keyboard-custom` again for ev
 
 ```sh
 sudo pacman -Sy plasma-keyboard-custom
+```
+
+On SteamOS this needs the same handling as above, since its repositories have no `libstdc++`:
+
+```sh
+sudo pacman -S --assume-installed libstdc++ plasma-keyboard-custom
 ```
 
 Restart the keyboard after an update exactly as described above. The repository always publishes the

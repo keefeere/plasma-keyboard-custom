@@ -147,6 +147,14 @@ if [ "$dry_run" = 1 ]; then
 fi
 
 set -- pacman -U --noconfirm
+# SteamOS (like any system with a frozen package snapshot) has no libstdc++
+# package: the C++ runtime is part of gcc-libs there, and the package cannot be
+# downloaded from its repositories at all. Tell pacman that it is installed, the
+# library itself is already on the system.
+if ! pacman -Si libstdc++ >/dev/null 2>&1; then
+    echo "No libstdc++ package in the repositories (SteamOS): treating it as installed, since it comes with gcc-libs."
+    set -- "$@" --assume-installed libstdc++
+fi
 if [ "$overwrite" = 1 ]; then
     set -- "$@" --overwrite "/usr/*"
 fi
