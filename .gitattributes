@@ -1,0 +1,7 @@
+# Files that belong to the repository but not to the sources the package is
+# built from: packaging/build.sh creates its tarball with "git archive", so
+# everything marked here is kept out of the package build (and out of the
+# tarball shipped next to the sources).
+install.sh export-ignore
+.github export-ignore
+docs export-ignore
