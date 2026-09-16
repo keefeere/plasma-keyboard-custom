@@ -8,7 +8,46 @@
 #include "inputplugin.h"
 #include "inputmethod_p.h"
 
+#include <QStringList>
+
 #include <xkbcommon/xkbcommon-names.h>
+
+namespace
+{
+//! Wayland rejects any single message larger than 4096 bytes.
+constexpr int s_maxCommitBytes = 3800;
+
+/**
+ * Splits @p text into pieces that fit into a single commit, without ever
+ * cutting a character (or a surrogate pair) in half.
+ */
+QStringList splitCommit(const QString &text)
+{
+    QStringList chunks;
+    QString chunk;
+    int chunkBytes = 0;
+
+    const QList<uint> codePoints = text.toUcs4();
+    for (uint codePoint : codePoints) {
+        const char32_t character = codePoint;
+        const QString encoded = QString::fromUcs4(&character, 1);
+        const int bytes = encoded.toUtf8().size();
+        if (chunkBytes + bytes > s_maxCommitBytes && !chunk.isEmpty()) {
+            chunks.append(chunk);
+            chunk.clear();
+            chunkBytes = 0;
+        }
+        chunk.append(encoded);
+        chunkBytes += bytes;
+    }
+
+    if (!chunk.isEmpty()) {
+        chunks.append(chunk);
+    }
+
+    return chunks;
+}
+}
 
 InputPlugin::InputPlugin(InputMethod *inputMethod)
 {
@@ -97,7 +136,13 @@ void InputPlugin::commit(const QString &text)
     if (!m_context) {
         return;
     }
-    m_context->commit_string(m_context->m_latestSerial, text);
+
+    // A long text (e.g. pasted from the clipboard) does not fit into one
+    // Wayland message, so it is committed in several pieces.
+    const QStringList chunks = splitCommit(text);
+    for (const QString &chunk : chunks) {
+        m_context->commit_string(m_context->m_latestSerial, chunk);
+    }
 }
 
 void InputPlugin::keysym(uint timestamp, uint sym, KeyState state, uint modifiers)
