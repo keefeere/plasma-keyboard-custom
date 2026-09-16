@@ -36,6 +36,10 @@ class KeyboardModifiers : public QObject
     //! True while a gamepad is available, so key panels can show button hints.
     Q_PROPERTY(bool gamepadAvailable READ gamepadAvailable WRITE setGamepadAvailable NOTIFY gamepadAvailableChanged)
 
+    //! True while the gamepad focus is in the rows above the keyboard: the
+    //! keyboard then hides its own navigation highlight.
+    Q_PROPERTY(bool extraRowsFocused READ extraRowsFocused WRITE setExtraRowsFocused NOTIFY extraRowsFocusedChanged)
+
 public:
     static KeyboardModifiers *instance();
 
@@ -48,12 +52,16 @@ public:
     bool gamepadAvailable() const;
     void setGamepadAvailable(bool available);
 
+    bool extraRowsFocused() const;
+    void setExtraRowsFocused(bool focused);
+
     Q_INVOKABLE void reset();
 
 Q_SIGNALS:
     void ctrlChanged();
     void altChanged();
     void gamepadAvailableChanged();
+    void extraRowsFocusedChanged();
 
 private:
     explicit KeyboardModifiers(QObject *parent = nullptr);
@@ -61,6 +69,7 @@ private:
     bool m_ctrl = false;
     bool m_alt = false;
     bool m_gamepadAvailable = false;
+    bool m_extraRowsFocused = false;
 };
 
 /**

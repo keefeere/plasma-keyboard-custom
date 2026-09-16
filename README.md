@@ -146,7 +146,12 @@ The settings page in System Settings:
 
 ### What is different from upstream
 
-- **Gamepad support** via InputPlumber's system D-Bus target (`org.shadowblip.Input.DBusDevice`):
+- **Gamepad navigation** reaches the rows above the keyboard too, not only the key grid: up from the top row goes
+  into the F1-F12 row (landing under the selected key) and from there into the clipboard row, down continues back,
+  left/right move along a row, A activates the selected item and Select jumps into the rows. The focused item is
+  highlighted the same way Qt Virtual Keyboard highlights its keys, the clipboard row scrolls the selected entry
+  into view, and disabled or empty rows simply drop out of the chain. Full gamepad support is provided via
+  InputPlumber's system D-Bus target (`org.shadowblip.Input.DBusDevice`):
   - D-pad / left stick navigate, **A** selects, **B** closes, **X** backspace (holding it keeps deleting, like a key on a
     hardware keyboard), **Y** space, **LT** shift, **RT** enter, **LB** symbols, **RB** switches the layout.
   - Button glyphs are shown directly on the mapped keys (X, RT, LT, LB, RB, Y, B) plus an **A** badge on the focused key.
@@ -175,10 +180,11 @@ The settings page in System Settings:
   input method again (`kwinrc [Wayland] InputMethod` toggled), deferring the restart while the panel is visible but
   never for more than a couple of minutes — no manual restart after `pacman -Syu`.
 - **Optional F1–F12 row** above the keyboard, sized and styled like the regular keys; the panel grows accordingly.
-- **Clipboard row** above the keyboard (off by default): the recent entries of the desktop clipboard manager as three
-  equally sized chips, aligned with the keyboard and centred while there are fewer than three. Tapping a chip inserts
-  that text into the focused field (terminals included); long texts are shortened, and the row appears and disappears
-  with the clipboard itself.
+- **Clipboard row** above the keyboard (off by default): the recent entries of the desktop clipboard manager, asked for
+  over D-Bus (`org.kde.klipper`, i.e. the clipboard widget of the Plasma panel), shown as three equally sized chips that
+  are aligned with the keyboard and centred while there are fewer than three. Tapping a chip inserts that text into the
+  focused field (terminals included), the key at the right edge of the row forgets the whole history, and long or
+  multi-line entries are shortened to a single line. The row appears and disappears together with the clipboard.
 - **Single instance**: a second process exits right away, so a stale instance can never keep an old panel around.
 - **Settings page** (`plasma-keyboard-custom` in System Settings), organised in tabs — *Layouts* (languages),
   *Opening* (long press, mouse focus, hiding the Plasma panel),   *Appearance* (height, font, F1–F12 row, clipboard row) and

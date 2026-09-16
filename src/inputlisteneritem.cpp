@@ -101,6 +101,21 @@ void KeyboardModifiers::setGamepadAvailable(bool available)
     Q_EMIT gamepadAvailableChanged();
 }
 
+bool KeyboardModifiers::extraRowsFocused() const
+{
+    return m_extraRowsFocused;
+}
+
+void KeyboardModifiers::setExtraRowsFocused(bool focused)
+{
+    if (focused == m_extraRowsFocused) {
+        return;
+    }
+
+    m_extraRowsFocused = focused;
+    Q_EMIT extraRowsFocusedChanged();
+}
+
 void KeyboardModifiers::reset()
 {
     setCtrl(false);

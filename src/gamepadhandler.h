@@ -68,6 +68,8 @@ Q_SIGNALS:
     void switchLanguage();
     /*! Hide the keyboard. */
     void hideKeyboard();
+    /*! Move the focus between the keyboard and the rows above it (Select). */
+    void toggleExtraRows();
 
     void availableChanged();
 

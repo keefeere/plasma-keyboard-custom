@@ -304,6 +304,11 @@ void GamepadHandler::onInputEvent(const QString &event, double value)
     } else if (event == QLatin1String("ui_r2")) {
         // RT: Enter.
         Q_EMIT enter();
+    } else if (event == QLatin1String("ui_select") || event == QLatin1String("ui_quick")) {
+        // Select (and the QuickAccess button of handhelds): reach the rows above
+        // the keyboard (clipboard entries, clear key, F1-F12), which are not
+        // part of the key grid.
+        Q_EMIT toggleExtraRows();
     } else if (event == QLatin1String("ui_option")) {
         // Start: close the keyboard.
         Q_EMIT hideKeyboard();

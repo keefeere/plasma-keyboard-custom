@@ -12,6 +12,8 @@ import QtQuick.Effects
 
 import org.kde.kirigami as Kirigami
 
+import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
+
 import org.kde.plasma.keyboard.custom
 import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
 
@@ -830,6 +832,10 @@ KeyboardStyle {
     }
 
     navigationHighlight: Rectangle {
+        // Qt Virtual Keyboard also highlights its candidate bar, which sits
+        // above the keys: our own rows (F1-F12, clipboard) live there now, so a
+        // highlight that ends up outside the keyboard is not shown.
+        visible: parent && parent.y >= 0 && !PlasmaKeyboard.Modifiers.extraRowsFocused
         color: theme.navigationHighlightColor
         border.color: theme.navigationHighlightBorderColor
         border.width: 3
