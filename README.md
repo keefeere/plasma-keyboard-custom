@@ -68,7 +68,7 @@ hence `SigLevel`:
 ```ini
 [plasma-keyboard-custom]
 SigLevel = Optional TrustAll
-Server = https://mops1k.github.io/plasma-keyboard-custom/$arch
+Server = https://mops1k.github.io/plasma-keyboard-custom/repo/$arch
 ```
 
 Then install it, and simply run `pacman -Sy plasma-keyboard-custom` again for every new release:

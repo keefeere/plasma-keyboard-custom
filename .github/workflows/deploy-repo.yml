@@ -5,7 +5,7 @@
 #
 #   [plasma-keyboard-custom]
 #   SigLevel = Optional TrustAll
-#   Server = https://<owner>.github.io/<repo>/$arch
+#   Server = https://<owner>.github.io/<repo>/repo/$arch
 #
 # Enable it once under Settings -> Pages (Source: "Deploy from a branch",
 # Branch: gh-pages, Folder: / (root)).
@@ -257,6 +257,6 @@ jobs:
             echo '```ini'
             echo "[plasma-keyboard-custom]"
             echo "SigLevel = Optional TrustAll"
-            echo "Server = https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/\$arch"
+            echo "Server = https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/repo/\$arch"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
