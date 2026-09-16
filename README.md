@@ -58,6 +58,29 @@ Then pick **plasma-keyboard-custom** in **System Settings → Virtual Keyboard**
 
 To build the package yourself: `bash packaging/build.sh`.
 
+### Install from the pacman repository
+
+Every published release is also pushed into a small pacman repository on the `gh-pages` branch
+(`repo/x86_64/`), so the package can be installed and upgraded with pacman instead of being
+downloaded by hand. Add the repository once to `/etc/pacman.conf` — the packages are not signed,
+hence `SigLevel`:
+
+```ini
+[plasma-keyboard-custom]
+SigLevel = Optional TrustAll
+Server = https://mops1k.github.io/plasma-keyboard-custom/$arch
+```
+
+Then install it, and simply run `pacman -Sy plasma-keyboard-custom` again for every new release:
+
+```sh
+sudo pacman -Sy plasma-keyboard-custom
+```
+
+Restart the keyboard after an update exactly as described above. The repository is maintained
+automatically by [`.github/workflows/deploy-repo.yml`](.github/workflows/deploy-repo.yml) whenever a
+release is published; it can also be re-run by hand from the Actions tab with a release tag.
+
 ### About
 
 This is a **fork of [KDE plasma-keyboard](https://invent.kde.org/plasma/plasma-keyboard)** (based on the 6.7.90 sources) with
@@ -123,7 +146,8 @@ The settings page in System Settings:
 - **Global shortcut** to show/hide the keyboard (default `Meta+Shift+K`, configurable in
   System Settings → Shortcuts → Plasma Keyboard (custom)).
 - **Build/packaging**: a `PKGBUILD` for Arch-based systems that installs only custom-named files (no file conflicts with
-  the official package). The KCM's own translations are installed under our own domain
+  the official package), built by GitHub Actions on every release (the tag also gets a GitHub release with the package,
+  the checksums and the pacman repository described above). The KCM's own translations are installed under our own domain
   (`/usr/share/locale/*/LC_MESSAGES/kcm_plasmakeyboardcustom.mo`); the application itself keeps using the
   "plasma-keyboard" translation domain provided by the official package, as installing it ourselves would conflict.
 
