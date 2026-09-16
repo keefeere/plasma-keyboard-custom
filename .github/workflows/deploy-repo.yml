@@ -49,6 +49,10 @@ jobs:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
       # Base name of the package, and therefore of both pacman databases.
       PKG: plasma-keyboard-custom
+      # How many versions of every package stay in the branch. The newest one
+      # is what the database publishes (the only thing pacman can install from
+      # a repository); the rest are kept as archives for rollbacks.
+      KEEP_VERSIONS: 5
       # gh and the git remote authenticate with the workflow token.
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -149,65 +153,72 @@ jobs:
           echo "Packages to index: ${#pkgs[@]}"
 
           # repo-add only exists on Arch, so run it in the official container.
-          # The database is rebuilt from the packages that are on disk, so the
-          # two can never drift apart when a release stops shipping an asset
-          # (the former -debug packages, for instance). The flags:
-          #   -n  add a package unless that exact database entry already
-          #       exists (re-running a release is a no-op),
-          #   -R  remove the older entries of that package name together with
-          #       their package files, so the database advertises the newest
-          #       package and the branch does not grow forever.
+          # A pacman database advertises the newest version of every package
+          # name - an older one cannot be installed from a repository at all,
+          # pacman resolves every name to the newest entry - so only the newest
+          # package of each name is indexed. The versions behind it are kept as
+          # archives (KEEP_VERSIONS) and can be installed straight from the
+          # branch with "pacman -U <url of the package>", which is the only
+          # supported way to roll back.
           docker run --rm \
             -e PKG="$PKG" \
+            -e KEEP="$KEEP_VERSIONS" \
             -v "$PWD/repo:/repo" \
             -w /repo \
             archlinux:latest \
             bash -euo pipefail -c '
               cd x86_64
+              declare -A seen
+              newest=()
+              # Newest first (sort -V), so the first file of every package name
+              # is the one to publish and the next ones fill the archive.
+              mapfile -t all < <(printf "%s\n" *.pkg.tar.zst | sort -Vr)
+              for pkg in "${all[@]}"; do
+                base="${pkg%.pkg.tar.zst}"             # <name>-<ver>-<rel>-<arch>
+                rest="${base%-*}"; rest="${rest%-*}"   # <name>-<ver>
+                name="${rest%-*}"
+                seen[$name]=$(( ${seen[$name]:-0} + 1 ))
+                if [ "${seen[$name]}" -eq 1 ]; then
+                  newest+=("$pkg")
+                elif [ "${seen[$name]}" -gt "$KEEP" ]; then
+                  echo "Dropping $pkg, only $KEEP versions are kept"
+                  rm -f "$pkg"
+                fi
+              done
+
+              # -n leaves an entry that is already there alone, and the
+              # database is rebuilt from scratch below anyway.
               rm -f "${PKG}".db* "${PKG}".files*
-              mapfile -t pkgs < <(printf "%s\n" *.pkg.tar.zst | sort -V)
-              repo-add -n -R "${PKG}.db.tar.gz" "${pkgs[@]}"
+              repo-add -n "${PKG}.db.tar.gz" "${newest[@]}"
             '
 
           # repo-add runs as root inside the container.
           sudo chown -R "$(id -u):$(id -g)" repo
           ls -l repo/x86_64
 
-      - name: Drop packages that are no longer in the database
+      - name: Verify the repository contents
         run: |
           set -euo pipefail
           cd repo/x86_64
-          # -R already removes the package files of the entries it drops; this
-          # pass is the safety net for anything else that ended up in the
-          # directory (a hand-uploaded file, a leftover from an interrupted
-          # run). Ask the database itself (%FILENAME% of every entry) which
-          # packages are still served and delete the rest, so the branch does
-          # not grow forever.
+          # Every entry the database advertises must be downloadable.
           tar --wildcards -xzOf "${PKG}.db.tar.gz" '*/desc' \
             | awk '/^%FILENAME%$/ { getline; print }' \
-            | sort -u > /tmp/keep
-          echo "Packages still referenced by the database:"; cat /tmp/keep
+            | sort -u > /tmp/db-files
+          echo "Packages published by the database:"; cat /tmp/db-files
 
-          # Every entry the database advertises must be downloadable.
           while read -r pkg; do
             [ -n "$pkg" ] || continue
             if [ ! -e "$pkg" ]; then
               echo "::error::The database references $pkg, which is not there."
               exit 1
             fi
-          done < /tmp/keep
-
-          for pkg in *.pkg.tar.zst; do
-            [ -e "$pkg" ] || continue
-            if ! grep -qxF "$pkg" /tmp/keep; then
-              echo "Removing obsolete package $pkg"
-              rm -f "$pkg"
-            fi
-          done
+          done < /tmp/db-files
 
           # repo-add keeps the previous database around as *.old; pacman never
           # downloads those, so do not carry them in the branch forever.
           rm -f ./*.old
+          # What the branch serves: the published package plus the archived
+          # versions kept for rollbacks.
           ls -l
 
       - name: Ship real database files instead of symlinks

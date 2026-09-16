@@ -77,11 +77,25 @@ Then install it, and simply run `pacman -Sy plasma-keyboard-custom` again for ev
 sudo pacman -Sy plasma-keyboard-custom
 ```
 
-Restart the keyboard after an update exactly as described above. The repository is maintained
-automatically by [`.github/workflows/deploy-repo.yml`](.github/workflows/deploy-repo.yml) whenever a
-release is published; the workflow can also be re-run by hand from the Actions tab — with a release
-tag it republishes that release, without one it re-indexes every published release (useful after a
-failed run, or if the branch was lost).
+Restart the keyboard after an update exactly as described above. The repository always publishes the
+newest package, but keeps the previous versions around (5 of them) in `repo/x86_64/`, so rolling back
+is one command — pacman cannot install an older version from a repository database, an explicit
+package is the way:
+
+```sh
+sudo pacman -U https://mops1k.github.io/plasma-keyboard-custom/repo/x86_64/plasma-keyboard-custom-<version>-x86_64.pkg.tar.zst
+```
+
+Hold the package back (`IgnorePkg = plasma-keyboard-custom` in `/etc/pacman.conf`, or
+`pacman -Syu --ignore plasma-keyboard-custom`) if a later upgrade should not undo the rollback.
+Older versions also stay attached to their GitHub releases and in `/var/cache/pacman/pkg/` until
+`pacman -Sc`.
+
+The repository is maintained automatically by
+[`.github/workflows/deploy-repo.yml`](.github/workflows/deploy-repo.yml) whenever a release is
+published; the workflow can also be re-run by hand from the Actions tab — with a release tag it
+republishes that release, without one it re-indexes every published release (useful after a failed
+run, or if the branch was lost).
 
 ### About
 
