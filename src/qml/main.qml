@@ -250,6 +250,44 @@ InputPanelWindow {
                 return;
             }
 
+            // Qt Virtual Keyboard wraps sideways across rows: on the first and
+            // last key of a row the focus should stay in that row instead.
+            // Whether a key is at the edge is not guessed from the geometry
+            // (rows have different margins and keys different widths): the press
+            // is performed, and if it left the row it is undone with the
+            // opposite direction and the focus walks to the other end of the
+            // same row.
+            if (key === Qt.Key_Left || key === Qt.Key_Right) {
+                const keyboard = inputPanel.keyboard;
+                const highlight = keyboard.navigationHighlight;
+                const item = highlight ? highlight.highlightItem : null;
+                if (keyboard.navigationModeActive && item && item !== keyboard) {
+                    const rowHeight = keyboard.style ? keyboard.style.targetKeyboardHeight / 5 : keyboard.height / 5;
+                    const rowY = keyboard.mapFromItem(item, 0, item.height / 2).y;
+                    const inSameRow = (what) => what && what !== keyboard && Math.abs(keyboard.mapFromItem(what, 0, what.height / 2).y - rowY) < rowHeight * 0.6;
+                    const press = (what) => {
+                        inputPanel.InputContext.priv.navigationKeyPressed(what, false);
+                        inputPanel.InputContext.priv.navigationKeyReleased(what, false);
+                    };
+                    const opposite = key === Qt.Key_Left ? Qt.Key_Right : Qt.Key_Left;
+
+                    press(key);
+                    if (!inSameRow(highlight.highlightItem)) {
+                        // Wrapped onto the neighbouring row: go back and walk to
+                        // the other end of this row.
+                        press(opposite);
+                        for (let i = 0; i < 24; ++i) {
+                            press(opposite);
+                            if (!inSameRow(highlight.highlightItem)) {
+                                press(key);
+                                break;
+                            }
+                        }
+                    }
+                    return;
+                }
+            }
+
             // The rows above the keyboard take part in the navigation: up from
             // the top row of the keyboard enters them, down from the bottom row
             // continues into them after a full circle.
