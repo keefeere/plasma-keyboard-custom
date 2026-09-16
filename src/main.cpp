@@ -11,6 +11,7 @@
 #include "layoutpathhelper.h"
 #include "logging.h"
 #include "plasmakeyboardsettings.h"
+#include "restartwatcher.h"
 #include <plasma_keyboard_version.h>
 
 #include <KAboutData>
@@ -284,6 +285,13 @@ private:
 
 int main(int argc, char **argv)
 {
+    // Helper spawned detached by RestartWatcher after a package update: it only
+    // toggles KWin's input method setting and exits. Handled before anything
+    // else, so that it neither connects to Wayland nor takes the instance lock.
+    if (argc > 1 && qstrcmp(argv[1], "--restart-input-method") == 0) {
+        return restartInputMethod();
+    }
+
     qputenv("QT_IM_MODULE", QByteArray("qtvirtualkeyboard"));
 
     initLayoutsPath();
@@ -394,6 +402,10 @@ int main(int argc, char **argv)
 #endif
 
     qCDebug(PlasmaKeyboard) << "Starting Plasma Keyboard application";
+
+    // Restart with the new binary after the package was updated (see
+    // RestartWatcher).
+    new RestartWatcher(&application);
 
     return application.exec();
 }

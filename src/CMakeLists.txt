@@ -26,6 +26,8 @@ target_sources(plasma-keyboard-custom PRIVATE
     inputpanelwindow.cpp
     inputpanelwindow.h
     inputplugin.cpp
+    restartwatcher.cpp
+    restartwatcher.h
     touchholdwatcher.cpp
     inputplugin.h
     qwaylandinputpanelshellintegration.cpp
