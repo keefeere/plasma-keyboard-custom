@@ -80,6 +80,13 @@ The [install script](install.sh) adds that flag by itself when the repositories 
 and it works the same way for an install from the repository:
 `sudo pacman -S --assume-installed libstdc++ plasma-keyboard-custom`.
 
+The release is built against Qt 6.9, the version SteamOS 3.8 ships, so the binaries carry the
+`Qt_6.9` symbol version and load there as well as on current Arch/CachyOS (Qt 6.11). The app uses
+Qt's private Gui and WaylandClient APIs, whose ABI changes between Qt minor releases, so the build
+is pinned to the Arch snapshot matching SteamOS 3.8 (Qt 6.9.1-5) instead of the rolling Qt. SteamOS
+3.7 and older ship Qt 6.7/6.8 and are **not supported** by the prebuilt package — on those systems
+build it locally from source.
+
 On SteamOS the system is mounted read-only, so the script runs
 `sudo steamos-readonly disable` before installing and `sudo steamos-readonly enable` afterwards — also
 when the installation fails. Installing by hand there needs the same two commands around `pacman`.
