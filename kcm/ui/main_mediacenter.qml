@@ -151,7 +151,7 @@ KCM.SimpleKCM {
             id: clipboardEnabledButton
             text: i18n("Clipboard")
             KeyNavigation.up: showFunctionKeyRowButton
-            KeyNavigation.down: autoCapitalizationButton
+            KeyNavigation.down: themeComboBox
 
             checked: kcm.clipboardEnabled
             onCheckedChanged: {
@@ -161,9 +161,25 @@ KCM.SimpleKCM {
         }
 
         QQC2.ComboBox {
-            id: keyboardFontComboBox
+            id: themeComboBox
             Layout.preferredWidth: column.width
             KeyNavigation.up: clipboardEnabledButton
+            KeyNavigation.down: keyboardFontComboBox
+
+            model: kcm.availableThemes
+            textRole: "name"
+            valueRole: "id"
+            currentIndex: Math.max(0, model.findIndex(theme => theme.id === kcm.theme))
+
+            onActivated: (index) => {
+                kcm.theme = model[index].id;
+            }
+        }
+
+        QQC2.ComboBox {
+            id: keyboardFontComboBox
+            Layout.preferredWidth: column.width
+            KeyNavigation.up: themeComboBox
             KeyNavigation.down: autoCapitalizationButton
 
             model: [i18n("Default")].concat(Qt.fontFamilies())

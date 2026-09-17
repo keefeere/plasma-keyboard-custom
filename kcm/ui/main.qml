@@ -140,6 +140,21 @@ KCM.AbstractKCM {
                 }
             }
 
+            QQC2.ComboBox {
+                id: themeComboBox
+                Kirigami.FormData.label: i18n("Theme:")
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 16
+
+                model: kcm.availableThemes
+                textRole: "name"
+                valueRole: "id"
+                currentIndex: Math.max(0, model.findIndex(theme => theme.id === kcm.theme))
+
+                onActivated: (index) => {
+                    kcm.theme = model[index].id;
+                }
+            }
+
             QQC2.CheckBox {
                 id: showFunctionKeyRow
                 Kirigami.FormData.label: i18n("Function keys:")

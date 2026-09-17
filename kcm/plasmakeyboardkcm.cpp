@@ -8,6 +8,9 @@
 #include "plasmakeyboardkcm.h"
 #include "../src/layoutpathhelper.h"
 
+#include <KLocalizedString>
+
+#include <QVariantMap>
 #include <qqml.h>
 
 K_PLUGIN_CLASS_WITH_JSON(PlasmaKeyboardKcm, "kcm_plasmakeyboardcustom.json")
@@ -246,6 +249,32 @@ void PlasmaKeyboardKcm::setKeyboardFontFamily(const QString &family)
     setNeedsSave(true);
 }
 
+QString PlasmaKeyboardKcm::theme() const
+{
+    return m_theme;
+}
+
+void PlasmaKeyboardKcm::setTheme(const QString &theme)
+{
+    if (theme == m_theme) {
+        return;
+    }
+
+    m_theme = theme;
+    Q_EMIT themeChanged();
+
+    setNeedsSave(true);
+}
+
+QVariantList PlasmaKeyboardKcm::availableThemes() const
+{
+    return {
+        QVariantMap{{QStringLiteral("id"), QStringLiteral("system")}, {QStringLiteral("name"), i18n("System")}},
+        QVariantMap{{QStringLiteral("id"), QStringLiteral("light")}, {QStringLiteral("name"), i18n("Light")}},
+        QVariantMap{{QStringLiteral("id"), QStringLiteral("dark")}, {QStringLiteral("name"), i18n("Dark")}},
+    };
+}
+
 int PlasmaKeyboardKcm::keyboardHeightPercent() const
 {
     return m_keyboardHeightPercent;
@@ -335,6 +364,7 @@ void PlasmaKeyboardKcm::load()
     setShowOnLongTapThresholdMs(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs());
     setHidePanelWhenKeyboardVisible(PlasmaKeyboardSettings::self()->hidePanelWhenKeyboardVisible());
     setKeyboardFontFamily(PlasmaKeyboardSettings::self()->keyboardFontFamily());
+    setTheme(PlasmaKeyboardSettings::self()->theme());
     setKeyboardHeightPercent(PlasmaKeyboardSettings::self()->keyboardHeightPercent());
     setDiacriticsPopupEnabled(PlasmaKeyboardSettings::self()->diacriticsPopupEnabled());
     setDiacriticsHoldThresholdMs(PlasmaKeyboardSettings::self()->diacriticsHoldThresholdMs());
@@ -357,6 +387,7 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setShowOnLongTapThresholdMs(m_showOnLongTapThresholdMs);
     PlasmaKeyboardSettings::self()->setHidePanelWhenKeyboardVisible(m_hidePanelWhenKeyboardVisible);
     PlasmaKeyboardSettings::self()->setKeyboardFontFamily(m_keyboardFontFamily);
+    PlasmaKeyboardSettings::self()->setTheme(m_theme);
     PlasmaKeyboardSettings::self()->setKeyboardHeightPercent(m_keyboardHeightPercent);
     PlasmaKeyboardSettings::self()->setDiacriticsPopupEnabled(m_diacriticsPopupEnabled);
     PlasmaKeyboardSettings::self()->setDiacriticsHoldThresholdMs(m_diacriticsHoldThresholdMs);

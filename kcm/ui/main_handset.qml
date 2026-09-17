@@ -143,6 +143,22 @@ KCM.SimpleKCM {
 
             FormCard.FormDelegateSeparator {}
 
+            FormCard.FormComboBoxDelegate {
+                id: themeComboBox
+                text: i18n("Theme")
+
+                model: kcm.availableThemes
+                textRole: "name"
+                valueRole: "id"
+                currentIndex: Math.max(0, model.findIndex(theme => theme.id === kcm.theme))
+
+                onActivated: (index) => {
+                    kcm.theme = model[index].id;
+                }
+            }
+
+            FormCard.FormDelegateSeparator {}
+
             FormCard.FormSwitchDelegate {
                 id: showFunctionKeyRow
                 text: i18n("Function keys")

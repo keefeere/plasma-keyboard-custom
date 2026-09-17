@@ -22,12 +22,12 @@ KeyboardStyle {
     readonly property bool compactSelectionList: [InputEngine.InputMode.Pinyin, InputEngine.InputMode.Cangjie, InputEngine.InputMode.Zhuyin].indexOf(InputContext.inputEngine.inputMode) !== -1
 
     property Binding scaleHintBinding: Binding {
-        target: PlasmaKeyboard.BreezeConstants
+        target: PlasmaKeyboard.Theme.current
         property: 'scaleHint'
         value: currentStyle.scaleHint
     }
 
-    property var theme: PlasmaKeyboard.BreezeConstants
+    property var theme: PlasmaKeyboard.Theme.current
 
     // Small gamepad button glyph shown on keys that are mapped to a controller
     // button. Only visible while a gamepad is available.
@@ -152,7 +152,7 @@ KeyboardStyle {
             QQC2.Label {
                 id: keyText
                 text: control.displayText
-                color: theme.keyTextColor
+                color: theme.keyTextColorFor(keyPanel.category)
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: control.displayText.length > 1 ? Text.AlignVCenter : Text.AlignBottom
                 anchors.centerIn: parent
@@ -208,6 +208,7 @@ KeyboardStyle {
             }
             Kirigami.Icon {
                 id: backspaceKeyIcon
+                color: theme.keyTextColorFor(backspaceKeyPanel.category)
                 anchors.centerIn: parent
                 implicitHeight: 88 * theme.keyIconScale
                 implicitWidth: implicitHeight
@@ -244,6 +245,7 @@ KeyboardStyle {
             }
             Kirigami.Icon {
                 id: languageKeyIcon
+                color: theme.keyTextColorFor(languageKeyPanel.category)
                 anchors.centerIn: parent
                 implicitHeight: 96 * theme.keyIconScale
                 source: "globe-symbolic"
@@ -281,6 +283,8 @@ KeyboardStyle {
             }
 
             Kirigami.Icon {
+                color: theme.keyTextColorFor(enterKeyPanel.category)
+                isMask: true
                 id: enterKeyIcon
                 visible: enterKeyText.text.length === 0
                 anchors.centerIn: parent
@@ -320,7 +324,7 @@ KeyboardStyle {
                 fontSizeMode: Text.HorizontalFit
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
-                color: theme.keyTextColor
+                color: theme.keyTextColorFor(enterKeyPanel.category)
                 font {
                     family: theme.fontFamily
                     weight: Font.Light
@@ -366,6 +370,7 @@ KeyboardStyle {
 
             Kirigami.Icon {
                 id: hideKeyIcon
+                color: theme.keyTextColorFor(hideKeyPanel.category)
                 anchors.centerIn: parent
                 implicitHeight: 96 * theme.keyIconScale
                 source: "input-keyboard-virtual-hide-symbolic"
@@ -400,6 +405,7 @@ KeyboardStyle {
                 badgeColor: "#455a64"
             }
             Kirigami.Icon {
+                color: theme.keyTextColorFor(shiftKeyPanel.category)
                 id: shiftKeyIcon
                 anchors.centerIn: parent
                 implicitHeight: 134 * theme.keyIconScale
@@ -420,7 +426,7 @@ KeyboardStyle {
                 when: InputContext.capsLockActive
                 PropertyChanges {
                     target: shiftKeyPanel
-                    color: theme.capsLockKeyAccentColor
+                    color: theme.hasCategoryColors(shiftKeyPanel.category) ? theme.keyColorFor(shiftKeyPanel.category, "active") : theme.capsLockKeyAccentColor
                 }
             },
             State {
@@ -457,7 +463,7 @@ KeyboardStyle {
                     const name = Qt.locale(InputContext.locale).nativeLanguageName;
                     return name.length > 0 ? name.charAt(0).toUpperCase() + name.slice(1) : name;
                 }
-                color: theme.keyTextColor
+                color: theme.keyTextColorFor(spaceKeyPanel.category)
                 opacity: inputLocaleIndicatorOpacity
                 Behavior on opacity { PropertyAnimation { duration: 250 } }
                 font {
@@ -496,7 +502,7 @@ KeyboardStyle {
                 id: symbolKeyText
                 anchors.centerIn: parent
                 text: control.displayText
-                color: theme.keyTextColor
+                color: theme.keyTextColorFor(symbolKeyPanel.category)
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 font {
@@ -532,7 +538,7 @@ KeyboardStyle {
             QQC2.Label {
                 id: modeKeyText
                 text: control.displayText
-                color: theme.keyTextColor
+                color: theme.keyTextColorFor(modeKeyPanel.category)
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 anchors.fill: parent

@@ -8,7 +8,7 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 
 Kirigami.ShadowedRectangle {
-    property BreezeConstants theme
+    property ThemePalette theme
 
     // Use stronger shadow for dark theme for contrast
     shadow.size: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor) === Kirigami.ColorUtils.Dark ? 20 : 5

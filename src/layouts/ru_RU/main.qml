@@ -304,7 +304,6 @@ KeyboardLayout {
             alternativeKeys: "!?.,"
             smallText: "!?.,"
             smallTextVisible: true
-            highlighted: true
         }
 
         FillerKey {

@@ -5,6 +5,7 @@ ecm_add_qml_module(keyboardlib URI org.kde.plasma.keyboard.custom.lib GENERATE_P
 
 set_source_files_properties(
     BreezeConstants.qml
+    Theme.qml
     PROPERTIES
     QT_QML_SINGLETON_TYPE TRUE
 )
@@ -16,6 +17,11 @@ ecm_target_qml_sources(keyboardlib SOURCES
     HideKey.qml
     LanguageKey.qml
     ModifierKey.qml
+    Theme.qml
+    ThemePalette.qml
+    ThemeSystemPalette.qml
+    ThemeLightPalette.qml
+    ThemeDarkPalette.qml
 )
 
 target_link_libraries(keyboardlib

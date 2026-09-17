@@ -75,6 +75,10 @@
             <label>Font family used to render the keyboard keys. An empty value uses the default font.</label>
             <default></default>
         </entry>
+        <entry key="theme" type="String">
+            <label>Visual theme used by the keyboard.</label>
+            <default>system</default>
+        </entry>
         <entry key="diacriticsPopupEnabled" type="Bool">
             <label>Whether holding a physical key shows diacritic options.</label>
             <default>true</default>

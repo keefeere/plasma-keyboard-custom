@@ -3,51 +3,61 @@
 
 import QtQuick
 
-import org.kde.kirigami as Kirigami
-import org.kde.plasma.keyboard.custom
-
 pragma Singleton
 
 QtObject {
+    readonly property ThemePalette _theme: Theme.current
+
     // Filled in by the style
-    property real scaleHint
+    readonly property real scaleHint: _theme.scaleHint
 
-    readonly property string fontFamily: PlasmaKeyboardSettings.keyboardFontFamily.length > 0 ? PlasmaKeyboardSettings.keyboardFontFamily : Kirigami.Theme.defaultFont.family
-    readonly property real keyBackgroundMargin: Math.round(8 * scaleHint)
-    readonly property real keyContentMargin: Math.round(40 * scaleHint)
-    readonly property real keyIconScale: scaleHint * 0.8
+    readonly property string fontFamily: _theme.fontFamily
+    readonly property real keyBackgroundMargin: _theme.keyBackgroundMargin
+    readonly property real keyContentMargin: _theme.keyContentMargin
+    readonly property real keyIconScale: _theme.keyIconScale
 
-    property color primaryColor: Kirigami.Theme.backgroundColor
-    property color primaryLightColor: Qt.lighter(primaryColor, 1.3)
-    property color primaryDarkColor: Qt.darker(primaryColor, 1.3)
-    property color textOnPrimaryColor: Kirigami.Theme.textColor
-    property color secondaryColor: Kirigami.Theme.backgroundColor
-    property color secondaryLightColor: Qt.lighter(secondaryColor, 1.3)
-    property color secondaryDarkColor: Qt.darker(secondaryColor, 1.3)
-    property color textOnSecondaryColor: Kirigami.Theme.textColor
+    readonly property color primaryColor: _theme.primaryColor
+    readonly property color primaryLightColor: _theme.primaryLightColor
+    readonly property color primaryDarkColor: _theme.primaryDarkColor
+    readonly property color textOnPrimaryColor: _theme.textOnPrimaryColor
+    readonly property color secondaryColor: _theme.secondaryColor
+    readonly property color secondaryLightColor: _theme.secondaryLightColor
+    readonly property color secondaryDarkColor: _theme.secondaryDarkColor
+    readonly property color textOnSecondaryColor: _theme.textOnSecondaryColor
 
-    property color keyboardBackgroundColor: primaryColor
-    property color normalKeyBackgroundColor: primaryLightColor
-    property color normalKeyPressedBackgroundColor: primaryDarkColor
-    property color highlightedKeyBackgroundColor: primaryLightColor
-    // Latched (toggled) modifier keys, e.g. Ctrl/Alt.
-    property color latchedKeyBackgroundColor: Qt.lighter(normalKeyBackgroundColor, 1.6)
-    property color capsLockKeyAccentColor: secondaryColor
-    property color modeKeyAccentColor: textOnPrimaryColor
-    property color keyTextColor: textOnPrimaryColor
-    property color keySmallTextColor: textOnPrimaryColor
-    property color popupBackgroundColor: secondaryColor
-    property color popupBorderColor: Kirigami.ColorUtils.tintWithAlpha(Kirigami.Theme.textColor, secondaryColor, 0.9)
-    property color popupTextColor: textOnSecondaryColor
-    property color popupTextSelectedColor: textOnSecondaryColor
-    property color popupHighlightBorderColor: Kirigami.Theme.highlightColor
-    property color popupHighlightColor: Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.3)
-    property color selectionListTextColor: textOnPrimaryColor
-    property color selectionListSeparatorColor: primaryLightColor
-    property color selectionListBackgroundColor: primaryColor
-    property color navigationHighlightColor: Qt.rgba(navigationHighlightBorderColor.r, navigationHighlightBorderColor.g, navigationHighlightBorderColor.b, 0.3)
-    property color navigationHighlightBorderColor: Kirigami.Theme.highlightColor
+    readonly property color keyboardBackgroundColor: _theme.keyboardBackgroundColor
+    readonly property color normalKeyBackgroundColor: _theme.normalKeyBackgroundColor
+    readonly property color normalKeyPressedBackgroundColor: _theme.normalKeyPressedBackgroundColor
+    readonly property color highlightedKeyBackgroundColor: _theme.highlightedKeyBackgroundColor
+    readonly property color latchedKeyBackgroundColor: _theme.latchedKeyBackgroundColor
+    readonly property color capsLockKeyAccentColor: _theme.capsLockKeyAccentColor
+    readonly property color modeKeyAccentColor: _theme.modeKeyAccentColor
+    readonly property color keyTextColor: _theme.keyTextColor
+    readonly property color keySmallTextColor: _theme.keySmallTextColor
+    readonly property color popupBackgroundColor: _theme.popupBackgroundColor
+    readonly property color popupBorderColor: _theme.popupBorderColor
+    readonly property color popupTextColor: _theme.popupTextColor
+    readonly property color popupTextSelectedColor: _theme.popupTextSelectedColor
+    readonly property color popupHighlightBorderColor: _theme.popupHighlightBorderColor
+    readonly property color popupHighlightColor: _theme.popupHighlightColor
+    readonly property color selectionListTextColor: _theme.selectionListTextColor
+    readonly property color selectionListSeparatorColor: _theme.selectionListSeparatorColor
+    readonly property color selectionListBackgroundColor: _theme.selectionListBackgroundColor
+    readonly property color navigationHighlightColor: _theme.navigationHighlightColor
+    readonly property color navigationHighlightBorderColor: _theme.navigationHighlightBorderColor
 
-    readonly property real buttonRadius: Kirigami.Units.cornerRadius
-    readonly property real popupRadius: Kirigami.Units.cornerRadius
+    readonly property string backgroundType: _theme.backgroundType
+    readonly property color backgroundStart: _theme.backgroundStart
+    readonly property color backgroundEnd: _theme.backgroundEnd
+    readonly property real backgroundAngle: _theme.backgroundAngle
+
+    readonly property real keyOutlineWidth: _theme.keyOutlineWidth
+    readonly property color keyOutlineColor: _theme.keyOutlineColor
+    readonly property real keyShadowStrength: _theme.keyShadowStrength
+    readonly property string keyLabelCase: _theme.keyLabelCase
+
+    readonly property var keyColors: _theme.keyColors
+
+    readonly property real buttonRadius: _theme.buttonRadius
+    readonly property real popupRadius: _theme.popupRadius
 }

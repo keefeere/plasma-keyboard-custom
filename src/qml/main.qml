@@ -449,8 +449,6 @@ InputPanelWindow {
             // width, longer texts are cut off.
             readonly property int visibleChips: 3
             readonly property real chipWidth: width / visibleChips
-            // A little lighter than a keyboard key, so the row stands out.
-            readonly property color chipColor: Qt.lighter(PlasmaKeyboard.BreezeConstants.normalKeyBackgroundColor, 1.5)
 
             visible: PlasmaKeyboardSettings.clipboardEnabled && thing.clipboardHistory.count > 0
             onVisibleChanged: {
@@ -535,7 +533,7 @@ InputPanelWindow {
                                 anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
                                 radius: PlasmaKeyboard.BreezeConstants.buttonRadius
 
-                                color: chipHandler.pressed ? PlasmaKeyboard.BreezeConstants.primaryDarkColor : clipboardRow.chipColor
+                                color: PlasmaKeyboard.Theme.current.keyColorFor("suggestions", chipHandler.pressed ? "pressed" : "normal")
 
                                 // Selected with the gamepad: highlighted the way
                                 // Qt Virtual Keyboard highlights its own keys.
@@ -595,7 +593,7 @@ InputPanelWindow {
                     anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
                     radius: PlasmaKeyboard.BreezeConstants.buttonRadius
 
-                    color: clearHandler.pressed ? PlasmaKeyboard.BreezeConstants.normalKeyPressedBackgroundColor : PlasmaKeyboard.BreezeConstants.normalKeyBackgroundColor
+                    color: PlasmaKeyboard.Theme.current.keyColorFor("normal", clearHandler.pressed ? "pressed" : "normal")
 
                     Rectangle {
                         anchors.fill: parent
@@ -654,13 +652,23 @@ InputPanelWindow {
                     width: functionKeyRow.width / 12
                     height: functionKeyRow.keyHeight
 
-                    Rectangle {
+                    Kirigami.ShadowedRectangle {
                         anchors.fill: parent
                         anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
                         radius: PlasmaKeyboard.BreezeConstants.buttonRadius
                         readonly property bool focused: root.extraRowFocus === root.zoneOf("fkeys") && root.extraColumn === index
+                        readonly property var outline: PlasmaKeyboard.Theme.current.keyOutlineFor("function")
+                        readonly property real shadowStrength: PlasmaKeyboard.Theme.current.keyShadowFor("function")
 
-                        color: pressHandler.pressed ? PlasmaKeyboard.BreezeConstants.primaryDarkColor : PlasmaKeyboard.BreezeConstants.normalKeyBackgroundColor
+                        color: PlasmaKeyboard.Theme.current.hasCategoryColors("function")
+                            ? PlasmaKeyboard.Theme.current.keyColorFor("function", pressHandler.pressed ? "pressed" : "normal")
+                            : (pressHandler.pressed ? PlasmaKeyboard.BreezeConstants.primaryDarkColor : PlasmaKeyboard.BreezeConstants.normalKeyBackgroundColor)
+
+                        border.width: outline.width
+                        border.color: outline.color
+                        shadow.size: 3 * shadowStrength
+                        shadow.yOffset: 1 * shadowStrength
+                        shadow.color: Qt.rgba(0, 0, 0, 0.2 * shadowStrength)
 
                         Rectangle {
                             anchors.fill: parent
@@ -674,7 +682,7 @@ InputPanelWindow {
                         Text {
                             anchors.centerIn: parent
                             text: "F" + (index + 1)
-                            color: PlasmaKeyboard.BreezeConstants.keyTextColor
+                            color: PlasmaKeyboard.Theme.current.keyTextColorFor("function")
                             font {
                                 family: PlasmaKeyboard.BreezeConstants.fontFamily
                                 weight: Font.Bold
@@ -745,10 +753,14 @@ InputPanelWindow {
                 function onEnabledLocalesChanged() {
                     inputPanel.updateLocales();
                 }
+                function onThemeChanged() {
+                    PlasmaKeyboard.Theme.setThemeId(PlasmaKeyboardSettings.theme);
+                }
             }
 
             Component.onCompleted: {
                 VirtualKeyboardSettings.styleName = "PlasmaBreeze";
+                PlasmaKeyboard.Theme.setThemeId(PlasmaKeyboardSettings.theme);
                 // Enable Qt Virtual Keyboard's arrow-key navigation so the
                 // gamepad can move the highlight and activate keys.
                 VirtualKeyboardSettings.arrowKeyNavigationEnabled = true;

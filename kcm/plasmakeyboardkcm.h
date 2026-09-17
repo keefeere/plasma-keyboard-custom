@@ -9,6 +9,8 @@
 
 #include <KQuickManagedConfigModule>
 
+#include <QVariantList>
+
 #include "plasmakeyboardsettings.h"
 
 class PlasmaKeyboardKcm : public KQuickManagedConfigModule
@@ -28,6 +30,8 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(
         bool hidePanelWhenKeyboardVisible READ hidePanelWhenKeyboardVisible WRITE setHidePanelWhenKeyboardVisible NOTIFY hidePanelWhenKeyboardVisibleChanged)
     Q_PROPERTY(QString keyboardFontFamily READ keyboardFontFamily WRITE setKeyboardFontFamily NOTIFY keyboardFontFamilyChanged)
+    Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
+    Q_PROPERTY(QVariantList availableThemes READ availableThemes CONSTANT)
     Q_PROPERTY(int keyboardHeightPercent READ keyboardHeightPercent WRITE setKeyboardHeightPercent NOTIFY keyboardHeightPercentChanged)
     Q_PROPERTY(bool diacriticsPopupEnabled READ diacriticsPopupEnabled WRITE setDiacriticsPopupEnabled NOTIFY diacriticsPopupEnabledChanged)
     Q_PROPERTY(int diacriticsHoldThresholdMs READ diacriticsHoldThresholdMs WRITE setDiacriticsHoldThresholdMs NOTIFY diacriticsHoldThresholdMsChanged)
@@ -76,6 +80,11 @@ public:
     QString keyboardFontFamily() const;
     void setKeyboardFontFamily(const QString &family);
 
+    QString theme() const;
+    void setTheme(const QString &theme);
+
+    QVariantList availableThemes() const;
+
     int keyboardHeightPercent() const;
     void setKeyboardHeightPercent(int percent);
 
@@ -105,6 +114,7 @@ Q_SIGNALS:
     void showOnLongTapThresholdMsChanged();
     void hidePanelWhenKeyboardVisibleChanged();
     void keyboardFontFamilyChanged();
+    void themeChanged();
     void keyboardHeightPercentChanged();
     void diacriticsPopupEnabledChanged();
     void diacriticsHoldThresholdMsChanged();
@@ -122,6 +132,7 @@ private:
     int m_showOnLongTapThresholdMs = 600;
     bool m_hidePanelWhenKeyboardVisible = true;
     QString m_keyboardFontFamily;
+    QString m_theme = QStringLiteral("system");
     int m_keyboardHeightPercent = 42;
     bool m_diacriticsPopupEnabled = true;
     int m_diacriticsHoldThresholdMs = 600;

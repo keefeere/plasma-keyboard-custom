@@ -20,19 +20,23 @@ KeyPanel {
 
     property real radius: BreezeConstants.buttonRadius
 
+    readonly property string category: Theme.categoryOf(control)
+    readonly property var outline: Theme.current.keyOutlineFor(category)
+    readonly property real shadowStrength: Theme.current.keyShadowFor(category)
+
     property color color: {
         if (control && control.latched) {
-            return BreezeConstants.latchedKeyBackgroundColor;
+            return Theme.current.categoryActiveColorFor(category);
         } else if (control && control.keyType === QtVirtualKeyboard.KeyType.ShiftKey
                    && (InputContext.shiftActive || InputContext.capsLockActive)) {
             // Show the shift key as latched while shift/caps is active.
-            return BreezeConstants.latchedKeyBackgroundColor;
+            return Theme.current.categoryActiveColorFor(category);
         } else if (control && control.pressed) {
-            return BreezeConstants.normalKeyPressedBackgroundColor;
+            return Theme.current.keyColorFor(category, "pressed");
         } else if (control && control.highlighted) {
-            return BreezeConstants.highlightedKeyBackgroundColor;
+            return Theme.current.keyColorFor(category, "highlighted");
         }
-        return BreezeConstants.normalKeyBackgroundColor;
+        return Theme.current.keyColorFor(category, "normal");
     }
 
     soundEffect: PlasmaKeyboardSettings.soundEnabled ? Qt.resolvedUrl('qrc:///sounds/keyboard_tick2_quiet.wav') : ''
@@ -46,10 +50,13 @@ KeyPanel {
             color: root.color
             radius: root.radius
 
+            border.width: root.outline.width
+            border.color: root.outline.color
+
             // Shadow
-            shadow.color: Qt.rgba(0, 0, 0, 0.2)
-            shadow.size: 3
-            shadow.yOffset: 1
+            shadow.color: Qt.rgba(0, 0, 0, 0.2 * root.shadowStrength)
+            shadow.size: 3 * root.shadowStrength
+            shadow.yOffset: 1 * root.shadowStrength
         }
     }
 
