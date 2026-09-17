@@ -12,6 +12,7 @@
 #include "logging.h"
 #include "plasmakeyboardsettings.h"
 #include "restartwatcher.h"
+#include "thememanager.h"
 #include <plasma_keyboard_version.h>
 
 #include <KAboutData>
@@ -369,7 +370,13 @@ int main(int argc, char **argv)
     // Expose the Ctrl/Alt latch state to the keyboard layouts.
     qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "Modifiers", KeyboardModifiers::instance());
 
+    // User themes (import/export/remove and the list of built-in themes).
+    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "ThemeManager", ThemeManager::instance());
+
     QQmlApplicationEngine view;
+    // Let the manager read the effective palette from the QML theme layer
+    // (used by exportTheme).
+    ThemeManager::instance()->setQmlEngine(&view);
     KLocalization::setupLocalizedContext(&view);
 
     QObject::connect(&view, &QQmlApplicationEngine::objectCreated, &application, [](QObject *object) {

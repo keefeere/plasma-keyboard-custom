@@ -32,6 +32,8 @@ target_sources(plasma-keyboard-custom PRIVATE
     restartwatcher.h
     touchholdwatcher.cpp
     inputplugin.h
+    theme/thememanager.cpp
+    theme/thememanager.h
     qwaylandinputpanelshellintegration.cpp
     qwaylandinputpanelshellintegration_p.h
     qwaylandinputpanelsurface.cpp
@@ -107,6 +109,7 @@ target_include_directories(plasma-keyboard-custom PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/clipboard
     ${CMAKE_CURRENT_SOURCE_DIR}/overlay
+    ${CMAKE_CURRENT_SOURCE_DIR}/theme
 )
 
 target_link_libraries(plasma-keyboard-custom

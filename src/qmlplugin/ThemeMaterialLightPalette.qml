@@ -4,39 +4,58 @@
 import QtQuick
 
 ThemePalette {
-    primaryColor: "#eceff1"
-    textOnPrimaryColor: "#212121"
+    primaryColor: "#f2f0f4"
+    textOnPrimaryColor: "#1b1b1d"
     secondaryColor: "#ffffff"
-    textOnSecondaryColor: "#212121"
+    textOnSecondaryColor: "#1b1b1d"
 
-    keyboardBackgroundColor: "#eceff1"
+    keyboardBackgroundColor: "#f2f0f4"
     normalKeyBackgroundColor: "#ffffff"
-    normalKeyPressedBackgroundColor: "#e0e0e0"
+    normalKeyPressedBackgroundColor: "#d9e2f8"
+    highlightedKeyBackgroundColor: "#d9e2f8"
+    latchedKeyBackgroundColor: "#a6c8ff"
 
-    keyTextColor: "#212121"
-    keySmallTextColor: "#212121"
-    modeKeyAccentColor: "#212121"
+    keyTextColor: "#1b1b1d"
+    keySmallTextColor: "#7d7d7d"
+    modeKeyAccentColor: "#1b1b1d"
 
     popupBackgroundColor: "#ffffff"
-    popupTextColor: "#212121"
-    popupTextSelectedColor: "#212121"
+    popupTextColor: "#1b1b1d"
+    popupTextSelectedColor: "#1b1b1d"
+    popupHighlightBorderColor: "#a6c8ff"
+    popupHighlightColor: Qt.rgba(0.651, 0.784, 1.0, 0.3)
 
-    keyOutlineWidth: 1
-    keyOutlineColor: "#b0bec5"
+    keyOutlineWidth: 0
 
-    buttonRadius: 4
-    popupRadius: 4
+    buttonRadius: 12
+    popupRadius: 12
 
+    // Material 3 "Default": white keys, a periwinkle container for the
+    // special keys and a stronger blue for the primary action key.
     keyColors: ({
         modifier: {
-            normal: "#e0e0e0",
-            pressed: "#cfd8dc",
-            text: keyTextColor
+            normal: "#d9e2f8",
+            pressed: "#c3d3f5",
+            highlighted: "#d9e2f8",
+            latched: "#a6c8ff",
+            active: "#a6c8ff",
+            text: "#1b1b1d"
+        },
+        function: {
+            normal: "#d9e2f8",
+            pressed: "#c3d3f5",
+            highlighted: "#d9e2f8",
+            latched: "#a6c8ff",
+            active: "#a6c8ff",
+            text: "#1b1b1d"
+        },
+        accent: {
+            normal: "#a6c8ff",
+            pressed: "#8fbaff",
+            highlighted: "#a6c8ff",
+            latched: "#a6c8ff",
+            active: "#a6c8ff",
+            text: "#1b1b1d"
         }
     })
-
-    backgroundType: "gradient"
-    backgroundStart: "#f5f7f8"
-    backgroundEnd: "#dfe3e6"
-    backgroundAngle: 0
 }

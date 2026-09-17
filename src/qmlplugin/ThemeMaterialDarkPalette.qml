@@ -4,39 +4,58 @@
 import QtQuick
 
 ThemePalette {
-    primaryColor: "#121212"
+    primaryColor: "#1b1d1f"
     textOnPrimaryColor: "#ffffff"
-    secondaryColor: "#1e1e1e"
+    secondaryColor: "#23262a"
     textOnSecondaryColor: "#ffffff"
 
-    keyboardBackgroundColor: "#121212"
-    normalKeyBackgroundColor: "#1e1e1e"
-    normalKeyPressedBackgroundColor: "#333333"
+    keyboardBackgroundColor: "#1b1d1f"
+    normalKeyBackgroundColor: "#23262a"
+    normalKeyPressedBackgroundColor: "#3a3e44"
+    highlightedKeyBackgroundColor: "#3a3e44"
+    latchedKeyBackgroundColor: "#4f6375"
 
     keyTextColor: "#ffffff"
-    keySmallTextColor: "#ffffff"
+    keySmallTextColor: "#adaeaf"
     modeKeyAccentColor: "#ffffff"
 
-    popupBackgroundColor: "#1e1e1e"
+    popupBackgroundColor: "#23262a"
     popupTextColor: "#ffffff"
     popupTextSelectedColor: "#ffffff"
+    popupHighlightBorderColor: "#588ab9"
+    popupHighlightColor: Qt.rgba(0.345, 0.541, 0.725, 0.3)
 
-    keyOutlineWidth: 1
-    keyOutlineColor: "#373737"
+    keyOutlineWidth: 0
 
-    buttonRadius: 4
-    popupRadius: 4
+    buttonRadius: 12
+    popupRadius: 12
 
+    // Material 3 "Default" dark: near-black keys, a steel-blue container for
+    // the special keys and a brighter blue for the primary action key.
     keyColors: ({
         modifier: {
-            normal: "#2a2a2a",
-            pressed: "#3a3a3a",
-            text: keyTextColor
+            normal: "#4f6375",
+            pressed: "#425365",
+            highlighted: "#4f6375",
+            latched: "#588ab9",
+            active: "#588ab9",
+            text: "#ffffff"
+        },
+        function: {
+            normal: "#4f6375",
+            pressed: "#425365",
+            highlighted: "#4f6375",
+            latched: "#588ab9",
+            active: "#588ab9",
+            text: "#ffffff"
+        },
+        accent: {
+            normal: "#588ab9",
+            pressed: "#497798",
+            highlighted: "#588ab9",
+            latched: "#588ab9",
+            active: "#588ab9",
+            text: "#ffffff"
         }
     })
-
-    backgroundType: "gradient"
-    backgroundStart: "#1f1f1f"
-    backgroundEnd: "#0d0d0d"
-    backgroundAngle: 0
 }
