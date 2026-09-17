@@ -23,4 +23,6 @@ git -C "$root" archive --format=tar.gz \
     --prefix="plasma-keyboard-custom-$version/" HEAD \
     > "plasma-keyboard-custom-$version.tar.gz"
 
-makepkg -f --nodeps --noconfirm
+# --nosign: never sign, whatever the machine's makepkg.conf says (BUILDENV
+# may enable it); CI has no secret key and makepkg would abort.
+makepkg -f --nodeps --noconfirm --nosign

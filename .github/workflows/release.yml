@@ -106,6 +106,12 @@ jobs:
 
       - name: Build package
         run: |
+          # Never sign: CI has no secret key and makepkg aborts with "There is
+          # no secret key available to sign with". The image's makepkg.conf is
+          # not necessarily the Arch default (and the rollback may have left a
+          # mixture), so the flag is set explicitly.
+          sed -i 's/^BUILDENV=.*/BUILDENV=(!distcc color !ccache check !sign)/' /etc/makepkg.conf
+          grep '^BUILDENV=' /etc/makepkg.conf
           useradd -m builder
           chown -R builder:builder "$GITHUB_WORKSPACE"
           su builder -c "pkgrel=${{ steps.ver.outputs.pkgrel }} bash $GITHUB_WORKSPACE/packaging/build.sh"
