@@ -86,16 +86,37 @@ ListView {
         }
     }
 
-    delegate: QQC2.CheckDelegate {
+    delegate: RowLayout {
         width: root.width
-        text: Qt.locale(modelData).nativeLanguageName
-        checked: kcm.enabledLocales.includes(modelData)
-        onCheckedChanged: {
-            if (checked) {
-                kcm.enableLocale(modelData);
-            } else {
-                kcm.disableLocale(modelData);
+        spacing: 0
+
+        QQC2.CheckDelegate {
+            Layout.fillWidth: true
+            text: Qt.locale(modelData).nativeLanguageName
+            checked: kcm.enabledLocales.includes(modelData)
+            onCheckedChanged: {
+                if (checked) {
+                    kcm.enableLocale(modelData);
+                } else {
+                    kcm.disableLocale(modelData);
+                }
             }
+        }
+
+        // Marks the layout the keyboard opens with. Only an enabled locale can
+        // be chosen, and picking one makes it win over the system locale.
+        QQC2.ToolButton {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.rightMargin: Kirigami.Units.smallSpacing
+            visible: kcm.enabledLocales.includes(modelData)
+            icon.name: kcm.defaultLocale === modelData ? "starred" : "non-starred"
+            checkable: true
+            checked: kcm.defaultLocale === modelData
+            onClicked: kcm.setDefaultLocale(checked ? modelData : "")
+            Accessible.name: i18n("Open this layout by default")
+            QQC2.ToolTip.text: i18n("Open by default")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
     }
 }

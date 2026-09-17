@@ -762,17 +762,25 @@ InputPanelWindow {
             }
 
             function updateLocales() {
-                if (PlasmaKeyboardSettings.enabledLocales.length === 0) {
+                let locales = PlasmaKeyboardSettings.enabledLocales;
+                if (locales.length === 0) {
                     // If there are no enabled locales, set it to the current locale
                     // NOTE: If Qt.locale().name is not valid, then all keyboard layouts will be shown.
                     let locale = Qt.locale().name;
                     if (locale === "C") {
                         locale = "en_US";
                     }
-                    VirtualKeyboardSettings.activeLocales = [locale];
-                } else {
-                    VirtualKeyboardSettings.activeLocales = PlasmaKeyboardSettings.enabledLocales;
+                    locales = [locale];
                 }
+                VirtualKeyboardSettings.activeLocales = locales;
+
+                // Qt checks VirtualKeyboardSettings.locale before the locale the
+                // system (or the focused application) asks for and before
+                // activeLocales[0], so setting it here is what makes the chosen
+                // layout open by default. A locale that is not in activeLocales
+                // is ignored by Qt, so clear the choice when it is not available.
+                const defaultLocale = PlasmaKeyboardSettings.defaultLocale;
+                VirtualKeyboardSettings.locale = locales.includes(defaultLocale) ? defaultLocale : "";
             }
 
             Connections {
@@ -785,6 +793,9 @@ InputPanelWindow {
             Connections {
                 target: PlasmaKeyboardSettings
                 function onEnabledLocalesChanged() {
+                    inputPanel.updateLocales();
+                }
+                function onDefaultLocaleChanged() {
                     inputPanel.updateLocales();
                 }
                 function onThemeChanged() {

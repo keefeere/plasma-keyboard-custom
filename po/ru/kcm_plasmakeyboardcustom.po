@@ -426,3 +426,11 @@ msgstr "Не удалось экспортировать тему: %1"
 #: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
 msgid "Could not remove the theme: %1"
 msgstr "Не удалось удалить тему: %1"
+
+#: ui/LocaleSelectorListView.qml ui/LocaleSelectorSidebar.qml
+msgid "Open by default"
+msgstr "Открывать по умолчанию"
+
+#: ui/LocaleSelectorListView.qml ui/LocaleSelectorSidebar.qml
+msgid "Open this layout by default"
+msgstr "Открывать эту раскладку по умолчанию"

@@ -21,6 +21,7 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(bool vibrationEnabled READ vibrationEnabled WRITE setVibrationEnabled NOTIFY vibrationEnabledChanged)
     Q_PROPERTY(int vibrationStrength READ vibrationStrength WRITE setVibrationStrength NOTIFY vibrationStrengthChanged)
     Q_PROPERTY(QStringList enabledLocales READ enabledLocales NOTIFY enabledLocalesChanged)
+    Q_PROPERTY(QString defaultLocale READ defaultLocale NOTIFY defaultLocaleChanged)
     Q_PROPERTY(bool keyboardNavigationEnabled READ keyboardNavigationEnabled WRITE setKeyboardNavigationEnabled NOTIFY keyboardNavigationEnabledChanged)
     Q_PROPERTY(bool autoCapitalizationEnabled READ autoCapitalizationEnabled WRITE setAutoCapitalizationEnabled NOTIFY autoCapitalizationEnabledChanged)
     Q_PROPERTY(bool showOnMouseFocus READ showOnMouseFocus WRITE setShowOnMouseFocus NOTIFY showOnMouseFocusChanged)
@@ -53,6 +54,11 @@ public:
 
     Q_INVOKABLE void enableLocale(const QString &locale);
     Q_INVOKABLE void disableLocale(const QString &locale);
+
+    QString defaultLocale() const;
+
+    //! Choose which of the enabled locales opens by default; empty lets the system locale decide.
+    Q_INVOKABLE void setDefaultLocale(const QString &locale);
 
     bool keyboardNavigationEnabled() const;
     void setKeyboardNavigationEnabled(bool keyboardNavigationEnabled);
@@ -115,6 +121,7 @@ Q_SIGNALS:
     void vibrationEnabledChanged();
     void vibrationStrengthChanged();
     void enabledLocalesChanged();
+    void defaultLocaleChanged();
     void keyboardNavigationEnabledChanged();
     void autoCapitalizationEnabledChanged();
     void showOnMouseFocusChanged();
@@ -151,6 +158,7 @@ private:
     bool m_saveNeeded = false;
 
     QStringList m_enabledLocales;
+    QString m_defaultLocale;
 
     PlasmaKeyboardSettings *m_settings = nullptr;
 };

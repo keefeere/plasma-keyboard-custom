@@ -233,6 +233,8 @@ The settings page in System Settings:
   - whether the keyboard opens when a text field is focused with a mouse (otherwise it only opens on touch or via the shortcut),
   - open on long press with its threshold, the F1–F12 row, the keyboard font, hiding the Plasma panel while the
     keyboard is visible,
+  - which of the enabled layouts opens by default — a star next to it in the layout list; without a choice the layout
+    the system asks for decides, falling back to the first enabled one,
   - the page and its options are translated (the `kcm_plasmakeyboardcustom` translation domain is shipped with the
     package, Russian included) instead of falling back to English,
   - plus the upstream settings (locales, sound, vibration, navigation, diacritics, …).

@@ -28,6 +28,10 @@
         <entry key="enabledLocales" type="StringList">
             <default></default>
         </entry>
+        <entry key="defaultLocale" type="String">
+            <label>Locale the keyboard opens with. Only an enabled locale has an effect; an empty value lets the system locale decide.</label>
+            <default></default>
+        </entry>
         <entry key="keyboardNavigationEnabled" type="Bool">
             <default>false</default>
         </entry>

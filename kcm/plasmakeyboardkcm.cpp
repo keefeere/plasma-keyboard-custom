@@ -113,6 +113,30 @@ void PlasmaKeyboardKcm::disableLocale(const QString &locale)
     m_enabledLocales.removeAll(locale);
     Q_EMIT enabledLocalesChanged();
 
+    if (m_defaultLocale == locale) {
+        m_defaultLocale.clear();
+        Q_EMIT defaultLocaleChanged();
+    }
+
+    setNeedsSave(true);
+}
+
+QString PlasmaKeyboardKcm::defaultLocale() const
+{
+    return m_defaultLocale;
+}
+
+void PlasmaKeyboardKcm::setDefaultLocale(const QString &locale)
+{
+    // Only an enabled locale can open by default; an empty value hands the
+    // choice back to Qt (the system locale, then the first enabled locale).
+    if (locale == m_defaultLocale || (!locale.isEmpty() && !m_enabledLocales.contains(locale))) {
+        return;
+    }
+
+    m_defaultLocale = locale;
+    Q_EMIT defaultLocaleChanged();
+
     setNeedsSave(true);
 }
 
@@ -380,6 +404,7 @@ void PlasmaKeyboardKcm::load()
 
     m_enabledLocales = PlasmaKeyboardSettings::self()->enabledLocales();
     Q_EMIT enabledLocalesChanged();
+    setDefaultLocale(PlasmaKeyboardSettings::self()->defaultLocale());
     setKeyboardNavigationEnabled(PlasmaKeyboardSettings::self()->keyboardNavigationEnabled());
     setAutoCapitalizationEnabled(PlasmaKeyboardSettings::self()->autoCapitalizationEnabled());
     setShowOnMouseFocus(PlasmaKeyboardSettings::self()->showOnMouseFocus());
@@ -403,6 +428,7 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setVibrationEnabled(m_vibrationEnabled);
     PlasmaKeyboardSettings::self()->setVibrationStrength(m_vibrationStrength);
     PlasmaKeyboardSettings::self()->setEnabledLocales(m_enabledLocales);
+    PlasmaKeyboardSettings::self()->setDefaultLocale(m_defaultLocale);
     PlasmaKeyboardSettings::self()->setKeyboardNavigationEnabled(m_keyboardNavigationEnabled);
     PlasmaKeyboardSettings::self()->setAutoCapitalizationEnabled(m_autoCapitalizationEnabled);
     PlasmaKeyboardSettings::self()->setShowOnMouseFocus(m_showOnMouseFocus);
