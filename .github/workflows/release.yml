@@ -67,6 +67,12 @@ jobs:
           # packages have to take back.
           pacman -Syyuu --noconfirm --needed --overwrite '*' git
           mv /etc/pacman.conf.orig /etc/pacman.conf
+          # The image's keyring has no secret key, so pacman-key refuses to
+          # local-sign anything ("There is no secret key available to sign
+          # with"). --init creates the master key, --populate then imports the
+          # snapshot's keys and signs them again, which also clears the disabled
+          # flags that made the first rollback attempt fail on `base`.
+          pacman-key --init
           pacman-key --populate archlinux
           # The build step chowns the workspace to an unprivileged user, which
           # makes git refuse to work here afterwards ("dubious ownership").
