@@ -22,6 +22,10 @@
 # The package is the same one attached to the release, so it can be installed
 # next to the official plasma-keyboard and upgraded later from the pacman
 # repository (see the README) instead of running this script again.
+#
+# On SteamOS the system is mounted read-only: the script runs
+# "sudo steamos-readonly disable" for the installation and enables it again
+# afterwards, including when the installation fails.
 
 set -eu
 
@@ -74,6 +78,9 @@ Options:
 The keyboard is installed with pacman, so it can be removed with
 "sudo pacman -R plasma-keyboard-custom" and upgraded from the pacman
 repository described in the README.
+
+On SteamOS the read-only filesystem is disabled for the installation and
+enabled again afterwards (even if pacman fails).
 EOF
         exit 0
         ;;
@@ -110,7 +117,20 @@ echo "Release: $tag"
 
 base="https://github.com/$repo/releases/download/$tag"
 tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
+
+# SteamOS mounts the system read-only. Remember whether this script disabled it
+# so the EXIT trap can always put it back, also when pacman fails.
+readonly_disabled=0
+reenable_readonly() {
+    if [ "$readonly_disabled" = 1 ]; then
+        readonly_disabled=0
+        echo "Making the system read-only again..."
+        sudo steamos-readonly enable ||
+            echo "warning: could not re-enable the read-only filesystem, run 'sudo steamos-readonly enable' yourself" >&2
+    fi
+}
+
+trap 'reenable_readonly; rm -rf "$tmp"' EXIT
 
 # Prefer the checksum file: it names the package and lets us verify it. It also
 # lists the -debug package of releases published before that was dropped, hence
@@ -144,6 +164,12 @@ version=${version%-x86_64.pkg.tar.zst}
 if [ "$dry_run" = 1 ]; then
     echo "Dry run: $file is valid, would install version $version"
     exit 0
+fi
+
+if command -v steamos-readonly >/dev/null 2>&1; then
+    echo "SteamOS detected: disabling the read-only filesystem for the installation."
+    sudo steamos-readonly disable
+    readonly_disabled=1
 fi
 
 set -- pacman -U --noconfirm

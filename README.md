@@ -13,6 +13,8 @@
 > the official package and does not replace it — see
 > [plasma-keyboard-custom (fork)](#plasma-keyboard-custom-fork) below.
 
+[Русская версия](README.ru.md)
+
 The plasma-keyboard is a virtual keyboard based on [Qt Virtual Keyboard](https://doc.qt.io/qt-6/qtvirtualkeyboard-overview.html) designed to integrate in Plasma.
 
 It wraps Qt Virtual Keyboard in a window, and uses the input-method-v1 Wayland protocol to communicate with the compositor to function as an input method.
@@ -77,6 +79,10 @@ sudo pacman -U --assume-installed libstdc++ /tmp/plasma-keyboard-custom.pkg.tar.
 The [install script](install.sh) adds that flag by itself when the repositories have no `libstdc++`,
 and it works the same way for an install from the repository:
 `sudo pacman -S --assume-installed libstdc++ plasma-keyboard-custom`.
+
+On SteamOS the system is mounted read-only, so the script runs
+`sudo steamos-readonly disable` before installing and `sudo steamos-readonly enable` afterwards — also
+when the installation fails. Installing by hand there needs the same two commands around `pacman`.
 
 **To update**, run the same command (or the install script) again — the package version (and `pkgrel`)
 grows with every release, so pacman upgrades the installed package in place. The keyboard restarts
@@ -186,6 +192,9 @@ The settings page in System Settings:
   long-press diacritics. Multi-mode layouts (Japanese, Korean, Chinese, Thai, Arabic, Hebrew) are left as upstream.
 - **Breeze style**: installed as `PlasmaBreeze` (so it is not shadowed by the system one), configurable keyboard height,
   bold function/modifier keys, monochrome globe for the language key, capitalized language name on the space key.
+- **Themes**: seven built-in themes (system, light/dark, and iOS and Material in their light and dark variants) plus
+  user themes imported as plain JSON (palette, geometry, background, key style and per-category key colours), selectable
+  live from the settings page. A theme file is data and never code — see [Themes](#themes).
 - **Working sound feedback**: upstream declares its CMake option as `PLASMA_KEYBOARD_SOUNDS_ENABLED` while everything
   else looks for `PLASMA_KEYBOARD_SOUND_ENABLED`, so the key click was never compiled in and the setting was forced
   off. The option is fixed here, the click plays at full volume and the bundled GPLv3 sound (from Qt Virtual Keyboard)
@@ -225,86 +234,13 @@ The settings page in System Settings:
 
 License and copyright remain those of the upstream project (see `LICENSES/` and the SPDX headers in each file).
 
-## Install using the flatpak nightly repository
-
-https://cdn.kde.org/flatpak/plasma-keyboard-nightly/org.kde.plasma.keyboard.flatpakref
-
-See also: https://userbase.kde.org/Tutorials/Flatpak#Nightly_KDE_apps
-
-## Development
-
-Recommended methods for development are to either use
-[KDE Linux](https://linux.kde.org/) (as your OS or in a VM), or to build the
-Flatpak version of plasma-keyboard.
-
-### KDE Linux (recommended)
-
-Follow the
-[instructions](https://linux.kde.org/docs/kde-dev/#build-kde-software-thats-shipped-on-the-base-image)
-to set up a development environment for KDE software.
-
-Build plasma-keyboard once to clone the source locally:
-
-```bash
-kde-builder plasma-keyboard
-```
-
-After making changes to the code the workflow is: rebuild, refresh sysext, and restart plasma-keyboard. This
-script can be used to do that:
-
-```bash
-#!/usr/bin/env bash
-
-set -e
-
-# Rebuild plasma-keyboard and refresh the sysext
-kde-builder --no-src plasma-keyboard && systemctl --user daemon-reload && sudo systemd-sysext refresh --always-refresh=yes && systemctl restart --user plasma-plasmashell.service
-
-# Disable plasma-keyboard
-kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod ''
-
-# Enable plasma-keyboard with the newly built changes
-kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod '/usr/share/applications/org.kde.plasma.keyboard.desktop'
-```
-
-### Flatpak
-
-It is also possible to build plasma-keyboard as a Flatpak. This is the
-recommended method for development on distributions other than KDE Linux, as we
-don't want to install the development version of plasma-keyboard on a
-traditional Linux distribution (which may break the system).
-
-Clone the repository and make changes to the code, then build and install the
-development version of the Flatpak with your changes by running the following
-from the repository root (or save as a script and run it):
-
-```bash
-#!/usr/bin/env bash
-
-# Build and install the flatpak
-flatpak-builder --user --install --force-clean build-flatpak .flatpak-manifest.json
-
-# Disable plasma-keyboard if it is already running
-killall plasma-keyboard; kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod ''
-
-# Enable plasma-keyboard with the newly built changes
-kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod '$HOME/.local/share/flatpak/exports/share/applications/org.kde.plasma.keyboard.desktop'
-
-```
-
-### Building from source manually
+## Building from source manually
 
 ```sh
 mkdir build && cd build
 cmake ..
 make && make install
 ```
-
-### Troubleshooting
-
-Join the [KDE Matrix chat](https://community.kde.org/Matrix) so we can help you
-get started with development! We have a room specifically for input handling:
-[#kde-input:kde.org](https://matrix.to/#/#kde-input:kde.org)
 
 ## Layouts
 
@@ -314,7 +250,182 @@ They are forked from Qt's [layouts](https://github.com/qt/qtvirtualkeyboard/tree
 
 To use Qt's built-in keyboard layouts rather than the ones we supply in `plasma-keyboard`, set `PLASMA_KEYBOARD_USE_QT_LAYOUTS=1` when starting KWin (or the login session).
 
+## Themes
+
+Plasma Keyboard (custom) paints the keyboard from a palette. Seven themes ship with it, and you can add your own as JSON files. A theme carries only colours and a few geometry/style values, so a theme file is **data and never code** — importing a file written by someone else cannot execute anything.
+
+Pick a theme in **System Settings → Plasma Keyboard (custom) → Appearance → Theme**. It is applied to a running keyboard immediately, without a restart.
+
+### Built-in themes
+
+| Id | Name | What it is |
+| --- | --- | --- |
+| `system` | System | The default. Overrides nothing and follows the current Plasma colour scheme (`Kirigami.Theme`). |
+| `light` | Light | The system palette with lighter keys. |
+| `dark` | Dark | The system palette with darker keys. |
+| `ios-light` | iOS (light) | Apple's light keyboard: white keys on a grey background, flat, upper-case labels, 6 px corners. |
+| `ios-dark` | iOS (dark) | The dark iOS variant. |
+| `material-light` | Material (light) | Material 3 "Default": white keys on a light surface, blue-grey accents, 12 px corners, no outline. |
+| `material-dark` | Material (dark) | The dark Material 3 variant. |
+
+### User themes
+
+User themes live in:
+
+```
+~/.local/share/plasma-keyboard/themes/*.json
+```
+
+(or `$XDG_DATA_HOME/plasma-keyboard/themes` when `XDG_DATA_HOME` is set). The directory is created on the first import and is not part of the package. The file name is the theme's id: the display name is turned into a lower-case slug (`Midnight Ocean` → `midnight-ocean.json`), and that id is what the settings page stores.
+
+A theme is a JSON object. Only the keys below are accepted — an unknown key or a wrong type is rejected with an error rather than silently ignored, so a typo cannot do nothing. Every colour must be a valid colour string (a CSS name such as `red`, or `#rgb`, `#rrggbb` or `#aarrggbb`). Missing values are taken from the `base` theme.
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `name` | string | The display name. Optional; without it the file name is used. |
+| `base` | string | The built-in theme the unspecified values come from. Optional, defaults to `system`; when present it must be one of the seven ids above. |
+| `palette` | object | Palette properties to override (see the list below). |
+| `geometry` | object | `keyBackgroundMargin`, `keyContentMargin`, `keyIconScale`, `buttonRadius`, `popupRadius` — all numbers. The keyboard font is **not** part of a theme; it is the separate *Keyboard font* setting. |
+| `background` | object | `type` (`"color"` or `"gradient"`), `start` and `end` (colours), and `angle`. The angle accepts only `0`, `90`, `180` or `270` (it is only meaningful for a gradient): `0`/`180` draw vertically and `90`/`270` horizontally, because Qt's `Rectangle.gradient` supports only those two orientations. |
+| `keyStyle` | object | `outlineWidth` (number), `outlineColor` (colour), `shadowStrength` (number) and `labelCase` (`"normal"` or `"upper"`). |
+| `keyColors` | object | Per-category key colours and outlines (see below). |
+
+`palette` accepts exactly these colour properties:
+
+- base colours: `primaryColor`, `primaryLightColor`, `primaryDarkColor`, `textOnPrimaryColor`, `secondaryColor`, `secondaryLightColor`, `secondaryDarkColor`, `textOnSecondaryColor`
+- keyboard and keys: `keyboardBackgroundColor`, `normalKeyBackgroundColor`, `normalKeyPressedBackgroundColor`, `highlightedKeyBackgroundColor`, `latchedKeyBackgroundColor`, `capsLockKeyAccentColor`, `modeKeyAccentColor`, `keyTextColor`, `keySmallTextColor`
+- popups: `popupBackgroundColor`, `popupBorderColor`, `popupTextColor`, `popupTextSelectedColor`, `popupHighlightBorderColor`, `popupHighlightColor`
+- selection list: `selectionListTextColor`, `selectionListSeparatorColor`, `selectionListBackgroundColor`
+- navigation highlight: `navigationHighlightColor`, `navigationHighlightBorderColor`
+
+`keyColors` maps a **category** to the colours for that category's **states**. The six categories are:
+
+- `suggestions` — the clipboard chips and their clear button,
+- `modifier` — `Shift`, `Ctrl`, `Alt`, `AltGr`, `Meta`, `CapsLock`,
+- `function` — keys marked as function keys,
+- `accent` — `Enter`,
+- `digit` — keys with a single non-letter symbol (digits, `=`/`-`, shifted symbols, punctuation),
+- `normal` — everything else, including the space bar.
+
+Inside a category the recognised states are `normal`, `pressed`, `highlighted`, `latched`, `active` and `text` (all colours; `text` is the label colour). A category can additionally set `outlineWidth` (number), `outlineColor` (colour), `shadow` (number) or an `outline` object `{ "width": <number>, "color": <colour> }`. A state that is not set falls back in this order: the category's colour for that state → the category's `normal` → the `normal` category's colour for the state → the `normal` category's `normal` → the global palette property above.
+
+A complete example — valid as written and safe to copy into a file and import:
+
+```json
+{
+    "name": "Midnight Ocean",
+    "base": "dark",
+    "palette": {
+        "primaryColor": "#16233f",
+        "primaryLightColor": "#1b2a4a",
+        "primaryDarkColor": "#0f1b33",
+        "textOnPrimaryColor": "#e8f0ff",
+        "secondaryColor": "#101a33",
+        "textOnSecondaryColor": "#e8f0ff",
+        "keyboardBackgroundColor": "#0b1020",
+        "normalKeyBackgroundColor": "#1b2a4a",
+        "normalKeyPressedBackgroundColor": "#0f1b33",
+        "highlightedKeyBackgroundColor": "#26427a",
+        "latchedKeyBackgroundColor": "#3a5fa8",
+        "capsLockKeyAccentColor": "#4c8dff",
+        "modeKeyAccentColor": "#4c8dff",
+        "keyTextColor": "#e8f0ff",
+        "keySmallTextColor": "#9fb8e6",
+        "popupBackgroundColor": "#101a33",
+        "popupTextColor": "#e8f0ff",
+        "popupHighlightBorderColor": "#4c8dff",
+        "popupHighlightColor": "#4c8dff4d",
+        "selectionListTextColor": "#e8f0ff",
+        "selectionListBackgroundColor": "#0b1020",
+        "navigationHighlightColor": "#4c8dff4d",
+        "navigationHighlightBorderColor": "#4c8dff"
+    },
+    "geometry": {
+        "keyBackgroundMargin": 8,
+        "keyContentMargin": 40,
+        "keyIconScale": 0.8,
+        "buttonRadius": 10,
+        "popupRadius": 12
+    },
+    "background": {
+        "type": "gradient",
+        "start": "#101a33",
+        "end": "#05070f",
+        "angle": 180
+    },
+    "keyStyle": {
+        "outlineWidth": 1,
+        "outlineColor": "#2a3f6b",
+        "shadowStrength": 0.5,
+        "labelCase": "normal"
+    },
+    "keyColors": {
+        "normal": {
+            "normal": "#1b2a4a",
+            "pressed": "#0f1b33",
+            "highlighted": "#26427a",
+            "text": "#e8f0ff"
+        },
+        "modifier": {
+            "normal": "#24365c",
+            "pressed": "#16233f",
+            "highlighted": "#2d4877",
+            "latched": "#3a5fa8",
+            "active": "#4c8dff",
+            "text": "#ffffff"
+        },
+        "function": {
+            "normal": "#152036",
+            "pressed": "#0d1526",
+            "text": "#9fb8e6",
+            "outline": {
+                "width": 1,
+                "color": "#2a3f6b"
+            },
+            "shadow": 0.5
+        },
+        "accent": {
+            "normal": "#4c8dff",
+            "pressed": "#3a6ecc",
+            "text": "#00121f"
+        },
+        "digit": {
+            "normal": "#1b2a4a",
+            "pressed": "#0f1b33",
+            "text": "#cfe0ff"
+        },
+        "suggestions": {
+            "normal": "#22345a",
+            "pressed": "#16233f",
+            "text": "#e8f0ff"
+        }
+    }
+}
+```
+
+### Import, export and removal
+
+The *Theme files* row in the same **Appearance** tab manages user themes; errors are shown inline under it.
+
+- **Import theme…** opens a file dialog for a `*.json` file and validates it before copying it into the theme directory. A broken file, an unknown key or category, a wrong type, an unknown `base`, an empty `name` or a duplicate name are all reported instead of being installed.
+- **Export theme…** writes the selected theme to a file. For the theme that is currently applied it writes a full snapshot (the base plus every effective palette, geometry, background, key style and key colour value), so re-importing it reproduces the same look on its own. A user theme that is not currently applied is written as its stored `base` plus its overrides; a built-in that is not currently applied is written as its `base` alone.
+- **Remove theme** is enabled only for user themes (the name of a built-in is greyed out). It asks for confirmation; if the removed theme was the selected one, the selection falls back to `system`. Built-in themes cannot be removed.
+
+A user theme can also be deleted by hand from `~/.local/share/plasma-keyboard/themes/`; a theme that disappears while it is selected also falls back to `system`.
+
 ## Troubleshooting
 
 KWin by default only shows the keyboard when a text field is interacted with by touch. Set `KWIN_IM_SHOW_ALWAYS=1` when starting KWin (or the login session) in order to force the keyboard to always pop up.
 
+## Credits
+
+This is a fork of KDE's [plasma-keyboard](https://invent.kde.org/plasma/plasma-keyboard), which is
+built on the [Qt Virtual Keyboard](https://doc.qt.io/qt-6/qtvirtualkeyboard-index.html). Many thanks
+to the plasma-keyboard authors and to the KDE community for the original application, the Breeze
+style, the layouts and the translations, and to The Qt Company for the virtual keyboard framework —
+this fork would not exist without their work.
+
+The fork is maintained as
+[mops1k/plasma-keyboard-custom](https://github.com/mops1k/plasma-keyboard-custom); bug reports and
+patches for the fork's own features (gamepad support, the clipboard row, the function key row, the
+theme system and the rest) are welcome there.
