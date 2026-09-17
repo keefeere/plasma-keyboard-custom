@@ -50,11 +50,20 @@ jobs:
             "$ARCH_SNAPSHOT_DATE" > /etc/pacman.d/mirrorlist
           cat /etc/pacman.d/mirrorlist
 
-      - name: Install git
+      - name: Downgrade to the snapshot
         run: |
           # -Syyuu downgrades the whole rolling base-devel image to the pinned
-          # snapshot, not just the newly needed packages.
+          # snapshot, not just the newly needed packages. The image's keyring
+          # has keys that signed the snapshot's packages disabled (e.g. the key
+          # behind `base`, which fails with "is disabled"), so signature checks
+          # are off while the rollback runs: the keyring is downgraded along with
+          # everything else and verification is restored right afterwards, so
+          # every later install is still checked.
+          cp /etc/pacman.conf /etc/pacman.conf.orig
+          sed -i 's/^SigLevel.*/SigLevel = Never/' /etc/pacman.conf
           pacman -Syyuu --noconfirm --needed git
+          mv /etc/pacman.conf.orig /etc/pacman.conf
+          pacman-key --populate archlinux
           # The build step chowns the workspace to an unprivileged user, which
           # makes git refuse to work here afterwards ("dubious ownership").
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -86,6 +95,10 @@ jobs:
             kcmutils kconfig kcoreaddons kcrash kglobalaccel ki18n \
             kirigami kirigami-addons kitemmodels libplasma \
             qt6-base qt6-declarative qt6-virtualkeyboard
+          # Report what actually landed: if the snapshot pinning ever stops
+          # working, the Qt stamp guard below fails the run, and this is the
+          # line that says why.
+          pacman -Q qt6-base qt6-declarative qt6-wayland qt6-virtualkeyboard
 
       - name: Build package
         run: |
