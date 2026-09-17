@@ -67,6 +67,11 @@ Then install it:
 sudo pacman -U /tmp/plasma-keyboard-custom.pkg.tar.zst
 ```
 
+> [!IMPORTANT]
+> The prebuilt package needs **SteamOS 3.8 or newer** (it is built against Qt 6.9, which is what
+> SteamOS 3.8 ships). SteamOS 3.7 and older carry Qt 6.7/6.8 and cannot load the binaries — there,
+> build the package from source.
+
 On SteamOS that fails on `libstdc++`: the package is built against the current Arch, where the C++
 runtime recently became a package of its own, while SteamOS carries a frozen snapshot in which
 `libstdc++.so.6` belongs to `gcc-libs` and no `libstdc++` package exists to download. The library
