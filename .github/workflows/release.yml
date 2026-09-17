@@ -61,7 +61,11 @@ jobs:
           # every later install is still checked.
           cp /etc/pacman.conf /etc/pacman.conf.orig
           sed -i 's/^SigLevel.*/SigLevel = Never/' /etc/pacman.conf
-          pacman -Syyuu --noconfirm --needed git
+          # --overwrite: the image is newer than the snapshot and has packages the
+          # snapshot predates (libstdc++/liblsan/libobjc/... split out of gcc-libs,
+          # libmakepkg-dropins out of pacman), whose files the snapshot's monolithic
+          # packages have to take back.
+          pacman -Syyuu --noconfirm --needed --overwrite '*' git
           mv /etc/pacman.conf.orig /etc/pacman.conf
           pacman-key --populate archlinux
           # The build step chowns the workspace to an unprivileged user, which
@@ -89,7 +93,7 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          pacman -Syyuu --noconfirm --needed \
+          pacman -Syyuu --noconfirm --needed --overwrite '*' \
             cmake extra-cmake-modules gettext ninja plasma-wayland-protocols \
             qt6-wayland wayland-protocols pkgconf \
             kcmutils kconfig kcoreaddons kcrash kglobalaccel ki18n \
