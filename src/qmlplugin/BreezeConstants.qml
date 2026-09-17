@@ -51,6 +51,15 @@ QtObject {
     readonly property color backgroundEnd: _theme.backgroundEnd
     readonly property real backgroundAngle: _theme.backgroundAngle
 
+    // Qt 6 Rectangle.gradient only supports vertical and horizontal fills, so
+    // any other angle is snapped to the nearest of the two.
+    readonly property int backgroundOrientation: {
+        const normalized = ((_theme.backgroundAngle % 360) + 360) % 360;
+        return ((normalized > 45 && normalized < 135) || (normalized > 225 && normalized < 315))
+            ? Gradient.Horizontal
+            : Gradient.Vertical;
+    }
+
     readonly property real keyOutlineWidth: _theme.keyOutlineWidth
     readonly property color keyOutlineColor: _theme.keyOutlineColor
     readonly property real keyShadowStrength: _theme.keyShadowStrength

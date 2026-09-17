@@ -410,7 +410,23 @@ InputPanelWindow {
         // Whether the panel takes the full width of the screen
         readonly property bool isFullScreenWidth: PlasmaKeyboardSettings.panelFillScreenWidth
 
-        color: PlasmaKeyboard.BreezeConstants.keyboardBackgroundColor
+        color: PlasmaKeyboard.Theme.current.backgroundType === "gradient" ? "transparent" : PlasmaKeyboard.BreezeConstants.keyboardBackgroundColor
+
+        // Themed gradient background, used when the theme asks for one. The
+        // per-corner radii follow the panel's rounded corners.
+        Rectangle {
+            anchors.fill: parent
+            visible: PlasmaKeyboard.Theme.current.backgroundType === "gradient"
+            topLeftRadius: panelWrapper.corners.topLeftRadius
+            topRightRadius: panelWrapper.corners.topRightRadius
+            bottomLeftRadius: panelWrapper.corners.bottomLeftRadius
+            bottomRightRadius: panelWrapper.corners.bottomRightRadius
+            gradient: Gradient {
+                orientation: PlasmaKeyboard.BreezeConstants.backgroundOrientation
+                GradientStop { position: 0.0; color: PlasmaKeyboard.Theme.current.backgroundStart }
+                GradientStop { position: 1.0; color: PlasmaKeyboard.Theme.current.backgroundEnd }
+            }
+        }
 
         // Provide shadow and radius when the keyboard is detached from edges
         corners {
@@ -525,7 +541,7 @@ InputPanelWindow {
                             width: clipboardRow.chipWidth
                             height: clipboardRow.rowHeight
 
-                            Rectangle {
+                            Kirigami.ShadowedRectangle {
                                 id: chipBackground
                                 // Same margins as a keyboard key, so the row looks like
                                 // part of the keyboard.
@@ -533,7 +549,16 @@ InputPanelWindow {
                                 anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
                                 radius: PlasmaKeyboard.BreezeConstants.buttonRadius
 
+                                readonly property var outline: PlasmaKeyboard.Theme.current.keyOutlineFor("suggestions")
+                                readonly property real shadowStrength: PlasmaKeyboard.Theme.current.keyShadowFor("suggestions")
+
                                 color: PlasmaKeyboard.Theme.current.keyColorFor("suggestions", chipHandler.pressed ? "pressed" : "normal")
+
+                                border.width: outline.width
+                                border.color: outline.color
+                                shadow.size: 3 * shadowStrength
+                                shadow.yOffset: 1 * shadowStrength
+                                shadow.color: Qt.rgba(0, 0, 0, 0.2 * shadowStrength)
 
                                 // Selected with the gamepad: highlighted the way
                                 // Qt Virtual Keyboard highlights its own keys.
@@ -588,12 +613,21 @@ InputPanelWindow {
                 width: clipboardRow.rowHeight
                 height: clipboardRow.rowHeight
 
-                Rectangle {
+                Kirigami.ShadowedRectangle {
                     anchors.fill: parent
                     anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
                     radius: PlasmaKeyboard.BreezeConstants.buttonRadius
 
+                    readonly property var outline: PlasmaKeyboard.Theme.current.keyOutlineFor("normal")
+                    readonly property real shadowStrength: PlasmaKeyboard.Theme.current.keyShadowFor("normal")
+
                     color: PlasmaKeyboard.Theme.current.keyColorFor("normal", clearHandler.pressed ? "pressed" : "normal")
+
+                    border.width: outline.width
+                    border.color: outline.color
+                    shadow.size: 3 * shadowStrength
+                    shadow.yOffset: 1 * shadowStrength
+                    shadow.color: Qt.rgba(0, 0, 0, 0.2 * shadowStrength)
 
                     Rectangle {
                         anchors.fill: parent

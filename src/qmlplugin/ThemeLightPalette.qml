@@ -35,6 +35,9 @@ ThemePalette {
         modifier: {
             normal: Qt.darker(normalKeyBackgroundColor, 1.12),
             pressed: Qt.darker(normalKeyPressedBackgroundColor, 1.1),
+            highlighted: highlightedKeyBackgroundColor,
+            latched: latchedKeyBackgroundColor,
+            active: latchedKeyBackgroundColor,
             text: keyTextColor
         }
     })

@@ -14,7 +14,11 @@ QtObject {
     readonly property var availableThemes: [
         { id: "system", name: qsTr("System"), source: "" },
         { id: "light", name: qsTr("Light"), source: "" },
-        { id: "dark", name: qsTr("Dark"), source: "" }
+        { id: "dark", name: qsTr("Dark"), source: "" },
+        { id: "ios-light", name: qsTr("iOS (light)"), source: "" },
+        { id: "ios-dark", name: qsTr("iOS (dark)"), source: "" },
+        { id: "material-light", name: qsTr("Material (light)"), source: "" },
+        { id: "material-dark", name: qsTr("Material (dark)"), source: "" }
     ]
 
     property ThemePalette _current: ThemeSystemPalette {}
@@ -23,6 +27,10 @@ QtObject {
     readonly property Component systemPaletteComponent: Component { ThemeSystemPalette {} }
     readonly property Component lightPaletteComponent: Component { ThemeLightPalette {} }
     readonly property Component darkPaletteComponent: Component { ThemeDarkPalette {} }
+    readonly property Component iosLightPaletteComponent: Component { ThemeIosLightPalette {} }
+    readonly property Component iosDarkPaletteComponent: Component { ThemeIosDarkPalette {} }
+    readonly property Component materialLightPaletteComponent: Component { ThemeMaterialLightPalette {} }
+    readonly property Component materialDarkPaletteComponent: Component { ThemeMaterialDarkPalette {} }
 
     function setThemeId(id) {
         let component = systemPaletteComponent;
@@ -30,6 +38,14 @@ QtObject {
             component = lightPaletteComponent;
         } else if (id === "dark") {
             component = darkPaletteComponent;
+        } else if (id === "ios-light") {
+            component = iosLightPaletteComponent;
+        } else if (id === "ios-dark") {
+            component = iosDarkPaletteComponent;
+        } else if (id === "material-light") {
+            component = materialLightPaletteComponent;
+        } else if (id === "material-dark") {
+            component = materialDarkPaletteComponent;
         }
         themeId = id;
         const previous = _current;

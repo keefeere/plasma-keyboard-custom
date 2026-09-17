@@ -272,6 +272,10 @@ QVariantList PlasmaKeyboardKcm::availableThemes() const
         QVariantMap{{QStringLiteral("id"), QStringLiteral("system")}, {QStringLiteral("name"), i18n("System")}},
         QVariantMap{{QStringLiteral("id"), QStringLiteral("light")}, {QStringLiteral("name"), i18n("Light")}},
         QVariantMap{{QStringLiteral("id"), QStringLiteral("dark")}, {QStringLiteral("name"), i18n("Dark")}},
+        QVariantMap{{QStringLiteral("id"), QStringLiteral("ios-light")}, {QStringLiteral("name"), i18n("iOS (light)")}},
+        QVariantMap{{QStringLiteral("id"), QStringLiteral("ios-dark")}, {QStringLiteral("name"), i18n("iOS (dark)")}},
+        QVariantMap{{QStringLiteral("id"), QStringLiteral("material-light")}, {QStringLiteral("name"), i18n("Material (light)")}},
+        QVariantMap{{QStringLiteral("id"), QStringLiteral("material-dark")}, {QStringLiteral("name"), i18n("Material (dark)")}},
     };
 }
 

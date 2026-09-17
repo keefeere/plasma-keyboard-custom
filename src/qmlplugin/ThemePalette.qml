@@ -11,9 +11,9 @@ QtObject {
     property real scaleHint
 
     readonly property string fontFamily: PlasmaKeyboardSettings.keyboardFontFamily.length > 0 ? PlasmaKeyboardSettings.keyboardFontFamily : Kirigami.Theme.defaultFont.family
-    readonly property real keyBackgroundMargin: Math.round(8 * scaleHint)
-    readonly property real keyContentMargin: Math.round(40 * scaleHint)
-    readonly property real keyIconScale: scaleHint * 0.8
+    property real keyBackgroundMargin: Math.round(8 * scaleHint)
+    property real keyContentMargin: Math.round(40 * scaleHint)
+    property real keyIconScale: scaleHint * 0.8
 
     property color primaryColor: Kirigami.Theme.backgroundColor
     property color primaryLightColor: Qt.lighter(primaryColor, 1.3)
@@ -71,6 +71,13 @@ QtObject {
         keyColors[category][state] = color;
     }
 
+    // Key colours fall back in this order: the category's colour for the
+    // requested state, the category's own "normal" colour, the "normal"
+    // category's colour for the state, the "normal" category's "normal" colour,
+    // and finally the global palette property. A category therefore keeps its
+    // own base colour for states it does not paint (e.g. a theme that only sets
+    // modifier.normal still colours Ctrl/Alt when highlighted, latched or
+    // active) instead of borrowing the "normal" category's state colour.
     function keyColorFor(category, state) {
         if (category === "suggestions" && !(keyColors && keyColors["suggestions"])) {
             return state === "pressed" ? primaryDarkColor : Qt.lighter(normalKeyBackgroundColor, 1.5);
@@ -79,9 +86,15 @@ QtObject {
         if (categoryColors && categoryColors[state] !== undefined) {
             return categoryColors[state];
         }
+        if (categoryColors && categoryColors["normal"] !== undefined) {
+            return categoryColors["normal"];
+        }
         const normalColors = keyColors ? keyColors["normal"] : undefined;
         if (normalColors && normalColors[state] !== undefined) {
             return normalColors[state];
+        }
+        if (normalColors && normalColors["normal"] !== undefined) {
+            return normalColors["normal"];
         }
         switch (state) {
         case "pressed":
@@ -139,14 +152,25 @@ QtObject {
         return keyColors !== undefined && keyColors[category] !== undefined;
     }
 
+    // Same fallback as keyColorFor, for the "active" (latched) state.
     function categoryActiveColorFor(category) {
         const categoryColors = keyColors ? keyColors[category] : undefined;
         if (categoryColors && categoryColors.active !== undefined) {
             return categoryColors.active;
         }
+        if (categoryColors && categoryColors["normal"] !== undefined) {
+            return categoryColors["normal"];
+        }
+        const normalColors = keyColors ? keyColors["normal"] : undefined;
+        if (normalColors && normalColors.active !== undefined) {
+            return normalColors.active;
+        }
+        if (normalColors && normalColors["normal"] !== undefined) {
+            return normalColors["normal"];
+        }
         return latchedKeyBackgroundColor;
     }
 
-    readonly property real buttonRadius: Kirigami.Units.cornerRadius
-    readonly property real popupRadius: Kirigami.Units.cornerRadius
+    property real buttonRadius: Kirigami.Units.cornerRadius
+    property real popupRadius: Kirigami.Units.cornerRadius
 }

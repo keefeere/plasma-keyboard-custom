@@ -29,6 +29,13 @@ KeyboardStyle {
 
     property var theme: PlasmaKeyboard.Theme.current
 
+    // Gradient used for the keyboard background when the theme asks for one.
+    property Gradient keyboardBackgroundGradient: Gradient {
+        orientation: PlasmaKeyboard.BreezeConstants.backgroundOrientation
+        GradientStop { position: 0.0; color: theme.backgroundStart }
+        GradientStop { position: 1.0; color: theme.backgroundEnd }
+    }
+
     // Small gamepad button glyph shown on keys that are mapped to a controller
     // button. Only visible while a gamepad is available.
     component GamepadBadge: Rectangle {
@@ -119,10 +126,12 @@ KeyboardStyle {
     keyboardRelativeBottomMargin: 6 / keyboardDesignHeight
 
     keyboardBackground: Rectangle {
-        color: theme.keyboardBackgroundColor
+        color: theme.backgroundType === "gradient" ? "transparent" : theme.keyboardBackgroundColor
+        gradient: theme.backgroundType === "gradient" ? currentStyle.keyboardBackgroundGradient : null
     }
 
     keyPanel: PlasmaKeyboard.BreezeKeyPanel {
+
         id: keyPanel
 
         Item {
@@ -151,18 +160,19 @@ KeyboardStyle {
             }
             QQC2.Label {
                 id: keyText
-                text: control.displayText
+                text: control.key === Qt.Key_Tab ? "\u21b9" : control.displayText
                 color: theme.keyTextColorFor(keyPanel.category)
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: control.displayText.length > 1 ? Text.AlignVCenter : Text.AlignBottom
                 anchors.centerIn: parent
                 font {
-                    family: theme.fontFamily
+                    family: control.key === Qt.Key_Tab ? "DejaVu Sans" : theme.fontFamily
                     // Modifier and function keys (Ctrl, Alt, Tab, Del, arrows, ...) are bold
                     weight: control.functionKey ? Font.Bold : Font.Light
                     pixelSize: 60 * scaleHint
-                    // Letters become uppercase while shift is active; function/modifier labels stay as authored.
-                    capitalization: control.uppercased && !control.functionKey ? Font.AllUppercase : Font.MixedCase
+                    // Letters become uppercase while shift is active or when the theme asks for it;
+                    // function/modifier labels stay as authored.
+                    capitalization: (control.uppercased || theme.keyLabelCase === "upper") && !control.functionKey ? Font.AllUppercase : Font.MixedCase
                 }
             }
             states: [
@@ -426,7 +436,7 @@ KeyboardStyle {
                 when: InputContext.capsLockActive
                 PropertyChanges {
                     target: shiftKeyPanel
-                    color: theme.hasCategoryColors(shiftKeyPanel.category) ? theme.keyColorFor(shiftKeyPanel.category, "active") : theme.capsLockKeyAccentColor
+                    color: theme.hasCategoryColors(shiftKeyPanel.category) ? theme.categoryActiveColorFor(shiftKeyPanel.category) : theme.capsLockKeyAccentColor
                 }
             },
             State {
@@ -470,6 +480,7 @@ KeyboardStyle {
                     family: theme.fontFamily
                     weight: Font.Light
                     pixelSize: 26 * scaleHint
+                    capitalization: theme.keyLabelCase === "upper" ? Font.AllUppercase : Font.MixedCase
                 }
             }
         }
@@ -587,6 +598,8 @@ KeyboardStyle {
         Item {
             Kirigami.Icon {
                 id: hwrKeyIcon
+                color: theme.keyTextColorFor(handwritingKeyPanel.category)
+                isMask: true
                 anchors.centerIn: parent
                 implicitHeight: 127 * theme.keyIconScale
                 source: (keyboard.handwritingMode ? "edit-select-text-symbolic" : "draw-freehand-symbolic")

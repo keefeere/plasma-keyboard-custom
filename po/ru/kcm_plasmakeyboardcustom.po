@@ -336,3 +336,39 @@ msgstr "Показывать недавние записи буфера обме
 #: ui/main_handset.qml:162
 msgid "Clipboard"
 msgstr "Буфер обмена"
+
+#: ui/main.qml:145
+msgid "Theme:"
+msgstr "Тема:"
+
+#: ui/main_handset.qml:148
+msgid "Theme"
+msgstr "Тема"
+
+#: plasmakeyboardkcm.cpp:272
+msgid "System"
+msgstr "Системная"
+
+#: plasmakeyboardkcm.cpp:273
+msgid "Light"
+msgstr "Светлая"
+
+#: plasmakeyboardkcm.cpp:274
+msgid "Dark"
+msgstr "Тёмная"
+
+#: plasmakeyboardkcm.cpp:275
+msgid "iOS (light)"
+msgstr "iOS (светлая)"
+
+#: plasmakeyboardkcm.cpp:276
+msgid "iOS (dark)"
+msgstr "iOS (тёмная)"
+
+#: plasmakeyboardkcm.cpp:277
+msgid "Material (light)"
+msgstr "Material (светлая)"
+
+#: plasmakeyboardkcm.cpp:278
+msgid "Material (dark)"
+msgstr "Material (тёмная)"
