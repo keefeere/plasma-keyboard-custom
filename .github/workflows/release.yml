@@ -3,8 +3,10 @@
 #
 # The version is set automatically for every run:
 #   pkgver = PROJECT_VERSION from CMakeLists.txt (e.g. 6.7.90)
-#   pkgrel = workflow run number (monotonically increasing, so pacman
-#            always sees an upgrade)
+#   pkgrel = one more than the highest pkgrel already released for that pkgver
+#            (r12 -> r13). It is derived from the tags rather than from the
+#            workflow run number, so a failed run does not burn a number: the
+#            next one reuses it.
 #   tag    = v<pkgver>-custom-r<pkgrel> (e.g. v6.7.90-custom-r12)
 name: Build and Release
 
@@ -26,6 +28,12 @@ permissions:
   contents: write
   # Needed to dispatch the pacman repository workflow below.
   actions: write
+
+# Two runs must not pick the same pkgrel: the tags they read only change once a
+# release is published. A queued run waits instead of being cancelled.
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -91,7 +99,15 @@ jobs:
             echo "Could not determine project version" >&2
             exit 1
           fi
-          pkgrel="${{ github.run_number }}"
+          # The checkout fetches all tags (fetch-depth: 0), so the highest
+          # pkgrel released for this pkgver is available here. Deriving it from
+          # the tags keeps the numbering dense: a failed run consumes nothing.
+          last="$(git tag --list "v${base}-custom-r*" --sort=-v:refname | head -n1)"
+          if [ -n "$last" ]; then
+            pkgrel=$(( ${last##*-r} + 1 ))
+          else
+            pkgrel=1
+          fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
           echo "pkgrel=$pkgrel" >> "$GITHUB_OUTPUT"
           echo "version=$base-$pkgrel" >> "$GITHUB_OUTPUT"
@@ -348,6 +364,9 @@ jobs:
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
+        # A transient asset-save failure must not strand the release: the
+        # reconcile step below repairs it before the pacman repo is dispatched.
+        continue-on-error: true
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: plasma-keyboard-custom ${{ steps.ver.outputs.version }}
@@ -357,6 +376,184 @@ jobs:
             packaging/*.pkg.tar.zst
             packaging/SHA256SUMS
             packaging/PAYLOAD.sha256
+
+      - name: Verify and repair release assets
+        # A transient "Error saving asset" from softprops/action-gh-release (seen
+        # when GitHub's API lags right after the release is created) fails the
+        # publish step after the release exists but before "Update the pacman
+        # repository" dispatches deploy-repo.yml. That leaves the pacman repo
+        # serving the previous package although a new one was published, so the
+        # publish step is allowed to continue and this step reconciles the
+        # release against what the run actually built. A genuine problem still
+        # fails loudly, here, before the pacman repository is dispatched.
+        run: |
+          set -euo pipefail
+
+          # force=true skips the duplicate-package guard, which is the step that
+          # normally installs curl/jq, so install them here to be self-contained.
+          pacman -S --noconfirm --needed curl jq >/dev/null
+
+          repo="${{ github.repository }}"
+          tag="${{ steps.ver.outputs.tag }}"
+          version="${{ steps.ver.outputs.version }}"
+          prerelease="${{ github.event.inputs.prerelease == 'true' }}"
+          api="https://api.github.com/repos/${repo}"
+          auth=(-H "Authorization: Bearer ${{ github.token }}"
+                -H "Accept: application/vnd.github+json"
+                -H "X-GitHub-Api-Version: 2022-11-28")
+
+          # The duplicate guard runs on every build and always writes
+          # PAYLOAD.sha256, so all three assets are required: a missing local
+          # file means an earlier step went wrong, not that the asset is optional.
+          files=()
+          for f in packaging/*.pkg.tar.zst packaging/SHA256SUMS packaging/PAYLOAD.sha256; do
+            if [ ! -f "$f" ]; then
+              echo "::error::expected build asset $f is missing" >&2
+              exit 1
+            fi
+            files+=("$f")
+          done
+          if [ "${#files[@]}" -ne 3 ]; then
+            echo "::error::expected 3 release assets, found ${#files[@]}: ${files[*]}" >&2
+            exit 1
+          fi
+
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          # GET helper: record the HTTP status in HTTP_CODE instead of aborting on
+          # a non-2xx, so callers can tell 404 (no release yet) from a real error.
+          HTTP_CODE=""
+          api_get() {
+            HTTP_CODE="$(curl -sS -o "$2" -w '%{http_code}' "${auth[@]}" "$1")" || HTTP_CODE=000
+          }
+
+          # Fetch this tag's release. Retry 404 briefly: right after creation the
+          # tag can take a moment to become discoverable through the API.
+          release_json="$tmp/release.json"
+          for attempt in 1 2 3 4 5; do
+            api_get "$api/releases/tags/$tag" "$release_json"
+            if [ "$HTTP_CODE" != "404" ]; then
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$HTTP_CODE" = "404" ]; then
+            # No release at all: the publish step may have failed before it was
+            # created, so recreate it from this run's generated release notes.
+            jq -n \
+              --arg tag "$tag" \
+              --arg name "plasma-keyboard-custom $version" \
+              --rawfile body release-notes.md \
+              --argjson prerelease "$prerelease" \
+              '{tag_name: $tag, name: $name, body: $body, prerelease: $prerelease}' \
+              > "$tmp/create.json"
+            HTTP_CODE="$(curl -sS -o "$release_json" -w '%{http_code}' "${auth[@]}" \
+              -X POST "$api/releases" --data-binary @"$tmp/create.json")" || HTTP_CODE=000
+            if [ "$HTTP_CODE" = "422" ]; then
+              # Lost a race: the release appeared between the lookup and the
+              # create. Re-fetch it instead of treating that as fatal.
+              for attempt in 1 2 3 4 5; do
+                sleep 2
+                api_get "$api/releases/tags/$tag" "$release_json"
+                if [ "$HTTP_CODE" = "200" ]; then
+                  break
+                fi
+              done
+            fi
+            if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
+              echo "::error::could not create or find release $tag (HTTP $HTTP_CODE):" >&2
+              cat "$release_json" >&2
+              exit 1
+            fi
+            echo "$tag: release created"
+          elif [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::could not look up release $tag (HTTP $HTTP_CODE):" >&2
+            cat "$release_json" >&2
+            exit 1
+          fi
+
+          # upload_url comes back as .../assets{?name,label}; strip the template
+          # and pass the URL-encoded name as the query parameter on upload.
+          upload_url="$(jq -r '.upload_url // empty' "$release_json" | sed 's/{?name,label}$//')"
+          if [ -z "$upload_url" ]; then
+            echo "::error::release $tag has no upload_url" >&2
+            exit 1
+          fi
+
+          repaired=0
+          uploaded=0
+          for f in "${files[@]}"; do
+            name="$(basename "$f")"
+            want="$(stat -c '%s' "$f")"
+            enc="$(jq -rn --arg s "$name" '$s|@uri')"
+            aid="$(jq -r --arg n "$name" '[.assets[]? | select(.name == $n)][0].id // empty' "$release_json")"
+            have="$(jq -r --arg n "$name" '[.assets[]? | select(.name == $n)][0].size // empty' "$release_json")"
+
+            if [ -n "$aid" ] && [ "$have" = "$want" ]; then
+              echo "$name: present ($want bytes)"
+              continue
+            fi
+
+            if [ -n "$aid" ]; then
+              echo "$name: wrong size ($have != $want), replacing"
+              HTTP_CODE="$(curl -sS -o "$tmp/delete.json" -w '%{http_code}' "${auth[@]}" \
+                -X DELETE "$api/releases/assets/$aid")" || HTTP_CODE=000
+              if [ "$HTTP_CODE" != "204" ]; then
+                echo "::error::could not delete stale asset $name (HTTP $HTTP_CODE):" >&2
+                cat "$tmp/delete.json" >&2
+                exit 1
+              fi
+              repaired=$((repaired + 1))
+            else
+              echo "$name: missing, uploading"
+              uploaded=$((uploaded + 1))
+            fi
+
+            HTTP_CODE="$(curl -sS -o "$tmp/upload.json" -w '%{http_code}' "${auth[@]}" \
+              -X POST \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$f" \
+              "$upload_url?name=$enc")" || HTTP_CODE=000
+            if [ "$HTTP_CODE" != "201" ]; then
+              echo "::error::could not upload $name (HTTP $HTTP_CODE):" >&2
+              cat "$tmp/upload.json" >&2
+              exit 1
+            fi
+            echo "$name: uploaded ($want bytes)"
+          done
+
+          # Verify against a fresh view of the release. The asset listing can lag
+          # a moment behind an upload, so retry briefly before giving up.
+          status=1
+          for attempt in 1 2 3 4 5; do
+            api_get "$api/releases/tags/$tag" "$tmp/final.json"
+            if [ "$HTTP_CODE" != "200" ]; then
+              sleep 2
+              continue
+            fi
+            status=0
+            for f in "${files[@]}"; do
+              name="$(basename "$f")"
+              want="$(stat -c '%s' "$f")"
+              have="$(jq -r --arg n "$name" '[.assets[]? | select(.name == $n)][0].size // empty' "$tmp/final.json")"
+              if [ "$have" != "$want" ]; then
+                echo "$name: not published correctly (release: ${have:-missing}, expected: $want)" >&2
+                status=1
+              fi
+            done
+            if [ "$status" = "0" ]; then
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$status" != "0" ]; then
+            echo "::error::release $tag does not match the build; assets are still missing or truncated" >&2
+            exit 1
+          fi
+          echo "$tag: release verified, 3/3 assets match (repaired $repaired, uploaded $uploaded)"
 
       - name: Update the pacman repository
         # A release published with the default GITHUB_TOKEN does not trigger
