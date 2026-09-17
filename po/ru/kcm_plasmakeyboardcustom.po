@@ -372,3 +372,57 @@ msgstr "Material (светлая)"
 #: plasmakeyboardkcm.cpp:278
 msgid "Material (dark)"
 msgstr "Material (тёмная)"
+
+# Translations for user themes (import/export/remove)
+
+#: ui/main.qml
+msgid "Theme files:"
+msgstr "Файлы тем:"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Import theme…"
+msgstr "Импорт темы…"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Export theme…"
+msgstr "Экспорт темы…"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Remove theme"
+msgstr "Удалить тему"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Import theme"
+msgstr "Импорт темы"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Export theme"
+msgstr "Экспорт темы"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Theme files (*.json)"
+msgstr "Файлы тем (*.json)"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "All files (*)"
+msgstr "Все файлы (*)"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Remove theme?"
+msgstr "Удалить тему?"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "The theme \"%1\" will be deleted permanently."
+msgstr "Тема «%1» будет удалена без возможности восстановления."
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Could not import the theme: %1"
+msgstr "Не удалось импортировать тему: %1"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Could not export the theme: %1"
+msgstr "Не удалось экспортировать тему: %1"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Could not remove the theme: %1"
+msgstr "Не удалось удалить тему: %1"

@@ -7,8 +7,7 @@
 
 #include "plasmakeyboardkcm.h"
 #include "../src/layoutpathhelper.h"
-
-#include <KLocalizedString>
+#include "../src/theme/thememanager.h"
 
 #include <QVariantMap>
 #include <qqml.h>
@@ -19,6 +18,10 @@ PlasmaKeyboardKcm::PlasmaKeyboardKcm(QObject *parent, const KPluginMetaData &met
     : KQuickManagedConfigModule(parent, metaData)
 {
     initLayoutsPath();
+
+    // The KCM is a separate process without the keyboard's QML theme layer, so
+    // exports fall back to the base palette plus the stored overrides.
+    ThemeManager::instance()->setQmlEngine(nullptr);
 
     // clang-format off
     qmlRegisterSingletonInstance<PlasmaKeyboardSettings>(
@@ -268,15 +271,33 @@ void PlasmaKeyboardKcm::setTheme(const QString &theme)
 
 QVariantList PlasmaKeyboardKcm::availableThemes() const
 {
-    return {
-        QVariantMap{{QStringLiteral("id"), QStringLiteral("system")}, {QStringLiteral("name"), i18n("System")}},
-        QVariantMap{{QStringLiteral("id"), QStringLiteral("light")}, {QStringLiteral("name"), i18n("Light")}},
-        QVariantMap{{QStringLiteral("id"), QStringLiteral("dark")}, {QStringLiteral("name"), i18n("Dark")}},
-        QVariantMap{{QStringLiteral("id"), QStringLiteral("ios-light")}, {QStringLiteral("name"), i18n("iOS (light)")}},
-        QVariantMap{{QStringLiteral("id"), QStringLiteral("ios-dark")}, {QStringLiteral("name"), i18n("iOS (dark)")}},
-        QVariantMap{{QStringLiteral("id"), QStringLiteral("material-light")}, {QStringLiteral("name"), i18n("Material (light)")}},
-        QVariantMap{{QStringLiteral("id"), QStringLiteral("material-dark")}, {QStringLiteral("name"), i18n("Material (dark)")}},
-    };
+    return ThemeManager::instance()->availableThemes();
+}
+
+QString PlasmaKeyboardKcm::installTheme(const QUrl &source)
+{
+    const QString error = ThemeManager::instance()->installTheme(source);
+    if (error.isEmpty()) {
+        Q_EMIT availableThemesChanged();
+    }
+    return error;
+}
+
+QString PlasmaKeyboardKcm::exportTheme(const QString &id, const QUrl &target)
+{
+    return ThemeManager::instance()->exportTheme(id, target);
+}
+
+QString PlasmaKeyboardKcm::removeUserTheme(const QString &id)
+{
+    const QString error = ThemeManager::instance()->removeUserTheme(id);
+    if (error.isEmpty()) {
+        Q_EMIT availableThemesChanged();
+        if (m_theme == id) {
+            setTheme(QStringLiteral("system"));
+        }
+    }
+    return error;
 }
 
 int PlasmaKeyboardKcm::keyboardHeightPercent() const

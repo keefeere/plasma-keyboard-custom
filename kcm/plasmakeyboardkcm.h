@@ -9,6 +9,7 @@
 
 #include <KQuickManagedConfigModule>
 
+#include <QUrl>
 #include <QVariantList>
 
 #include "plasmakeyboardsettings.h"
@@ -31,7 +32,7 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
         bool hidePanelWhenKeyboardVisible READ hidePanelWhenKeyboardVisible WRITE setHidePanelWhenKeyboardVisible NOTIFY hidePanelWhenKeyboardVisibleChanged)
     Q_PROPERTY(QString keyboardFontFamily READ keyboardFontFamily WRITE setKeyboardFontFamily NOTIFY keyboardFontFamilyChanged)
     Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
-    Q_PROPERTY(QVariantList availableThemes READ availableThemes CONSTANT)
+    Q_PROPERTY(QVariantList availableThemes READ availableThemes NOTIFY availableThemesChanged)
     Q_PROPERTY(int keyboardHeightPercent READ keyboardHeightPercent WRITE setKeyboardHeightPercent NOTIFY keyboardHeightPercentChanged)
     Q_PROPERTY(bool diacriticsPopupEnabled READ diacriticsPopupEnabled WRITE setDiacriticsPopupEnabled NOTIFY diacriticsPopupEnabledChanged)
     Q_PROPERTY(int diacriticsHoldThresholdMs READ diacriticsHoldThresholdMs WRITE setDiacriticsHoldThresholdMs NOTIFY diacriticsHoldThresholdMsChanged)
@@ -85,6 +86,15 @@ public:
 
     QVariantList availableThemes() const;
 
+    //! Import a theme file; an empty return means success.
+    Q_INVOKABLE QString installTheme(const QUrl &source);
+
+    //! Export a theme; an empty return means success.
+    Q_INVOKABLE QString exportTheme(const QString &id, const QUrl &target);
+
+    //! Remove a user theme; an empty return means success.
+    Q_INVOKABLE QString removeUserTheme(const QString &id);
+
     int keyboardHeightPercent() const;
     void setKeyboardHeightPercent(int percent);
 
@@ -115,6 +125,7 @@ Q_SIGNALS:
     void hidePanelWhenKeyboardVisibleChanged();
     void keyboardFontFamilyChanged();
     void themeChanged();
+    void availableThemesChanged();
     void keyboardHeightPercentChanged();
     void diacriticsPopupEnabledChanged();
     void diacriticsHoldThresholdMsChanged();

@@ -7,6 +7,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
+import QtQuick.Dialogs
 
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
@@ -14,6 +15,8 @@ import org.kde.kirigamiaddons.formcard 1.0 as FormCard
 
 KCM.SimpleKCM {
     id: root
+
+    readonly property var currentTheme: kcm.availableThemes[themeComboBox.currentIndex] || ({})
 
     leftPadding: 0
     rightPadding: 0
@@ -159,6 +162,44 @@ KCM.SimpleKCM {
 
             FormCard.FormDelegateSeparator {}
 
+            FormCard.FormButtonDelegate {
+                id: importThemeButton
+                text: i18n("Import theme…")
+                icon.name: "document-import"
+                onClicked: {
+                    themeError.text = "";
+                    importThemeDialog.open();
+                }
+            }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormButtonDelegate {
+                id: exportThemeButton
+                text: i18n("Export theme…")
+                icon.name: "document-export"
+                onClicked: {
+                    themeError.text = "";
+                    exportThemeDialog.themeId = themeComboBox.currentValue;
+                    exportThemeDialog.open();
+                }
+            }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormButtonDelegate {
+                id: removeThemeButton
+                text: i18n("Remove theme")
+                icon.name: "edit-delete"
+                enabled: root.currentTheme.source === "user"
+                onClicked: {
+                    themeError.text = "";
+                    removeThemeDialog.open();
+                }
+            }
+
+            FormCard.FormDelegateSeparator {}
+
             FormCard.FormSwitchDelegate {
                 id: showFunctionKeyRow
                 text: i18n("Function keys")
@@ -184,6 +225,14 @@ KCM.SimpleKCM {
                     checked = Qt.binding(() => kcm.clipboardEnabled)
                 }
             }
+        }
+
+        Kirigami.InlineMessage {
+            id: themeError
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            type: Kirigami.MessageType.Error
+            visible: text.length > 0
         }
 
         FormCard.FormHeader {
@@ -295,6 +344,50 @@ KCM.SimpleKCM {
                     kcm.keyboardNavigationEnabled = checked;
                     checked = Qt.binding(() => kcm.keyboardNavigationEnabled)
                 }
+            }
+        }
+    }
+
+    FileDialog {
+        id: importThemeDialog
+        title: i18n("Import theme")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [i18n("Theme files (*.json)"), i18n("All files (*)")]
+
+        onAccepted: {
+            const error = kcm.installTheme(selectedFile);
+            if (error.length > 0) {
+                themeError.text = i18n("Could not import the theme: %1", error);
+            }
+        }
+    }
+
+    FileDialog {
+        id: exportThemeDialog
+        property string themeId
+        title: i18n("Export theme")
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "json"
+        nameFilters: [i18n("Theme files (*.json)"), i18n("All files (*)")]
+
+        onAccepted: {
+            const error = kcm.exportTheme(themeId, selectedFile);
+            if (error.length > 0) {
+                themeError.text = i18n("Could not export the theme: %1", error);
+            }
+        }
+    }
+
+    Kirigami.PromptDialog {
+        id: removeThemeDialog
+        title: i18n("Remove theme?")
+        subtitle: i18n("The theme \"%1\" will be deleted permanently.", root.currentTheme.name || "")
+        standardButtons: Kirigami.Dialog.Ok | Kirigami.Dialog.Cancel
+
+        onAccepted: {
+            const error = kcm.removeUserTheme(root.currentTheme.id);
+            if (error.length > 0) {
+                themeError.text = i18n("Could not remove the theme: %1", error);
             }
         }
     }

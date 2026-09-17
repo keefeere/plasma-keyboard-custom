@@ -8,6 +8,7 @@ import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
+import QtQuick.Dialogs
 
 import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
@@ -15,6 +16,8 @@ import org.kde.bigscreen as Bigscreen
 
 KCM.SimpleKCM {
     id: keyboardSettingsView
+
+    readonly property var currentTheme: kcm.availableThemes[themeComboBox.currentIndex] || ({})
 
     title: i18n("On-Screen Keyboard")
     background: null
@@ -164,7 +167,7 @@ KCM.SimpleKCM {
             id: themeComboBox
             Layout.preferredWidth: column.width
             KeyNavigation.up: clipboardEnabledButton
-            KeyNavigation.down: keyboardFontComboBox
+            KeyNavigation.down: importThemeButton
 
             model: kcm.availableThemes
             textRole: "name"
@@ -176,10 +179,55 @@ KCM.SimpleKCM {
             }
         }
 
+        Bigscreen.ButtonDelegate {
+            id: importThemeButton
+            text: i18n("Import theme…")
+            KeyNavigation.up: themeComboBox
+            KeyNavigation.down: exportThemeButton
+
+            onClicked: {
+                themeError.text = "";
+                importThemeDialog.open();
+            }
+        }
+
+        Bigscreen.ButtonDelegate {
+            id: exportThemeButton
+            text: i18n("Export theme…")
+            KeyNavigation.up: importThemeButton
+            KeyNavigation.down: removeThemeButton
+
+            onClicked: {
+                themeError.text = "";
+                exportThemeDialog.themeId = themeComboBox.currentValue;
+                exportThemeDialog.open();
+            }
+        }
+
+        Bigscreen.ButtonDelegate {
+            id: removeThemeButton
+            text: i18n("Remove theme")
+            enabled: keyboardSettingsView.currentTheme.source === "user"
+            KeyNavigation.up: exportThemeButton
+            KeyNavigation.down: keyboardFontComboBox
+
+            onClicked: {
+                themeError.text = "";
+                removeThemeDialog.open();
+            }
+        }
+
+        Kirigami.InlineMessage {
+            id: themeError
+            Layout.fillWidth: true
+            type: Kirigami.MessageType.Error
+            visible: text.length > 0
+        }
+
         QQC2.ComboBox {
             id: keyboardFontComboBox
             Layout.preferredWidth: column.width
-            KeyNavigation.up: themeComboBox
+            KeyNavigation.up: removeThemeButton
             KeyNavigation.down: autoCapitalizationButton
 
             model: [i18n("Default")].concat(Qt.fontFamilies())
@@ -227,6 +275,50 @@ KCM.SimpleKCM {
         LocaleSelectorSidebar {
             id: localeSelectorSidebar
             onClosed: changeLanguagesButton.forceActiveFocus()
+        }
+    }
+
+    FileDialog {
+        id: importThemeDialog
+        title: i18n("Import theme")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [i18n("Theme files (*.json)"), i18n("All files (*)")]
+
+        onAccepted: {
+            const error = kcm.installTheme(selectedFile);
+            if (error.length > 0) {
+                themeError.text = i18n("Could not import the theme: %1", error);
+            }
+        }
+    }
+
+    FileDialog {
+        id: exportThemeDialog
+        property string themeId
+        title: i18n("Export theme")
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "json"
+        nameFilters: [i18n("Theme files (*.json)"), i18n("All files (*)")]
+
+        onAccepted: {
+            const error = kcm.exportTheme(themeId, selectedFile);
+            if (error.length > 0) {
+                themeError.text = i18n("Could not export the theme: %1", error);
+            }
+        }
+    }
+
+    Kirigami.PromptDialog {
+        id: removeThemeDialog
+        title: i18n("Remove theme?")
+        subtitle: i18n("The theme \"%1\" will be deleted permanently.", keyboardSettingsView.currentTheme.name || "")
+        standardButtons: Kirigami.Dialog.Ok | Kirigami.Dialog.Cancel
+
+        onAccepted: {
+            const error = kcm.removeUserTheme(keyboardSettingsView.currentTheme.id);
+            if (error.length > 0) {
+                themeError.text = i18n("Could not remove the theme: %1", error);
+            }
         }
     }
 }
