@@ -16,7 +16,9 @@
 #include <QDBusVariant>
 #include <QFile>
 #include <QFileInfo>
+#include <QLockFile>
 #include <QProcess>
+#include <QStandardPaths>
 #include <QThread>
 #include <QTimer>
 
@@ -149,4 +151,47 @@ void RestartWatcher::restart()
         return;
     }
     QCoreApplication::quit();
+}
+
+int runInputMethodWatchdog()
+{
+    const QString runtimeDir = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
+    const QString instanceLockPath = runtimeDir + QStringLiteral("/plasma-keyboard-custom.lock");
+    const QString watchdogLockPath = runtimeDir + QStringLiteral("/plasma-keyboard-custom-watchdog.lock");
+
+    // A single watchdog is enough, however many keyboard instances ask for one.
+    QLockFile watchdogLock(watchdogLockPath);
+    watchdogLock.setStaleLockTime(0);
+    if (!watchdogLock.tryLock(0)) {
+        return 0;
+    }
+
+    constexpr int s_checkIntervalMs = 5000;
+    constexpr int s_startGraceMs = 20000;
+
+    for (;;) {
+        if (kwinInputMethod().isEmpty()) {
+            // The virtual keyboard is disabled in the system settings, so there
+            // is no input method to keep alive.
+            QThread::msleep(s_checkIntervalMs);
+            continue;
+        }
+
+        QLockFile instanceProbe(instanceLockPath);
+        instanceProbe.setStaleLockTime(0);
+        if (!instanceProbe.tryLock(0)) {
+            // An input method process is running, the global shortcut is
+            // registered by it.
+            QThread::msleep(s_checkIntervalMs);
+            continue;
+        }
+        instanceProbe.unlock();
+
+        // KWin does not start the input method again after it exits, which
+        // would silently take the global shortcut with it. Toggle the setting
+        // so KWin starts a fresh process.
+        qCInfo(PlasmaKeyboard) << "The keyboard is not running, restarting it";
+        restartInputMethod();
+        QThread::msleep(s_startGraceMs);
+    }
 }

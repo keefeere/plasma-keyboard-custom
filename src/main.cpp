@@ -35,6 +35,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLockFile>
+#include <QProcess>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
 #include <QStandardPaths>
@@ -292,6 +293,11 @@ int main(int argc, char **argv)
     if (argc > 1 && qstrcmp(argv[1], "--restart-input-method") == 0) {
         return restartInputMethod();
     }
+    // Long-lived watchdog spawned below, before the gamepad/theme setup, so it
+    // neither connects to Wayland nor takes the single instance lock.
+    if (argc > 1 && qstrcmp(argv[1], "--watchdog") == 0) {
+        return runInputMethodWatchdog();
+    }
 
     qputenv("QT_IM_MODULE", QByteArray("qtvirtualkeyboard"));
 
@@ -307,6 +313,11 @@ int main(int argc, char **argv)
         qWarning() << "Another Plasma Keyboard instance is already running, exiting.";
         return 1;
     }
+
+    // Keep a detached watchdog around. KWin does not start the input method
+    // again when it dies, which would take the global shortcut with it; the
+    // watchdog outlives this process and asks KWin for a replacement.
+    QProcess::startDetached(QCoreApplication::applicationFilePath(), {QStringLiteral("--watchdog")});
 
     KLocalizedString::setApplicationDomain("plasma-keyboard");
 
