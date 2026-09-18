@@ -47,6 +47,11 @@ makedepends=(
   'qt6-wayland'
   'wayland-protocols'
 )
+# libhunspell is loaded while the application runs, so it stays optional: with
+# it (and a dictionary) the spell checking and the corrections use the
+# dictionaries of the system, without it everything works on the word lists
+# compiled into the package.
+optdepends=('hunspell: use the dictionaries of the system for the spelling and the corrections')
 # Deliberately no conflicts/replaces/provides: this package installs only
 # custom-named files so it can be installed next to the official
 # plasma-keyboard package. Choose it in System Settings -> Virtual Keyboard.

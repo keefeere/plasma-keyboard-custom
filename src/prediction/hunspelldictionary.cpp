@@ -11,29 +11,96 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QLibrary>
 #include <QLoggingCategory>
 #include <QStandardPaths>
 #include <QStringDecoder>
 
 #include <algorithm>
 
-#ifdef HAVE_HUNSPELL
-// pkg-config puts the directory of the headers on the include path.
-#include <hunspell.h>
-#endif
-
 Q_LOGGING_CATEGORY(lcHunspell, "org.kde.plasma.keyboard.custom.prediction.hunspell")
+
+//! The handle libhunspell works with. The library declares it as an opaque
+//! struct, and so does this file: hunspell is loaded while the application
+//! runs, so its header is not needed to build against.
+struct Hunhandle;
 
 namespace
 {
-#ifdef HAVE_HUNSPELL
-struct HunspellDeleter {
-    void operator()(Hunhandle *handle) const
+/**
+ * The part of the C API of libhunspell the engine uses, as hunspell.h declares
+ * it. The functions are looked up in the library when it is loaded.
+ */
+struct HunspellApi {
+    using Create = Hunhandle *(*)(const char *affixPath, const char *dictionaryPath);
+    using Destroy = void (*)(Hunhandle *handle);
+    using Spell = int (*)(Hunhandle *handle, const char *word);
+    using Suggest = int (*)(Hunhandle *handle, char ***suggestions, const char *word);
+    using FreeList = void (*)(Hunhandle *handle, char ***suggestions, int count);
+    using DictionaryEncoding = char *(*)(Hunhandle * handle);
+
+    Create create = nullptr;
+    Destroy destroy = nullptr;
+    Spell spell = nullptr;
+    Suggest suggest = nullptr;
+    FreeList freeList = nullptr;
+    DictionaryEncoding dictionaryEncoding = nullptr;
+
+    bool isValid() const
     {
-        Hunspell_destroy(handle);
+        return create && destroy && spell && suggest && freeList;
     }
 };
-#endif
+
+//! The names libhunspell is installed under, the versioned one first.
+const char *const libraryNames[] = {
+    "libhunspell-1.7.so.0",
+    "libhunspell.so.0",
+    "libhunspell.so",
+    "hunspell-1.7",
+    "hunspell",
+};
+
+//! The loaded library, kept alive as long as the functions found in it are
+//! used.
+QLibrary &hunspellLibrary()
+{
+    static QLibrary library;
+    return library;
+}
+
+const HunspellApi &hunspellApi()
+{
+    static const HunspellApi api = [] {
+        HunspellApi loaded;
+        QLibrary &library = hunspellLibrary();
+        for (const char *name : libraryNames) {
+            library.setFileName(QString::fromLatin1(name));
+            if (!library.load()) {
+                continue;
+            }
+
+            loaded.create = reinterpret_cast<HunspellApi::Create>(library.resolve("Hunspell_create"));
+            loaded.destroy = reinterpret_cast<HunspellApi::Destroy>(library.resolve("Hunspell_destroy"));
+            loaded.spell = reinterpret_cast<HunspellApi::Spell>(library.resolve("Hunspell_spell"));
+            loaded.suggest = reinterpret_cast<HunspellApi::Suggest>(library.resolve("Hunspell_suggest"));
+            loaded.freeList = reinterpret_cast<HunspellApi::FreeList>(library.resolve("Hunspell_free_list"));
+            loaded.dictionaryEncoding = reinterpret_cast<HunspellApi::DictionaryEncoding>(library.resolve("Hunspell_get_dic_encoding"));
+
+            if (loaded.isValid()) {
+                library.setLoadHints(QLibrary::PreventUnloadHint);
+                qCDebug(lcHunspell) << "loaded" << library.fileName();
+                return loaded;
+            }
+
+            library.unload();
+        }
+
+        qCDebug(lcHunspell) << "libhunspell is not installed";
+        return loaded;
+    }();
+    return api;
+}
 
 //! The directories a dictionary may be installed in.
 QStringList dictionaryDirectories()
@@ -90,10 +157,8 @@ QPair<QString, QString> dictionaryFiles(const QString &locale)
 } // namespace
 
 struct HunspellDictionary::Handle {
-#ifdef HAVE_HUNSPELL
     //! The opened dictionary, null when it could not be opened.
     std::shared_ptr<Hunhandle> hunspell;
-#endif
     //! The .dic file, read for the list of words.
     QString dictionaryPath;
     bool valid = false;
@@ -103,13 +168,9 @@ HunspellDictionary::HunspellDictionary() = default;
 
 HunspellDictionary::~HunspellDictionary() = default;
 
-bool HunspellDictionary::isCompiledIn()
+bool HunspellDictionary::isLibraryAvailable()
 {
-#ifdef HAVE_HUNSPELL
-    return true;
-#else
-    return false;
-#endif
+    return hunspellApi().isValid();
 }
 
 std::shared_ptr<HunspellDictionary::Handle> HunspellDictionary::handleFor(const QString &locale) const
@@ -123,17 +184,18 @@ std::shared_ptr<HunspellDictionary::Handle> HunspellDictionary::handleFor(const 
     const QPair<QString, QString> files = dictionaryFiles(locale);
     if (!files.first.isEmpty()) {
         handle->dictionaryPath = files.second;
-#ifdef HAVE_HUNSPELL
-        handle->hunspell = std::shared_ptr<Hunhandle>(Hunspell_create(files.first.toUtf8().constData(), files.second.toUtf8().constData()), HunspellDeleter());
-        handle->valid = handle->hunspell != nullptr;
-        if (!handle->valid) {
-            qCWarning(lcHunspell) << "could not open the hunspell dictionary" << files.first;
+        const HunspellApi &api = hunspellApi();
+        if (api.isValid()) {
+            Hunhandle *dictionary = api.create(files.first.toUtf8().constData(), files.second.toUtf8().constData());
+            if (dictionary) {
+                handle->hunspell = std::shared_ptr<Hunhandle>(dictionary, [](Hunhandle *open) {
+                    hunspellApi().destroy(open);
+                });
+                handle->valid = true;
+            } else {
+                qCWarning(lcHunspell) << "could not open the hunspell dictionary" << files.first;
+            }
         }
-#else
-        // The dictionary is installed, but this build has no libhunspell to
-        // read it with.
-        handle->valid = false;
-#endif
     }
 
     m_handles.insert(locale, handle);
@@ -157,11 +219,7 @@ bool HunspellDictionary::spell(const QString &word, const QString &locale) const
         return false;
     }
 
-#ifdef HAVE_HUNSPELL
-    return Hunspell_spell(handle->hunspell.get(), word.toUtf8().constData()) != 0;
-#else
-    return false;
-#endif
+    return hunspellApi().spell(handle->hunspell.get(), word.toUtf8().constData()) != 0;
 }
 
 QStringList HunspellDictionary::suggest(const QString &word, int limit, const QString &locale) const
@@ -175,18 +233,15 @@ QStringList HunspellDictionary::suggest(const QString &word, int limit, const QS
         return {};
     }
 
-#ifdef HAVE_HUNSPELL
+    const HunspellApi &api = hunspellApi();
     char **suggestions = nullptr;
-    const int count = Hunspell_suggest(handle->hunspell.get(), &suggestions, word.toUtf8().constData());
+    const int count = api.suggest(handle->hunspell.get(), &suggestions, word.toUtf8().constData());
     QStringList words;
     for (int index = 0; index < count && words.size() < limit; ++index) {
         words.append(QString::fromUtf8(suggestions[index]));
     }
-    Hunspell_free_list(handle->hunspell.get(), &suggestions, count);
+    api.freeList(handle->hunspell.get(), &suggestions, count);
     return words;
-#else
-    return {};
-#endif
 }
 
 std::shared_ptr<const QStringList> HunspellDictionary::wordsFor(const QString &locale) const
@@ -202,11 +257,12 @@ std::shared_ptr<const QStringList> HunspellDictionary::wordsFor(const QString &l
         QFile file(handle->dictionaryPath);
         if (file.open(QIODevice::ReadOnly)) {
             QByteArray encoding = "UTF-8";
-#ifdef HAVE_HUNSPELL
-            if (const char *name = Hunspell_get_dic_encoding(handle->hunspell.get())) {
-                encoding = name;
+            const HunspellApi &api = hunspellApi();
+            if (api.dictionaryEncoding) {
+                if (const char *name = api.dictionaryEncoding(handle->hunspell.get())) {
+                    encoding = name;
+                }
             }
-#endif
             // The .dic files are usually UTF-8; an encoding Qt cannot decode
             // falls back to UTF-8, which is what the dictionaries we ship with
             // use.

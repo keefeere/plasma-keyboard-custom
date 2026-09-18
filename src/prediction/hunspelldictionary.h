@@ -20,8 +20,9 @@
  * (/usr/share/hunspell, /usr/share/myspell, the Qt Virtual Keyboard directory,
  * ~/.local/share/hunspell) and are only opened when they are asked for.
  *
- * Everything here works without libhunspell as well: the build then simply
- * knows no dictionary, and every question is answered with «no».
+ * The library itself is loaded while the application runs, so that hunspell
+ * stays an optional dependency: without libhunspell, and without a dictionary,
+ * every question is simply answered with «no».
  */
 class HunspellDictionary
 {
@@ -30,9 +31,9 @@ public:
     ~HunspellDictionary();
 
     /**
-     * Whether libhunspell was found when the application was built.
+     * Whether libhunspell could be loaded. False when it is not installed.
      */
-    static bool isCompiledIn();
+    static bool isLibraryAvailable();
 
     /**
      * Whether a dictionary for @p locale is installed.

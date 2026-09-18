@@ -246,7 +246,8 @@ The settings page in System Settings:
   hunspell dictionaries installed in the system (`/usr/share/hunspell`, `~/.local/share/hunspell` and the other usual
   places, for instance the `hunspell-ru` or `hunspell-en_us` packages) are used when they are there: the words of a
   language without a compiled list come from them, and a correction is asked of them when our own lists have nothing to
-  offer. Without installed dictionaries everything works as before.
+  offer. The libhunspell library is loaded while the application runs, so hunspell is an optional dependency: without
+  the library, or without an installed dictionary, everything works as before.
   Suggestions start with the first letter (the threshold is configurable, 1–4), the chips are as wide as their text and
   sit on the left, and the part that would complete the word is underlined (a correction and a prediction have nothing to
   underline).

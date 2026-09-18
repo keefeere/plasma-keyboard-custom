@@ -145,12 +145,8 @@ target_link_libraries(plasma-keyboard-custom
     Wayland::Client
 )
 
-# The hunspell dictionaries of the system are asked for only when the library
-# was found; the engine works without it as well.
-if(PLASMA_KEYBOARD_HUNSPELL_FOUND)
-    target_compile_definitions(plasma-keyboard-custom PRIVATE HAVE_HUNSPELL)
-    target_link_libraries(plasma-keyboard-custom PRIVATE PkgConfig::HUNSPELL)
-endif()
+# libhunspell is an optional dependency: the engine loads it while the
+# application runs, so nothing is linked against it here.
 
 install(TARGETS plasma-keyboard-custom ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 install(PROGRAMS org.kde.plasma.keyboard.custom.desktop DESTINATION ${KDE_INSTALL_APPDIR})

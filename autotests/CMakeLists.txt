@@ -43,13 +43,6 @@ target_include_directories(predictivedictionarytest PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction
 )
 
-# The engine asks the hunspell dictionaries of the system only when the library
-# was found; without it the test simply has none to ask.
-if(PLASMA_KEYBOARD_HUNSPELL_FOUND)
-    target_compile_definitions(predictivedictionarytest PRIVATE HAVE_HUNSPELL)
-    target_link_libraries(predictivedictionarytest PkgConfig::HUNSPELL)
-endif()
-
 # The word lists are normally compiled into the application (src/prediction.qrc);
 # the test reads the same files from the resources.
 qt_add_resources(predictivedictionarytest "prediction_dictionaries"
@@ -111,8 +104,3 @@ ecm_add_test(hunspelldictionarytest.cpp
 target_include_directories(hunspelldictionarytest PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction
 )
-
-if(PLASMA_KEYBOARD_HUNSPELL_FOUND)
-    target_compile_definitions(hunspelldictionarytest PRIVATE HAVE_HUNSPELL)
-    target_link_libraries(hunspelldictionarytest PkgConfig::HUNSPELL)
-endif()

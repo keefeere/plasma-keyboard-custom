@@ -17,7 +17,7 @@ class HunspellDictionaryTest : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
-    void knowsWhetherHunspellWasCompiledIn();
+    void knowsWhetherTheLibraryIsAvailable();
     void knowsNothingWithoutADictionary();
     void spellsAndSuggestsWithAnInstalledDictionary();
     void completesFromAnInstalledDictionary();
@@ -26,13 +26,17 @@ private:
     HunspellDictionary dictionary;
 };
 
-void HunspellDictionaryTest::knowsWhetherHunspellWasCompiledIn()
+void HunspellDictionaryTest::knowsWhetherTheLibraryIsAvailable()
 {
-#ifdef HAVE_HUNSPELL
-    QVERIFY(HunspellDictionary::isCompiledIn());
-#else
-    QVERIFY(!HunspellDictionary::isCompiledIn());
-#endif
+    qInfo() << "libhunspell is available:" << HunspellDictionary::isLibraryAvailable();
+
+    // A machine without the library has no dictionaries to ask, and asking has
+    // to answer «no» instead of failing.
+    if (!HunspellDictionary::isLibraryAvailable()) {
+        QVERIFY(!dictionary.isAvailable(QStringLiteral("ru_RU")));
+        QVERIFY(!dictionary.spell(QStringLiteral("привет"), QStringLiteral("ru_RU")));
+        QVERIFY(dictionary.suggest(QStringLiteral("привт"), 5, QStringLiteral("ru_RU")).isEmpty());
+    }
 }
 
 void HunspellDictionaryTest::knowsNothingWithoutADictionary()
