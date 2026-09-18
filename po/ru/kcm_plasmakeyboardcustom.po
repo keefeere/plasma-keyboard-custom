@@ -171,6 +171,34 @@ msgstr "Скрывать панель, пока клавиатура откры�
 msgid "Hold a finger on a text field"
 msgstr "Удерживайте палец на текстовом поле"
 
+#: main.qml:295
+msgid "Gamepad:"
+msgstr "Геймпад:"
+
+#: main.qml:296
+msgid "Hold the A button to pick an alternate character"
+msgstr "Удерживайте кнопку A, чтобы выбрать альтернативный символ"
+
+#: main.qml:306
+msgid "Gamepad hold delay:"
+msgstr "Задержка удержания на геймпаде:"
+
+#: main_handset.qml:288
+msgid "Gamepad alternate characters"
+msgstr "Альтернативные символы на геймпаде"
+
+#: main_handset.qml:289
+msgid "Hold the A button on a gamepad to pick an alternate character of the highlighted key"
+msgstr "Удерживайте кнопку A на геймпаде, чтобы выбрать альтернативный символ для подсвеченной клавиши"
+
+#: main_handset.qml:300
+msgid "Gamepad hold delay"
+msgstr "Задержка удержания на геймпаде"
+
+#: main_handset.qml:301
+msgid "Time to hold the A button before the popup appears"
+msgstr "Время удержания кнопки A до появления всплывающего окна"
+
 #: main_handset.qml:59
 msgid "Hold a finger on a text field to open the keyboard"
 msgstr "Удерживайте палец на текстовом поле, чтобы открыть клавиатуру"

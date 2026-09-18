@@ -191,6 +191,14 @@ The settings page in System Settings:
   InputPlumber's system D-Bus target (`org.shadowblip.Input.DBusDevice`):
   - D-pad / left stick navigate, **A** selects, **B** closes, **X** backspace (holding it keeps deleting, like a key on a
     hardware keyboard), **Y** space, **LT** shift, **RT** enter, **LB** symbols, **RB** switches the layout.
+  - **Holding A opens the alternate characters of the highlighted key** — the characters come from the layout (its
+    `alternativeKeys`, the very ones a long press on that same on-screen key shows: `e`→`é`, `1`→`!`), but without
+    typing the base character. The list appears **over that key** and is drawn with the keyboard style's own
+    alternate-keys components, so it follows the theme the user chose. The D-pad (or stick) walks the options — the
+    list itself stays put and only the highlight moves; **A** takes the selected character, **B** closes the list
+    without picking anything (a second press closes the keyboard). A key with a single alternate inserts it right
+    away, without a list. Tapping A still just types the key: the list only opens after the hold delay (400 ms by
+    default), which can be changed or disabled in the KCM.
   - Button glyphs are shown directly on the mapped keys (X, RT, LT, LB, RB, Y, B) plus an **A** badge on the focused key.
   - While the keyboard is visible the gamepad is intercepted (InputPlumber `InterceptMode = GAMEPAD_ONLY`) so input
     does not leak into the game or Steam's mapping; the previous mode is restored on hide/exit.
