@@ -269,6 +269,41 @@ KCM.AbstractKCM {
             }
 
             QQC2.CheckBox {
+                id: gamepadAlternatesCheckbox
+                Kirigami.FormData.label: i18n("Gamepad:")
+                text: i18n("Hold the A button to pick an alternate character")
+
+                checked: kcm.gamepadAlternatesEnabled
+                onCheckedChanged: {
+                    kcm.gamepadAlternatesEnabled = checked;
+                    checked = Qt.binding(() => kcm.gamepadAlternatesEnabled);
+                }
+            }
+
+            QQC2.SpinBox {
+                id: gamepadAlternatesDelaySpinBox
+                Kirigami.FormData.label: i18n("Gamepad hold delay:")
+                from: 100
+                to: 1500
+                stepSize: 50
+                enabled: gamepadAlternatesCheckbox.checked
+                value: kcm.gamepadAlternatesThresholdMs
+
+                textFromValue: function (value) {
+                    return i18nc("duration in milliseconds", "%1 ms", value);
+                }
+                valueFromText: function (text) {
+                    const number = parseInt(text);
+                    return isNaN(number) ? kcm.gamepadAlternatesThresholdMs : number;
+                }
+
+                onValueChanged: {
+                    kcm.gamepadAlternatesThresholdMs = value;
+                    value = Qt.binding(() => kcm.gamepadAlternatesThresholdMs);
+                }
+            }
+
+            QQC2.CheckBox {
                 id: soundsEnabled
                 Kirigami.FormData.label: i18n("Key press feedback:")
                 text: i18n("Sound")

@@ -282,6 +282,37 @@ KCM.SimpleKCM {
                     return i18nc("duration in milliseconds", "%1 ms", value);
                 }
             }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormSwitchDelegate {
+                id: gamepadAlternatesCheckbox
+                text: i18n("Gamepad alternate characters")
+                description: i18n("Hold the A button on a gamepad to pick an alternate character of the highlighted key")
+
+                checked: kcm.gamepadAlternatesEnabled
+                onCheckedChanged: {
+                    kcm.gamepadAlternatesEnabled = checked;
+                    checked = Qt.binding(() => kcm.gamepadAlternatesEnabled)
+                }
+            }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormSpinBoxDelegate {
+                label: i18n("Gamepad hold delay")
+                description: i18n("Time to hold the A button before the popup appears")
+                from: 100
+                to: 1500
+                stepSize: 50
+                enabled: gamepadAlternatesCheckbox.checked
+                value: kcm.gamepadAlternatesThresholdMs
+                onValueChanged: kcm.gamepadAlternatesThresholdMs = value
+
+                textFromValue: function (value) {
+                    return i18nc("duration in milliseconds", "%1 ms", value);
+                }
+            }
         }
 
         FormCard.FormHeader {

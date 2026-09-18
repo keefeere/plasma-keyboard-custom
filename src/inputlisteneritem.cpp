@@ -320,9 +320,14 @@ void InputListenerItem::commitText(const QString &text)
     m_input.commit(text);
 }
 
-void InputListenerItem::setEngine(QVirtualKeyboardInputEngine * /*engine*/)
+void InputListenerItem::setEngine(QVirtualKeyboardInputEngine *engine)
 {
-    // TODO: hook into engine events if necessary?
+    // The overlay controller inserts a picked alternate character as a key
+    // click through the engine, the way the on-screen alternate-keys popup
+    // does; a bare commit_string makes clients end the input session instead.
+    if (m_overlayController) {
+        m_overlayController->setInputEngine(engine);
+    }
 }
 
 QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
@@ -504,6 +509,25 @@ void InputListenerItem::sendKeyEvent(int key, const QString &text)
     QKeyEvent releaseEvent(QEvent::KeyRelease, key, Qt::NoModifier, text);
     keyPressEvent(&pressEvent);
     keyReleaseEvent(&releaseEvent);
+}
+
+QStringList InputListenerItem::alternatesFor(const QVariantList &alternatives, bool uppercase) const
+{
+    QStringList result;
+    result.reserve(alternatives.size());
+
+    for (const QVariant &entry : alternatives) {
+        const QString character = entry.toString();
+        if (character.isEmpty()) {
+            continue;
+        }
+        // Qt Virtual Keyboard uppercases its own alternate-keys popup from the
+        // keyboard state, not from the key text, so a shifted keyboard offers
+        // shifted alternates here too.
+        result.append(uppercase ? character.toUpper() : character);
+    }
+
+    return result;
 }
 
 void InputListenerItem::keyPressEvent(QKeyEvent *event)

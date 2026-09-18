@@ -37,6 +37,9 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(int keyboardHeightPercent READ keyboardHeightPercent WRITE setKeyboardHeightPercent NOTIFY keyboardHeightPercentChanged)
     Q_PROPERTY(bool diacriticsPopupEnabled READ diacriticsPopupEnabled WRITE setDiacriticsPopupEnabled NOTIFY diacriticsPopupEnabledChanged)
     Q_PROPERTY(int diacriticsHoldThresholdMs READ diacriticsHoldThresholdMs WRITE setDiacriticsHoldThresholdMs NOTIFY diacriticsHoldThresholdMsChanged)
+    Q_PROPERTY(bool gamepadAlternatesEnabled READ gamepadAlternatesEnabled WRITE setGamepadAlternatesEnabled NOTIFY gamepadAlternatesEnabledChanged)
+    Q_PROPERTY(
+        int gamepadAlternatesThresholdMs READ gamepadAlternatesThresholdMs WRITE setGamepadAlternatesThresholdMs NOTIFY gamepadAlternatesThresholdMsChanged)
 
 public:
     PlasmaKeyboardKcm(QObject *parent, const KPluginMetaData &metaData);
@@ -110,6 +113,12 @@ public:
     int diacriticsHoldThresholdMs() const;
     void setDiacriticsHoldThresholdMs(int thresholdMs);
 
+    bool gamepadAlternatesEnabled() const;
+    void setGamepadAlternatesEnabled(bool enabled);
+
+    int gamepadAlternatesThresholdMs() const;
+    void setGamepadAlternatesThresholdMs(int thresholdMs);
+
     bool isSaveNeeded() const override;
 
 public Q_SLOTS:
@@ -136,6 +145,8 @@ Q_SIGNALS:
     void keyboardHeightPercentChanged();
     void diacriticsPopupEnabledChanged();
     void diacriticsHoldThresholdMsChanged();
+    void gamepadAlternatesEnabledChanged();
+    void gamepadAlternatesThresholdMsChanged();
 
 private:
     bool m_soundEnabled = false;
@@ -154,6 +165,8 @@ private:
     int m_keyboardHeightPercent = 42;
     bool m_diacriticsPopupEnabled = true;
     int m_diacriticsHoldThresholdMs = 600;
+    bool m_gamepadAlternatesEnabled = true;
+    int m_gamepadAlternatesThresholdMs = 400;
 
     bool m_saveNeeded = false;
 

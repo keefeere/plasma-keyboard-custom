@@ -9,6 +9,7 @@
 #include <QObject>
 #include <QSet>
 #include <QString>
+#include <QStringList>
 
 #include <qqmlintegration.h>
 
@@ -49,11 +50,31 @@ public:
     Q_INVOKABLE void setActive(bool active);
     bool isActive() const;
 
+    /**
+     * Whether an alternates overlay may be opened right now, together with the
+     * characters it would offer.
+     *
+     * The panel calls this whenever the highlight moves: the decision has to be
+     * made while the button is on its way down, because holding A only starts
+     * the delay when the highlighted key has something to choose from.
+     */
+    Q_INVOKABLE void setAlternatesArmable(bool armable, const QStringList &alternates);
+
+    /**
+     * The alternates list is no longer on screen (a character was taken or the
+     * list was dismissed), so A goes back to typing the highlighted key.
+     */
+    Q_INVOKABLE void clearAlternatesOpen();
+
 Q_SIGNALS:
     /*! Move the keyboard focus in the given direction (Qt::Key_Up/Down/Left/Right). */
     void navigate(int key);
     /*! Type the currently highlighted key. */
     void activate();
+    /*! Offer the given alternate characters of the key the highlight is on. */
+    void showAlternates(const QStringList &alternates);
+    /*! Take the character highlighted in the alternates list. */
+    void confirmAlternates();
     /*! Delete the character before the cursor. */
     void backspace();
     /*! Insert a space. */
@@ -81,6 +102,7 @@ private Q_SLOTS:
 private:
     void handleDirection(int key, bool pressed);
     void handleBackspace(bool pressed);
+    void handleAccept(bool pressed);
     uint interceptMode() const;
     void setInterceptMode(uint mode);
 
@@ -91,7 +113,43 @@ private:
     QSet<int> m_pressedDirections;
     QTimer *m_repeatTimer = nullptr;
     QTimer *m_backspaceTimer = nullptr;
+    QTimer *m_acceptHoldTimer = nullptr;
     QTimer *m_kwinPollTimer = nullptr;
     int m_repeatKey = 0;
     bool m_backspaceHeld = false;
+
+    /*! Whether the A button is being held right now. */
+    bool m_acceptHeld = false;
+
+    /**
+     * Whether the A press that is being held has already done its job (it
+     * opened the alternates list or took a character out of it), so its
+     * release must not type the highlighted key as well.
+     */
+    bool m_acceptConsumed = false;
+
+    /**
+     * Whether the alternates overlay was opened for the A press that is still
+     * being held, so the release must not activate the highlighted key.
+     */
+    bool m_alternatesOpened = false;
+
+    /**
+     * Whether an alternates overlay may be opened at all: the panel reports
+     * that a key with alternate characters is highlighted and that gamepad
+     * alternates are enabled.
+     */
+    bool m_alternatesArmable = false;
+
+    /*! Alternate characters of the highlighted key. */
+    QStringList m_alternates;
+
+    /**
+     * Alternates the overlay is offered for, fixed when A went down.
+     *
+     * The panel keeps polling the highlight while the button is held, so the
+     * key under it may change (or blink out for a single poll) before the hold
+     * delay is over; the characters have to survive that.
+     */
+    QStringList m_pressedAlternates;
 };

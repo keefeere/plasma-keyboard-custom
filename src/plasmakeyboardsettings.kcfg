@@ -93,5 +93,15 @@
             <max>1500</max>
             <default>600</default>
         </entry>
+        <entry key="gamepadAlternatesEnabled" type="Bool">
+            <label>Whether holding the LT button on a gamepad opens the alternate characters of the highlighted key.</label>
+            <default>true</default>
+        </entry>
+        <entry key="gamepadAlternatesThresholdMs" type="Int">
+            <label>Delay (ms) before holding LT on a gamepad opens the alternate characters.</label>
+            <min>100</min>
+            <max>1500</max>
+            <default>400</default>
+        </entry>
     </group>
 </kcfg>

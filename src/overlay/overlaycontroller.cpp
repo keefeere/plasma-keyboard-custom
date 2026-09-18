@@ -312,6 +312,16 @@ CandidateModel *OverlayController::candidateModel() const
     return m_candidateModel;
 }
 
+bool OverlayController::alternatesOnly() const
+{
+    return m_alternatesOnly;
+}
+
+int OverlayController::alternateSelection() const
+{
+    return m_alternateSelection;
+}
+
 quint32 OverlayController::pendingNativeScanCode() const
 {
     return m_pendingNativeScanCode;
@@ -322,12 +332,46 @@ InputPlugin *OverlayController::inputPlugin() const
     return m_inputPlugin;
 }
 
+void OverlayController::setInputEngine(QVirtualKeyboardInputEngine *engine)
+{
+    m_inputEngine = engine;
+}
+
+void OverlayController::commitAlternate(const QString &text)
+{
+    if (text.isEmpty()) {
+        return;
+    }
+
+    // Qt Virtual Keyboard inserts a character picked from the alternate-keys
+    // popup as a key click through its input engine, and clients take that for
+    // ordinary typing. A bare commit_string instead makes a client (an address
+    // bar, a search field) treat the input as finished, and the compositor
+    // takes the keyboard down with it. Take the same route here.
+    if (m_inputEngine && m_inputEngine->virtualKeyClick(Qt::Key_unknown, text, Qt::KeyboardModifiers())) {
+        qCDebug(PlasmaKeyboard) << "Committing alternate as a key click:" << text;
+        setOverlayVisible(false);
+        resetState();
+        return;
+    }
+
+    commitText(text);
+}
+
 void OverlayController::commitCandidate(int index)
 {
     const QString text = m_candidateModel->insertTextAt(index);
     if (text.isEmpty()) {
         return;
     }
+
+    // A list the gamepad opened holds the layout's alternate characters, which
+    // nothing was typed for: insert them the way the on-screen popup does.
+    if (m_alternatesOnly) {
+        commitAlternate(text);
+        return;
+    }
+
     commitText(text);
 }
 
@@ -337,7 +381,7 @@ void OverlayController::commitText(const QString &text)
         return;
     }
 
-    qCDebug(PlasmaKeyboard) << "Committing overlay selection:" << text;
+    qCDebug(PlasmaKeyboard) << "Committing overlay selection:" << text << "pendingText" << m_pendingText;
 
     if (m_inputPlugin) {
         // The base character (m_pendingText) is still present in the text field —
@@ -411,7 +455,8 @@ void OverlayController::handleSurroundingTextChanged()
     // An external event changed the cursor (e.g. user tapped elsewhere in the
     // text field). Cancel any pending overlay state.
     if (m_holdTimer.isActive() || m_overlayVisible) {
-        qCDebug(PlasmaKeyboard) << "External cursor move detected while overlay active; cancelling overlay";
+        qCDebug(PlasmaKeyboard) << "External cursor move detected while overlay active; cancelling overlay"
+                                << "alternatesOnly" << m_alternatesOnly << "pendingText" << m_pendingText;
         cancelOverlay();
     }
 }
@@ -428,6 +473,17 @@ void OverlayController::openOverlay(const QString &triggerId, const QString &bas
 
     m_activeTriggerId = triggerId;
     m_pendingText = baseText;
+    // Candidates offered without a typed base character (the gamepad, which
+    // cannot type the key that is highlighted) are picked without any commit
+    // happening first, so they need a way to be chosen without the command
+    // buttons of the gamepad.
+    const bool wasAlternatesOnly = m_alternatesOnly;
+    m_alternatesOnly = baseText.isEmpty();
+    m_alternateSelection = -1;
+    if (wasAlternatesOnly != m_alternatesOnly) {
+        Q_EMIT alternatesOnlyChanged();
+    }
+    Q_EMIT alternateSelectionChanged();
 
     m_candidateModel->setTriggerId(triggerId);
     m_candidateModel->setCandidates(candidates);
@@ -465,6 +521,86 @@ void OverlayController::handleTimerExpired()
     // without a following commit would be consumed by a future unrelated commit
     // at a potentially different cursor position, corrupting the text.
     executeAction(result, m_pendingTrigger);
+}
+
+bool OverlayController::openAlternates(const QStringList &alternates)
+{
+    if (alternates.isEmpty()) {
+        return false;
+    }
+
+    // A pending long press of a physical key would otherwise open its own
+    // overlay on top of this one.
+    if (m_holdTimer.isActive()) {
+        m_holdTimer.stop();
+    }
+    m_pendingText.clear();
+    m_pendingNativeScanCode = 0;
+    m_pendingTrigger = nullptr;
+
+    // Opening this overlay is not caused by typing, so the base text is empty
+    // and no commit_string is sent. The client may still report a surrounding
+    // text update — the focus and the selection of the field change while the
+    // keyboard moves — and such an update must not be mistaken for the user
+    // moving the cursor elsewhere, which would cancel the overlay right away.
+    ++m_pendingSurroundingTextUpdates;
+    m_surroundingTextSettleTimer.start();
+
+    // The characters come from the layout of the highlighted key, so the same
+    // popup view is used as for a long press on that key.
+    openOverlay(QStringLiteral("alternates"), QString(), alternates);
+
+    if (!m_overlayVisible) {
+        return false;
+    }
+
+    // Nothing has been typed yet, so the first character is selected right
+    // away: the list is usable with the direction buttons alone.
+    m_alternateSelection = 0;
+    Q_EMIT alternateSelectionChanged();
+    return true;
+}
+
+void OverlayController::navigateAlternates(int key)
+{
+    if (!m_overlayVisible || m_alternatesOnly == false) {
+        return;
+    }
+
+    const int count = m_candidateModel->rowCount();
+    if (count <= 0) {
+        return;
+    }
+
+    switch (key) {
+    case Qt::Key_Left:
+        m_alternateSelection = m_alternateSelection <= 0 ? count - 1 : m_alternateSelection - 1;
+        break;
+    case Qt::Key_Right:
+        m_alternateSelection = m_alternateSelection < 0 ? 0 : (m_alternateSelection + 1) % count;
+        break;
+    case Qt::Key_Up:
+        m_alternateSelection = 0;
+        break;
+    case Qt::Key_Down:
+        m_alternateSelection = count - 1;
+        break;
+    case Qt::Key_Return:
+    case Qt::Key_Enter:
+        if (m_alternateSelection >= 0 && m_alternateSelection < count) {
+            commitCandidate(m_alternateSelection);
+        } else {
+            cancelOverlay();
+        }
+        return;
+    case Qt::Key_Escape:
+        cancelOverlay();
+        return;
+    default:
+        return;
+    }
+
+    Q_EMIT alternateSelectionChanged();
 }
 
 void OverlayController::executeAction(const OverlayTriggerResult &result, OverlayTrigger *trigger)
@@ -585,11 +721,22 @@ void OverlayController::resetState()
     m_pendingKeyReleased = false;
     m_activeTriggerId.clear();
     m_pendingTrigger = nullptr;
+    const bool hadSelection = m_alternateSelection >= 0;
+    const bool wasAlternatesOnly = m_alternatesOnly;
+    m_alternatesOnly = false;
+    m_alternateSelection = -1;
     m_candidateModel->clear();
     m_pendingSurroundingTextUpdates = 0;
     m_surroundingTextSettleTimer.stop();
     if (m_xkbComposeState) {
         xkb_compose_state_reset(m_xkbComposeState);
+    }
+
+    if (hadSelection) {
+        Q_EMIT alternateSelectionChanged();
+    }
+    if (wasAlternatesOnly) {
+        Q_EMIT alternatesOnlyChanged();
     }
 
     if (wasVisible) {

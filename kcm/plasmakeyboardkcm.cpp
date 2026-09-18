@@ -391,6 +391,40 @@ void PlasmaKeyboardKcm::setDiacriticsHoldThresholdMs(int thresholdMs)
     setNeedsSave(true);
 }
 
+bool PlasmaKeyboardKcm::gamepadAlternatesEnabled() const
+{
+    return m_gamepadAlternatesEnabled;
+}
+
+void PlasmaKeyboardKcm::setGamepadAlternatesEnabled(bool enabled)
+{
+    if (enabled == m_gamepadAlternatesEnabled) {
+        return;
+    }
+
+    m_gamepadAlternatesEnabled = enabled;
+    Q_EMIT gamepadAlternatesEnabledChanged();
+
+    setNeedsSave(true);
+}
+
+int PlasmaKeyboardKcm::gamepadAlternatesThresholdMs() const
+{
+    return m_gamepadAlternatesThresholdMs;
+}
+
+void PlasmaKeyboardKcm::setGamepadAlternatesThresholdMs(int thresholdMs)
+{
+    if (thresholdMs == m_gamepadAlternatesThresholdMs) {
+        return;
+    }
+
+    m_gamepadAlternatesThresholdMs = thresholdMs;
+    Q_EMIT gamepadAlternatesThresholdMsChanged();
+
+    setNeedsSave(true);
+}
+
 bool PlasmaKeyboardKcm::isSaveNeeded() const
 {
     return m_saveNeeded;
@@ -418,6 +452,8 @@ void PlasmaKeyboardKcm::load()
     setKeyboardHeightPercent(PlasmaKeyboardSettings::self()->keyboardHeightPercent());
     setDiacriticsPopupEnabled(PlasmaKeyboardSettings::self()->diacriticsPopupEnabled());
     setDiacriticsHoldThresholdMs(PlasmaKeyboardSettings::self()->diacriticsHoldThresholdMs());
+    setGamepadAlternatesEnabled(PlasmaKeyboardSettings::self()->gamepadAlternatesEnabled());
+    setGamepadAlternatesThresholdMs(PlasmaKeyboardSettings::self()->gamepadAlternatesThresholdMs());
 
     setNeedsSave(false);
 }
@@ -442,6 +478,8 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setKeyboardHeightPercent(m_keyboardHeightPercent);
     PlasmaKeyboardSettings::self()->setDiacriticsPopupEnabled(m_diacriticsPopupEnabled);
     PlasmaKeyboardSettings::self()->setDiacriticsHoldThresholdMs(m_diacriticsHoldThresholdMs);
+    PlasmaKeyboardSettings::self()->setGamepadAlternatesEnabled(m_gamepadAlternatesEnabled);
+    PlasmaKeyboardSettings::self()->setGamepadAlternatesThresholdMs(m_gamepadAlternatesThresholdMs);
     PlasmaKeyboardSettings::self()->save();
 
     setNeedsSave(false);

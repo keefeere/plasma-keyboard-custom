@@ -168,6 +168,61 @@ InputPanelWindow {
         }
     }
 
+    //! The key that currently has the navigation highlight, null when the
+    //! keyboard has no highlight to act on.
+    function highlightedKey() {
+        const keyboard = inputPanel.keyboard;
+        const highlight = keyboard.navigationHighlight;
+        const item = highlight ? highlight.highlightItem : null;
+        return item && item !== keyboard ? item : null;
+    }
+
+    //! The alternate characters the highlighted key offers, in the form they
+    //! would be typed. Empty when the key has none.
+    //!
+    //! The characters come from the layout (the alternativeKeys of the key),
+    //! which is what Qt Virtual Keyboard itself shows on a long press there.
+    function highlightedKeyAlternates() {
+        const item = highlightedKey();
+        if (!item || !item.effectiveAlternativeKeys) {
+            return [];
+        }
+        return thing.alternatesFor(item.effectiveAlternativeKeys, inputPanel.InputContext.uppercase);
+    }
+
+    // The gamepad opens the alternate characters of the key that is under the
+    // highlight, so it has to know whether there are any before the button is
+    // held: the delay only starts when something can be offered.
+    function updateGamepadAlternates() {
+        if (!PlasmaKeyboardSettings.gamepadAlternatesEnabled) {
+            gamepad.setAlternatesArmable(false, []);
+            return;
+        }
+        gamepad.setAlternatesArmable(root.extraRowFocus === 0, root.highlightedKeyAlternates());
+        root.updateAlternatesAnchor();
+    }
+
+    //! Put the alternates list over the key it belongs to, the way Qt Virtual
+    //! Keyboard puts its own alternate-keys popup there.
+    function updateAlternatesAnchor() {
+        const item = root.highlightedKey();
+        if (!item) {
+            return;
+        }
+        const centre = item.mapToItem(panelWrapper, item.width / 2, 0);
+        alternatesList.anchorX = centre.x;
+        alternatesList.anchorY = centre.y;
+    }
+
+    // The highlighted key is not a normal property of the panel: the highlight
+    // moves inside Qt Virtual Keyboard, so it is watched per frame instead.
+    Timer {
+        interval: 100
+        running: root.visible
+        repeat: true
+        onTriggered: root.updateGamepadAlternates()
+    }
+
     // While the focus is in the row right above the keyboard, keep the keyboard
     // cursor under the selected item, so leaving downwards lands on the key
     // that is below it.
@@ -198,7 +253,18 @@ InputPanelWindow {
     // Gamepad support (via InputPlumber's dbus target on the system bus).
     GamepadHandler {
         id: gamepad
+
+        //! The alternates overlay that the gamepad itself opened and drives.
+        //! Touch and physical keyboards open the same overlay through the
+        //! input method instead, and that one keeps its own selection.
+        readonly property bool drivingAlternates: thing.overlayController.overlayVisible && thing.overlayController.alternatesOnly
+
         onNavigate: (key) => {
+            if (drivingAlternates) {
+                thing.overlayController.navigateAlternates(key);
+                return;
+            }
+
             if (root.extraRowFocus !== 0) {
                 const count = root.extraRowItemCount(root.extraRowFocus);
                 if (key === Qt.Key_Left) {
@@ -326,6 +392,23 @@ InputPanelWindow {
             inputPanel.InputContext.priv.navigationKeyPressed(Qt.Key_Return, false);
             inputPanel.InputContext.priv.navigationKeyReleased(Qt.Key_Return, false);
         }
+        onShowAlternates: alternates => {
+            // A key with a single alternate has nothing to choose from: taking
+            // it straight away saves a list of one that only needs confirming.
+            if (alternates.length === 1) {
+                thing.overlayController.commitAlternate(alternates[0]);
+                gamepad.clearAlternatesOpen();
+                return;
+            }
+            // Nothing is typed for this: the characters come from the layout of
+            // the highlighted key, so no character has to be deleted afterwards.
+            thing.overlayController.openAlternates(alternates);
+        }
+        onConfirmAlternates: {
+            // The list takes the highlighted character; when there is nothing
+            // selected the list closes instead.
+            thing.overlayController.navigateAlternates(Qt.Key_Return);
+        }
         onToggleExtraRows: {
             const zone = root.rowAbove(root.extraRowFocus);
             if (root.extraRowFocus === 0) {
@@ -345,7 +428,15 @@ InputPanelWindow {
         onToggleShift: inputPanel.InputContext.priv.shiftHandler.toggleShift()
         onToggleSymbols: inputPanel.keyboard.symbolMode = !inputPanel.keyboard.symbolMode
         onSwitchLanguage: inputPanel.keyboard.changeInputLanguage(false)
-        onHideKeyboard: Qt.inputMethod.hide()
+        onHideKeyboard: {
+            // B dismisses the alternates list without picking anything; only a
+            // second press closes the keyboard.
+            if (drivingAlternates) {
+                thing.overlayController.navigateAlternates(Qt.Key_Escape);
+                return;
+            }
+            Qt.inputMethod.hide();
+        }
     }
 
     // Play the key click at full volume: the bundled sound is mastered quiet.
@@ -811,6 +902,52 @@ InputPanelWindow {
                 VirtualKeyboardSettings.arrowKeyNavigationEnabled = true;
                 inputPanel.updateLocales();
             }
+        }
+
+        // The alternate characters the gamepad offers are drawn here, inside
+        // the keyboard window. A window of its own would take the input focus
+        // away from the field being typed into, and the character picked from
+        // the list would then have nowhere to be inserted: the input engine
+        // sends it as a key click to the focused window.
+        AlternatesList {
+            id: alternatesList
+
+            property var cachedOptions: []
+
+            function reload() {
+                const model = thing.overlayController.candidateModel;
+                const items = [];
+                for (let i = 0; i < model.rowCount(); i++) {
+                    items.push(model.insertTextAt(i));
+                }
+                cachedOptions = items;
+            }
+
+            Connections {
+                target: thing.overlayController.candidateModel
+                function onModelReset() {
+                    alternatesList.reload();
+                }
+            }
+
+            // The list is gone, so A goes back to typing the highlighted key.
+            Connections {
+                target: thing.overlayController
+                function onOverlayVisibleChanged() {
+                    if (!thing.overlayController.overlayVisible) {
+                        gamepad.clearAlternatesOpen();
+                    }
+                }
+            }
+
+            Component.onCompleted: reload()
+
+            visible: thing.overlayController.overlayVisible && thing.overlayController.alternatesOnly
+            style: inputPanel.keyboard.style
+            options: cachedOptions
+            externalSelectedIndex: thing.overlayController.alternateSelection
+
+            onCharacterSelected: index => thing.overlayController.commitCandidate(index)
         }
     }
 

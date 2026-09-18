@@ -82,7 +82,7 @@ ecm_qt_declare_logging_category(plasma-keyboard-custom
     IDENTIFIER "PlasmaKeyboard"
     CATEGORY_NAME "org.kde.plasma.keyboard.custom"
     DESCRIPTION "Plasma Keyboard"
-    DEFAULT_SEVERITY Warning
+    DEFAULT_SEVERITY Debug
 )
 
 ecm_add_qml_module(plasma-keyboard-custom
@@ -97,6 +97,7 @@ ecm_target_qml_sources(plasma-keyboard-custom SOURCES
     qml/LanguagePopup.qml
     qml/LanguagePopupDelegate.qml
     qml/DiacriticsOverlay.qml
+    qml/AlternatesList.qml
     qml/OverlayWindow.qml
 )
 ecm_finalize_qml_module(plasma-keyboard-custom)

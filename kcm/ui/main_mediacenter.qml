@@ -272,6 +272,18 @@ KCM.SimpleKCM {
             }
         }
 
+        Bigscreen.SwitchDelegate {
+            id: gamepadAlternatesButton
+            text: i18n("Gamepad alternate characters")
+            KeyNavigation.up: diacriticsButton
+
+            checked: kcm.gamepadAlternatesEnabled
+            onCheckedChanged: {
+                kcm.gamepadAlternatesEnabled = checked;
+                checked = Qt.binding(() => kcm.gamepadAlternatesEnabled);
+            }
+        }
+
         LocaleSelectorSidebar {
             id: localeSelectorSidebar
             onClosed: changeLanguagesButton.forceActiveFocus()

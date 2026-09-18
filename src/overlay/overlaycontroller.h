@@ -12,6 +12,7 @@
 #include <QKeyEvent>
 #include <QObject>
 #include <QTimer>
+#include <QVirtualKeyboardInputEngine>
 #include <qqmlintegration.h>
 
 #include <xkbcommon/xkbcommon-compose.h>
@@ -55,6 +56,20 @@ class OverlayController : public QObject
      * Model of candidates for the current overlay.
      */
     Q_PROPERTY(CandidateModel *candidateModel READ candidateModel CONSTANT)
+
+    /**
+     * Whether the current overlay is a list of alternate characters that was
+     * opened without anything being typed (the gamepad case). The view then
+     * highlights alternateSelection itself and the command buttons of the
+     * gamepad commit and dismiss the selection.
+     */
+    Q_PROPERTY(bool alternatesOnly READ alternatesOnly NOTIFY alternatesOnlyChanged)
+
+    /**
+     * Index of the character selected in the alternates overlay, -1 when none
+     * is selected.
+     */
+    Q_PROPERTY(int alternateSelection READ alternateSelection NOTIFY alternateSelectionChanged)
 
 public:
     explicit OverlayController(InputPlugin *inputPlugin, QObject *parent = nullptr);
@@ -106,6 +121,8 @@ public:
     QString activeTriggerId() const;
     QString pendingText() const;
     CandidateModel *candidateModel() const;
+    bool alternatesOnly() const;
+    int alternateSelection() const;
 
     /**
      * Pending native scan code for release matching.
@@ -117,7 +134,26 @@ public:
      */
     InputPlugin *inputPlugin() const;
 
+    /**
+     * Hand the Qt Virtual Keyboard input engine to the controller.
+     *
+     * Characters picked in the alternates overlay are inserted as key clicks
+     * through this engine, the way the on-screen alternate-keys popup inserts
+     * them, instead of a bare commit_string.
+     */
+    void setInputEngine(QVirtualKeyboardInputEngine *engine);
+
 public Q_SLOTS:
+    /**
+     * Insert one alternate character of the highlighted key.
+     *
+     * Used when the key offers a single alternate, so no list is shown and the
+     * character goes in right away.
+     *
+     * @param text The character to insert.
+     */
+    Q_INVOKABLE void commitAlternate(const QString &text);
+
     /**
      * Commit the candidate at the given index.
      *
@@ -162,6 +198,30 @@ public Q_SLOTS:
      */
     void openOverlay(const QString &triggerId, const QString &baseText, const QStringList &candidates);
 
+    /**
+     * Offer the given alternate characters of the key that currently has the
+     * focus on the on-screen keyboard.
+     *
+     * Used by the gamepad, which cannot produce a key event for the pressed
+     * button: the characters come from the layout of the highlighted key (its
+     * alternativeKeys), which is exactly what a long press on that key shows.
+     * Nothing is typed, so no character has to be deleted when a candidate is
+     * picked afterwards.
+     *
+     * @param alternates The characters to offer.
+     * @return True if the overlay was opened.
+     */
+    Q_INVOKABLE bool openAlternates(const QStringList &alternates);
+
+    /**
+     * Move the selection inside the alternates overlay that was opened with
+     * openAlternates().
+     *
+     * @param key Qt::Key_Left/Right/Up/Down to move, Qt::Key_Return to pick
+     *            the selected character, Qt::Key_Escape to dismiss.
+     */
+    Q_INVOKABLE void navigateAlternates(int key);
+
 Q_SIGNALS:
     /**
      * Emitted when an overlay should be shown.
@@ -174,6 +234,8 @@ Q_SIGNALS:
     void overlayVisibleChanged();
     void activeTriggerIdChanged();
     void pendingTextChanged();
+    void alternatesOnlyChanged();
+    void alternateSelectionChanged();
 
     /**
      * Emitted when a navigation key (arrow or Enter) is pressed while the overlay is visible.
@@ -192,6 +254,14 @@ private:
     void setOverlayVisible(bool visible);
 
     InputPlugin *m_inputPlugin = nullptr;
+
+    /**
+     * The Qt Virtual Keyboard input engine, when the panel handed one over.
+     *
+     * Used to insert a picked alternate character as a key click, so a client
+     * sees ordinary typing and keeps the input session alive.
+     */
+    QVirtualKeyboardInputEngine *m_inputEngine = nullptr;
     QList<OverlayTrigger *> m_triggers;
     CandidateModel *m_candidateModel = nullptr;
 
@@ -203,6 +273,16 @@ private:
     quint32 m_pendingNativeScanCode = 0;
     bool m_swallowNextRelease = false;
     quint32 m_ignoreReleaseNativeScanCode = 0;
+
+    /**
+     * Whether the overlay currently shown is a list of alternate characters
+     * with nothing typed before it (the gamepad opens it for the highlighted
+     * key instead of for a pressed one).
+     */
+    bool m_alternatesOnly = false;
+
+    /** Index of the character selected in that list, -1 when none is. */
+    int m_alternateSelection = -1;
 
     /**
      * Tracks whether the pending key was released while the overlay was still open.

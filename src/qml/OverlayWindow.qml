@@ -31,7 +31,10 @@ InputPanelWindow {
      */
     signal candidateSelected(int index)
 
-    visible: controller.overlayVisible
+    // The list the gamepad opens is drawn inside the keyboard window instead:
+    // a window of its own takes the input focus away from the field being
+    // typed into, and the picked character then has nowhere to be inserted.
+    visible: controller.overlayVisible && !controller.alternatesOnly
     color: "transparent"
 
     width: contentLoader.item ? contentLoader.item.implicitWidth : 100

@@ -6,6 +6,7 @@
 
 #include "gamepadhandler.h"
 #include "logging.h"
+#include "plasmakeyboardsettings.h"
 
 #include <QDBusConnection>
 #include <QDBusMessage>
@@ -95,6 +96,22 @@ GamepadHandler::GamepadHandler(QObject *parent)
         }
         Q_EMIT backspace();
         m_backspaceTimer->start(s_backspaceRepeatMs);
+    });
+
+    // A tapped activates the highlighted key; held past the configured delay it
+    // offers that key's alternate characters instead, and the list is then
+    // walked with the directions.
+    m_acceptHoldTimer = new QTimer(this);
+    m_acceptHoldTimer->setSingleShot(true);
+    connect(m_acceptHoldTimer, &QTimer::timeout, this, [this] {
+        qCDebug(PlasmaKeyboard) << "GamepadHandler: A hold timer fired, held" << m_acceptHeld << "armed" << m_pressedAlternates;
+        if (m_acceptHeld && !m_pressedAlternates.isEmpty()) {
+            // This press has done its job, so its release must not type the key.
+            m_acceptConsumed = true;
+            m_alternatesOpened = true;
+            qCDebug(PlasmaKeyboard) << "GamepadHandler: offering alternates" << m_pressedAlternates;
+            Q_EMIT showAlternates(m_pressedAlternates);
+        }
     });
 
     const QString path = findDbusDevicePath(&m_compositePath);
@@ -278,15 +295,19 @@ void GamepadHandler::onInputEvent(const QString &event, double value)
         return;
     }
 
+    // A: activates the highlighted key, or offers its alternate characters
+    // when it is held.
+    if (event == QLatin1String("ui_accept")) {
+        handleAccept(pressed);
+        return;
+    }
+
     // All remaining mappings trigger on press only.
     if (!pressed) {
         return;
     }
 
-    if (event == QLatin1String("ui_accept")) {
-        // A: type the highlighted key.
-        Q_EMIT activate();
-    } else if (event == QLatin1String("ui_back")) {
+    if (event == QLatin1String("ui_back")) {
         // B: close the keyboard.
         Q_EMIT hideKeyboard();
     } else if (event == QLatin1String("ui_action")) {
@@ -328,6 +349,76 @@ void GamepadHandler::handleBackspace(bool pressed)
         m_backspaceHeld = false;
         m_backspaceTimer->stop();
     }
+}
+
+void GamepadHandler::handleAccept(bool pressed)
+{
+    if (pressed) {
+        if (m_acceptHeld) {
+            return;
+        }
+        m_acceptHeld = true;
+        m_acceptConsumed = false;
+
+        // A press while the list is already up means "take the highlighted
+        // character": the release that opened it is long gone, and the list
+        // stays on screen until something is picked or dismissed.
+        if (m_alternatesOpened) {
+            m_acceptConsumed = true;
+            qCDebug(PlasmaKeyboard) << "GamepadHandler: A pressed while the alternates list is open, confirming";
+            Q_EMIT confirmAlternates();
+            return;
+        }
+
+        // Fix the list now: the panel keeps polling the highlight while the
+        // button is down, and the key under it may change (or blink out for one
+        // poll) before the delay is over.
+        m_pressedAlternates = m_alternatesArmable ? m_alternates : QStringList();
+        qCDebug(PlasmaKeyboard) << "GamepadHandler: A pressed, armable" << m_alternatesArmable << "alternates" << m_pressedAlternates;
+        if (!m_pressedAlternates.isEmpty()) {
+            m_acceptHoldTimer->start(PlasmaKeyboardSettings::self()->gamepadAlternatesThresholdMs());
+        }
+        return;
+    }
+
+    if (!m_acceptHeld) {
+        return;
+    }
+    m_acceptHeld = false;
+    m_acceptHoldTimer->stop();
+    m_pressedAlternates.clear();
+
+    // The press that is ending already opened the list or took a character, so
+    // it must not type the highlighted key as well. Whether the list is still
+    // up makes no difference here: the next press picks from it.
+    const bool consumed = m_acceptConsumed;
+    m_acceptConsumed = false;
+    if (consumed) {
+        return;
+    }
+
+    Q_EMIT activate();
+}
+
+void GamepadHandler::setAlternatesArmable(bool armable, const QStringList &alternates)
+{
+    m_alternatesArmable = armable && !alternates.isEmpty();
+    m_alternates = alternates;
+
+    // The highlight moved away from a key before the button was held long
+    // enough: there is nothing to offer any more.
+    //
+    // The button being down keeps a running delay alive: the panel polls the
+    // highlight, and a poll that finds no key must not cancel the delay that
+    // was started for the characters fixed at press time.
+    if (!m_alternatesArmable && !m_acceptHeld) {
+        m_acceptHoldTimer->stop();
+    }
+}
+
+void GamepadHandler::clearAlternatesOpen()
+{
+    m_alternatesOpened = false;
 }
 
 void GamepadHandler::handleDirection(int key, bool pressed)

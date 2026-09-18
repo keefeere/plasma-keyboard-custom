@@ -123,6 +123,20 @@ public:
     Q_INVOKABLE void commitText(const QString &text);
 
     /**
+     * The alternate characters a key offers, in the form they would be typed.
+     *
+     * @p alternatives is the effectiveAlternativeKeys of the highlighted key
+     * (the characters of its alternativeKeys without the key's own text), which
+     * is exactly what the long press on the on-screen key shows. Shift is
+     * applied the same way Qt Virtual Keyboard applies it in its own popup.
+     *
+     * @param alternatives Raw alternative characters of the key.
+     * @param uppercase Whether the keyboard currently types upper case.
+     * @return The characters to offer, empty when the key has none.
+     */
+    Q_INVOKABLE QStringList alternatesFor(const QVariantList &alternatives, bool uppercase) const;
+
+    /**
      * Get the overlay controller.
      */
     OverlayController *overlayController() const;
