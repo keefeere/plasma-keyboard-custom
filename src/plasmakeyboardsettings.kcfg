@@ -103,5 +103,21 @@
             <max>1500</max>
             <default>400</default>
         </entry>
+        <entry key="predictiveTextEnabled" type="Bool">
+            <label>Whether the words that continue what is being typed are offered above the keyboard.</label>
+            <default>true</default>
+        </entry>
+        <entry key="predictiveSuggestionCount" type="Int">
+            <label>How many word suggestions are offered at once.</label>
+            <min>1</min>
+            <max>5</max>
+            <default>3</default>
+        </entry>
+        <entry key="predictiveMinPrefixLength" type="Int">
+            <label>How many letters have to be typed before word suggestions are offered.</label>
+            <min>1</min>
+            <max>4</max>
+            <default>1</default>
+        </entry>
     </group>
 </kcfg>

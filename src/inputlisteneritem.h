@@ -99,6 +99,13 @@ class InputListenerItem : public QQuickItem
      */
     Q_PROPERTY(ClipboardHistory *clipboardHistory READ clipboardHistory CONSTANT)
 
+    /**
+     * The word being typed: the letters before the cursor, together with the
+     * hyphens and apostrophes inside them («что-то», «don't»). Empty when the
+     * field is not being typed into or the cursor is not after a word.
+     */
+    Q_PROPERTY(QString predictionPrefix READ predictionPrefix NOTIFY predictionPrefixChanged)
+
 public:
     InputListenerItem();
 
@@ -121,6 +128,17 @@ public:
      * Used by the clipboard row to paste a copied text.
      */
     Q_INVOKABLE void commitText(const QString &text);
+
+    /**
+     * The word being typed, as offered to the predictive text input.
+     */
+    QString predictionPrefix() const;
+
+    /**
+     * Replaces the word being typed with @p word, the way a suggestion is
+     * taken. The word carries the case it should be typed in.
+     */
+    Q_INVOKABLE void applyPrediction(const QString &word);
 
     /**
      * The alternate characters a key offers, in the form they would be typed.
@@ -149,6 +167,7 @@ public:
 Q_SIGNALS:
     void keyNavigationPressed(int key);
     void keyNavigationReleased(int key);
+    void predictionPrefixChanged();
 
 private:
     /**
@@ -160,11 +179,17 @@ private:
      */
     bool handleModifiedKey(QKeyEvent *event, bool press);
 
+    //! Re-reads the word being typed and tells QML when it changed.
+    void updatePredictionPrefix();
+
     InputPlugin m_input;
     OverlayController *m_overlayController = nullptr;
     ClipboardHistory *m_clipboardHistory = nullptr;
     TouchHoldWatcher m_touchHold;
     bool m_keyboardNavigationActive = false;
+
+    //! The word the predictive text input currently suggests for.
+    QString m_predictionPrefix;
 
     //! True after the keyboard was hidden (by the user or by the system) and
     //! until the next input activation. A focused text field keeps sending

@@ -229,19 +229,30 @@ The settings page in System Settings:
   input method again (`kwinrc [Wayland] InputMethod` toggled), deferring the restart while the panel is visible but
   never for more than a couple of minutes — no manual restart after `pacman -Syu`.
 - **Optional F1–F12 row** above the keyboard, sized and styled like the regular keys; the panel grows accordingly.
-- **Clipboard row** above the keyboard (off by default): the recent entries of the desktop clipboard manager, asked for
-  over D-Bus (`org.kde.klipper`, i.e. the clipboard widget of the Plasma panel), shown as three equally sized chips that
-  are aligned with the keyboard and centred while there are fewer than three. Tapping a chip inserts that text into the
-  focused field (terminals included), the key at the right edge of the row forgets the whole history, and long or
-  multi-line entries are shortened to a single line. The row appears and disappears together with the clipboard.
+- **Clipboard and suggestion row** above the keyboard (the clipboard is off by default): the recent entries of the desktop
+  clipboard manager, asked for over D-Bus (`org.kde.klipper`, i.e. the clipboard widget of the Plasma panel), shown as three
+  equally sized chips that are aligned with the keyboard and centred while there are fewer than three. Tapping a chip inserts
+  that text into the focused field (terminals included), the key at the right edge of the row forgets the whole history, and
+  long or multi-line entries are shortened to a single line. While a word is being typed the same row offers the word
+  suggestions (below), and the key at its right edge switches the row between the two; the row appears and disappears
+  together with them.
+- **Predictive text (word suggestions)**: while a word is being typed, the words that continue it are offered above the
+  keyboard, the most frequent first (three at a time by default, 1–5 in the settings). The words come from frequency
+  dictionaries of Russian and English (about 1.18 M and 1.03 M word forms, FrequencyWords data, MIT licence), and the
+  prediction engine is our own — the hunspell plugin of Qt Virtual Keyboard stays deliberately switched off. Suggestions
+  start with the first letter (the threshold is configurable, 1–4), the chips are as wide as their text and sit on the
+  left, and the part that would complete the word is underlined. Taking a chip (or **A** on a gamepad) replaces the word
+  being typed as a whole and **adds a space**, so that the next word can be typed right away. It works with touch, mouse
+  and gamepad (D-pad along the row, **A** to take), and is configured on the *Typing* tab.
 - **Single instance**: a second process exits right away, so a stale instance can never keep an old panel around.
 - **Settings page** (`plasma-keyboard-custom` in System Settings), organised in tabs — *Layouts* (languages),
   *Opening* (long press, mouse focus, hiding the Plasma panel),   *Appearance* (height, font, F1–F12 row, clipboard row) and
-  *Typing* (auto-capitalization, alternate characters, sound, vibration, navigation, a test field):
+  *Typing* (auto-capitalization, word suggestions, alternate characters, sound, vibration, navigation, a test field):
   - keyboard height as a percentage of the screen (20–80%),
   - whether the keyboard opens when a text field is focused with a mouse (otherwise it only opens on touch or via the shortcut),
   - open on long press with its threshold, the F1–F12 row, the keyboard font, hiding the Plasma panel while the
     keyboard is visible,
+  - word suggestions: on or off, how many are offered at once (1–5) and how many letters it takes for them to appear (1–4),
   - which of the enabled layouts opens by default — a star next to it in the layout list; without a choice the layout
     the system asks for decides, falling back to the first enabled one,
   - the page and its options are translated (the `kcm_plasmakeyboardcustom` translation domain is shipped with the

@@ -425,6 +425,57 @@ void PlasmaKeyboardKcm::setGamepadAlternatesThresholdMs(int thresholdMs)
     setNeedsSave(true);
 }
 
+bool PlasmaKeyboardKcm::predictiveTextEnabled() const
+{
+    return m_predictiveTextEnabled;
+}
+
+void PlasmaKeyboardKcm::setPredictiveTextEnabled(bool enabled)
+{
+    if (enabled == m_predictiveTextEnabled) {
+        return;
+    }
+
+    m_predictiveTextEnabled = enabled;
+    Q_EMIT predictiveTextEnabledChanged();
+
+    setNeedsSave(true);
+}
+
+int PlasmaKeyboardKcm::predictiveSuggestionCount() const
+{
+    return m_predictiveSuggestionCount;
+}
+
+void PlasmaKeyboardKcm::setPredictiveSuggestionCount(int count)
+{
+    if (count == m_predictiveSuggestionCount) {
+        return;
+    }
+
+    m_predictiveSuggestionCount = count;
+    Q_EMIT predictiveSuggestionCountChanged();
+
+    setNeedsSave(true);
+}
+
+int PlasmaKeyboardKcm::predictiveMinPrefixLength() const
+{
+    return m_predictiveMinPrefixLength;
+}
+
+void PlasmaKeyboardKcm::setPredictiveMinPrefixLength(int length)
+{
+    if (length == m_predictiveMinPrefixLength) {
+        return;
+    }
+
+    m_predictiveMinPrefixLength = length;
+    Q_EMIT predictiveMinPrefixLengthChanged();
+
+    setNeedsSave(true);
+}
+
 bool PlasmaKeyboardKcm::isSaveNeeded() const
 {
     return m_saveNeeded;
@@ -454,6 +505,9 @@ void PlasmaKeyboardKcm::load()
     setDiacriticsHoldThresholdMs(PlasmaKeyboardSettings::self()->diacriticsHoldThresholdMs());
     setGamepadAlternatesEnabled(PlasmaKeyboardSettings::self()->gamepadAlternatesEnabled());
     setGamepadAlternatesThresholdMs(PlasmaKeyboardSettings::self()->gamepadAlternatesThresholdMs());
+    setPredictiveTextEnabled(PlasmaKeyboardSettings::self()->predictiveTextEnabled());
+    setPredictiveSuggestionCount(PlasmaKeyboardSettings::self()->predictiveSuggestionCount());
+    setPredictiveMinPrefixLength(PlasmaKeyboardSettings::self()->predictiveMinPrefixLength());
 
     setNeedsSave(false);
 }
@@ -480,6 +534,9 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setDiacriticsHoldThresholdMs(m_diacriticsHoldThresholdMs);
     PlasmaKeyboardSettings::self()->setGamepadAlternatesEnabled(m_gamepadAlternatesEnabled);
     PlasmaKeyboardSettings::self()->setGamepadAlternatesThresholdMs(m_gamepadAlternatesThresholdMs);
+    PlasmaKeyboardSettings::self()->setPredictiveTextEnabled(m_predictiveTextEnabled);
+    PlasmaKeyboardSettings::self()->setPredictiveSuggestionCount(m_predictiveSuggestionCount);
+    PlasmaKeyboardSettings::self()->setPredictiveMinPrefixLength(m_predictiveMinPrefixLength);
     PlasmaKeyboardSettings::self()->save();
 
     setNeedsSave(false);

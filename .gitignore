@@ -35,3 +35,9 @@ Testing/
 /packaging/pkg/
 /packaging/*.pkg.tar.zst
 /packaging/*.tar.gz
+
+# Local session data: plans and downloaded word list sources
+/.dsh/
+
+# Long-term memory pages written by dsh-llm-memory
+/.harness/

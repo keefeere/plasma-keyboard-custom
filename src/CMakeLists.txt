@@ -53,6 +53,11 @@ target_sources(plasma-keyboard-custom PRIVATE
     overlay/prefixquerytrigger.h
     overlay/textexpansiontrigger.cpp
     overlay/textexpansiontrigger.h
+    prediction.qrc
+    prediction/predictivedictionary.cpp
+    prediction/predictivedictionary.h
+    prediction/wordatcursor.cpp
+    prediction/wordatcursor.h
 )
 
 if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
@@ -110,6 +115,7 @@ target_include_directories(plasma-keyboard-custom PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/clipboard
     ${CMAKE_CURRENT_SOURCE_DIR}/overlay
+    ${CMAKE_CURRENT_SOURCE_DIR}/prediction
     ${CMAKE_CURRENT_SOURCE_DIR}/theme
 )
 

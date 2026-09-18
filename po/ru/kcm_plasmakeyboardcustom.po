@@ -462,3 +462,47 @@ msgstr "Открывать по умолчанию"
 #: ui/LocaleSelectorListView.qml ui/LocaleSelectorSidebar.qml
 msgid "Open this layout by default"
 msgstr "Открывать эту раскладку по умолчанию"
+
+#: ui/main.qml
+msgid "Word suggestions:"
+msgstr "Подсказки слов:"
+
+#: ui/main.qml ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Word suggestions"
+msgstr "Подсказки слов"
+
+#: ui/main.qml ui/main_handset.qml
+msgid "Offer words that continue what is being typed"
+msgstr "Предлагать слова, продолжающие набираемое"
+
+#: ui/main.qml
+msgid "Suggestions at once:"
+msgstr "Подсказок за раз:"
+
+#: ui/main_handset.qml
+msgid "Suggestions at once"
+msgstr "Подсказок за раз"
+
+#: ui/main_handset.qml
+msgid "How many word suggestions are offered at the same time"
+msgstr "Сколько подсказок слов показывать одновременно"
+
+#: ui/main.qml
+msgid "Letters before suggesting:"
+msgstr "Букв до подсказок:"
+
+#: ui/main_handset.qml
+msgid "Letters before suggesting"
+msgstr "Букв до подсказок"
+
+#: ui/main_handset.qml
+msgid "How many letters have to be typed before word suggestions appear"
+msgstr "Сколько букв нужно набрать до появления подсказок"
+
+#: ui/main.qml
+msgid "%1 letter"
+msgid_plural "%1 letters"
+msgstr[0] "%1 буква"
+msgstr[1] "%1 буквы"
+msgstr[2] "%1 букв"
+msgstr[3] "%1 буква"

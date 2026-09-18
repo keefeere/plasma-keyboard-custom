@@ -284,6 +284,18 @@ KCM.SimpleKCM {
             }
         }
 
+        Bigscreen.SwitchDelegate {
+            id: predictiveTextButton
+            text: i18n("Word suggestions")
+            KeyNavigation.up: gamepadAlternatesButton
+
+            checked: kcm.predictiveTextEnabled
+            onCheckedChanged: {
+                kcm.predictiveTextEnabled = checked;
+                checked = Qt.binding(() => kcm.predictiveTextEnabled);
+            }
+        }
+
         LocaleSelectorSidebar {
             id: localeSelectorSidebar
             onClosed: changeLanguagesButton.forceActiveFocus()

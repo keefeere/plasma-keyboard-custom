@@ -39,6 +39,10 @@ InputPanelWindow {
             extraRowFocus = 0;
             extraColumn = 0;
 
+            // The word being typed is gone with the field it was typed into.
+            predictions = [];
+            suggestionsRow.clipboardChosen = false;
+
             // Close language dialog
             languageDialog.close();
         }
@@ -51,6 +55,54 @@ InputPanelWindow {
     property int extraRowFocus: 0
     property int extraColumn: 0
 
+    //! Words that continue what is being typed, most frequent first. The row
+    //! above the keyboard offers them while a word is being typed and inserts
+    //! the chosen one in place of it.
+    property var predictions: []
+
+    //! The word lists the suggestions are looked up in.
+    PredictiveDictionary {
+        id: predictor
+    }
+
+    //! Re-reads the suggestions for the word that is being typed. The language
+    //! is the one the text field asked for.
+    function updatePredictions() {
+        if (!PlasmaKeyboardSettings.predictiveTextEnabled
+            || thing.predictionPrefix.length < PlasmaKeyboardSettings.predictiveMinPrefixLength) {
+            predictions = [];
+            return;
+        }
+        predictions = predictor.complete(thing.predictionPrefix, PlasmaKeyboardSettings.predictiveSuggestionCount, inputPanel.InputContext.locale);
+    }
+
+    Connections {
+        target: thing
+        function onPredictionPrefixChanged() {
+            root.updatePredictions();
+        }
+    }
+
+    Connections {
+        target: PlasmaKeyboardSettings
+        function onPredictiveTextEnabledChanged() {
+            root.updatePredictions();
+        }
+        function onPredictiveMinPrefixLengthChanged() {
+            root.updatePredictions();
+        }
+        function onPredictiveSuggestionCountChanged() {
+            root.updatePredictions();
+        }
+    }
+
+    Connections {
+        target: inputPanel.InputContext
+        function onLocaleChanged() {
+            root.updatePredictions();
+        }
+    }
+
     //! Rows above the keyboard, listed from the keyboard upwards. Rebuilt
     //! whenever a row is shown or hidden, so the whole navigation follows this
     //! one list and disabled or empty rows simply drop out of it.
@@ -59,8 +111,8 @@ InputPanelWindow {
         if (functionKeyRow.visible) {
             rows.push("fkeys");
         }
-        if (clipboardRow.visible) {
-            rows.push("clipboard");
+        if (suggestionsRow.visible) {
+            rows.push("suggestions");
         }
         return rows;
     }
@@ -70,8 +122,9 @@ InputPanelWindow {
         if (zone <= 0 || zone > navRows.length) {
             return 0;
         }
-        // The clipboard row also holds the key that clears the history.
-        return navRows[zone - 1] === "clipboard" ? thing.clipboardHistory.count + 1 : 12;
+        // The row above the keyboard holds the suggestions (or the clipboard
+        // entries) and the keys that switch between them and clear the history.
+        return navRows[zone - 1] === "suggestions" ? suggestionsRow.itemCount() : 12;
     }
 
     //! Zone number of the named row (0 when that row is not shown).
@@ -161,12 +214,8 @@ InputPanelWindow {
 
     //! Activates the selected item of the focused row.
     function activateExtraRowItem() {
-        if (extraRowFocus === zoneOf("clipboard")) {
-            if (extraColumn < thing.clipboardHistory.count) {
-                thing.commitText(thing.clipboardHistory.textAt(extraColumn));
-            } else {
-                thing.clipboardHistory.clear();
-            }
+        if (extraRowFocus === zoneOf("suggestions")) {
+            suggestionsRow.activate(extraColumn);
             return;
         }
         if (extraRowFocus === zoneOf("fkeys")) {
@@ -379,7 +428,7 @@ InputPanelWindow {
                         const ratio = keyboard.mapFromItem(item, item.width / 2, 0).x / keyboard.width;
                         root.extraRowFocus = zone;
                         // The clipboard row always starts at its first entry.
-                        root.extraColumn = zone === root.zoneOf("clipboard") ? 0 : root.columnForZone(zone, ratio);
+                        root.extraColumn = zone === root.zoneOf("suggestions") ? 0 : root.columnForZone(zone, ratio);
                         return;
                     }
 
@@ -422,7 +471,7 @@ InputPanelWindow {
                 const highlight = keyboard.navigationHighlight;
                 const item = highlight ? highlight.highlightItem : null;
                 const ratio = item && item !== keyboard ? keyboard.mapFromItem(item, item.width / 2, 0).x / keyboard.width : 0;
-                root.extraColumn = zone === root.zoneOf("clipboard") ? 0 : root.columnForZone(zone, ratio);
+                root.extraColumn = zone === root.zoneOf("suggestions") ? 0 : root.columnForZone(zone, ratio);
             } else {
                 root.extraColumn = root.columnForZone(zone, (root.extraColumn + 0.5) / root.extraRowItemCount(root.extraRowFocus));
             }
@@ -448,6 +497,7 @@ InputPanelWindow {
     // Play the key click at full volume: the bundled sound is mastered quiet.
     Component.onCompleted: {
         VirtualKeyboardSettings.keySoundVolume = 100;
+        root.updatePredictions();
 
         // The navigation highlight of Qt Virtual Keyboard is animated, so while
         // the focus is moved into place it appears to travel through the keys it
@@ -545,28 +595,114 @@ InputPanelWindow {
         // Padding for background corners and panel drag area
         readonly property real padding: isFullScreenWidth ? 0 : Kirigami.Units.largeSpacing
 
-        // Recent clipboard entries, read from the clipboard history of the
-        // desktop while the feature is enabled in the settings. Tapping an
-        // entry inserts it into the focused field. The row hides itself when
-        // nothing has been copied yet.
+        // The row above the keyboard: the words that continue what is being
+        // typed while a word is being typed, the recent clipboard entries
+        // otherwise. Both are a single row of chips, so they share the place on
+        // the screen; the keys in the corner switch between them when both have
+        // something to offer, and clear the clipboard history in that mode.
         Item {
-            id: clipboardRow
+            id: suggestionsRow
 
             readonly property var kbdStyle: inputPanel.keyboard.style
-            // Half the height of a normal keyboard row, like the F-key row.
+            // Three quarters of a normal keyboard row: the row is the F-key row
+            // (half a row) grown by half of that height, so that the suggestions
+            // are comfortable to read and to hit.
             readonly property real normalRowHeight: kbdStyle ? kbdStyle.targetKeyboardHeight / 5 : Kirigami.Units.gridUnit * 2
-            readonly property real rowHeight: normalRowHeight / 2
+            readonly property real rowHeight: normalRowHeight * 0.75
             readonly property real fontScale: rowHeight / normalRowHeight
             readonly property real sideMargin: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin / 2
             // How many entries fit on screen at once: all entries have the same
             // width, longer texts are cut off.
             readonly property int visibleChips: 3
-            readonly property real chipWidth: width / visibleChips
+            // The suggestions are all shown at once; the clipboard entries
+            // scroll three at a time, so that a long history does not shrink
+            // every entry to an unreadable width.
+            readonly property int chipColumns: showingSuggestions ? Math.max(visibleChips, rowItems.length) : visibleChips
+            readonly property real chipWidth: width / chipColumns
 
-            visible: PlasmaKeyboardSettings.clipboardEnabled && thing.clipboardHistory.count > 0
+            //! The word being typed, which the suggestions complete.
+            readonly property string prefix: thing.predictionPrefix
+
+            //! Whether there is something to suggest for the word being typed.
+            readonly property bool hasSuggestions: root.predictions.length > 0
+
+            //! Whether there are clipboard entries to offer.
+            readonly property bool hasClipboard: PlasmaKeyboardSettings.clipboardEnabled && thing.clipboardHistory.count > 0
+
+            //! Set when the clipboard was asked for while suggestions are
+            //! available; a new word gives way to the suggestions again.
+            property bool clipboardChosen: false
+
+            readonly property bool showingSuggestions: hasSuggestions && !clipboardChosen
+
+            //! The chips of the row: the suggestions (with the part that would
+            //! be added to the word) or the clipboard entries.
+            readonly property var rowItems: {
+                if (showingSuggestions) {
+                    return root.predictions.map(word => ({
+                                "text": word,
+                                "completion": Math.max(0, word.length - prefix.length),
+                                "suggestion": true
+                            }));
+                }
+                const items = [];
+                for (let i = 0; i < thing.clipboardHistory.count; ++i) {
+                    items.push({
+                        "text": thing.clipboardHistory.textAt(i),
+                        "completion": 0,
+                        "suggestion": false
+                    });
+                }
+                return items;
+            }
+
+            //! The key in the corner that switches to the other mode, if any.
+            readonly property bool hasSwitchButton: showingSuggestions ? hasClipboard : hasSuggestions
+
+            //! The key that clears the clipboard history (clipboard mode only).
+            readonly property bool hasClearButton: !showingSuggestions
+
+            //! Number of selectable cells of the row, for the gamepad.
+            function itemCount() {
+                return rowItems.length + (hasSwitchButton ? 1 : 0) + (hasClearButton ? 1 : 0);
+            }
+
+            //! Takes the cell the gamepad selected.
+            function activate(column) {
+                if (column < rowItems.length) {
+                    if (showingSuggestions) {
+                        thing.applyPrediction(rowItems[column].text);
+                    } else {
+                        thing.commitText(rowItems[column].text);
+                    }
+                    return;
+                }
+                let index = column - rowItems.length;
+                if (hasSwitchButton) {
+                    if (index === 0) {
+                        clipboardChosen = !clipboardChosen;
+                        return;
+                    }
+                    --index;
+                }
+                if (hasClearButton) {
+                    thing.clipboardHistory.clear();
+                }
+            }
+
+            visible: showingSuggestions || hasClipboard
             onVisibleChanged: {
-                if (!visible && root.extraRowFocus === root.zoneOf("clipboard")) {
+                if (!visible && root.extraRowFocus === root.zoneOf("suggestions")) {
                     root.extraRowFocus = 0;
+                }
+            }
+
+            // A new word means new suggestions, so the clipboard, if it was
+            // asked for, gives way to them again.
+            Connections {
+                target: thing
+                function onPredictionPrefixChanged() {
+                    suggestionsRow.clipboardChosen = false;
                 }
             }
 
@@ -588,25 +724,25 @@ InputPanelWindow {
             Connections {
                 target: root
                 function onExtraColumnChanged() {
-                    if (root.extraRowFocus === root.zoneOf("clipboard")) {
-                        clipboardRow.showColumn(root.extraColumn);
+                    if (root.extraRowFocus === root.zoneOf("suggestions")) {
+                        suggestionsRow.showColumn(root.extraColumn);
                     }
                 }
                 function onExtraRowFocusChanged() {
-                    if (root.extraRowFocus === root.zoneOf("clipboard")) {
-                        clipboardRow.showColumn(root.extraColumn);
+                    if (root.extraRowFocus === root.zoneOf("suggestions")) {
+                        suggestionsRow.showColumn(root.extraColumn);
                     }
                 }
             }
 
-            // The entries, flicked from the left edge. The clear button is not
-            // part of this area, so it never scrolls away.
+            // The chips, flicked from the left edge. The keys in the corner are
+            // not part of this area, so they never scroll away.
             Flickable {
                 id: entries
 
                 anchors.left: parent.left
                 anchors.top: parent.top
-                width: parent.width - clearButton.width
+                width: parent.width - cornerKeys.width
                 height: parent.height
 
                 contentWidth: chips.width
@@ -619,24 +755,36 @@ InputPanelWindow {
                 Row {
                     id: chips
                     height: entries.height
-                    // Fewer entries than fit into the row: center them. More than
-                    // fit: start at the left edge and let the row be flicked.
-                    x: Math.max(0, (entries.width - width) / 2)
+                    // The suggestions start at the left edge, the way the word
+                    // suggestions sit on the keyboards that have them. The
+                    // clipboard entries are centered while they fit: fewer
+                    // entries than the row holds should not hug the edge.
+                    x: suggestionsRow.showingSuggestions ? 0 : Math.max(0, (entries.width - width) / 2)
 
                     Repeater {
-                        model: thing.clipboardHistory
+                        model: suggestionsRow.rowItems
 
                         delegate: Item {
-                            id: clipboardChip
+                            id: chip
                             required property int index
-                            required property string text
+                            required property var modelData
 
                             //! Selected with the gamepad.
-                            readonly property bool focused: root.extraRowFocus === root.zoneOf("clipboard") && root.extraColumn === index
+                            readonly property bool focused: root.extraRowFocus === root.zoneOf("suggestions") && root.extraColumn === index
 
-                            // A third of the row each, matching one third of the keyboard.
-                            width: clipboardRow.chipWidth
-                            height: clipboardRow.rowHeight
+                            //! Whether the part of the suggestion that would be
+                            //! added to the word being typed is shown.
+                            readonly property bool completes: modelData.suggestion && modelData.completion > 0
+
+                            //! A suggestion is as wide as its text, so that a
+                            //! short word does not take a third of the screen; the
+                            //! clipboard entries keep one width, three to a row.
+                            //! The text keeps equal room on both sides of the chip,
+                            //! also when the chip is wider than its text.
+                            readonly property real chipPadding: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin * 2
+                            readonly property real chipTextWidth: chipLabel.contentWidth + 2 * chipPadding
+                            width: modelData.suggestion ? Math.min(suggestionsRow.width, Math.max(suggestionsRow.rowHeight * 2, chipTextWidth)) : suggestionsRow.chipWidth
+                            height: suggestionsRow.rowHeight
 
                             Kirigami.ShadowedRectangle {
                                 id: chipBackground
@@ -662,27 +810,33 @@ InputPanelWindow {
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: PlasmaKeyboard.BreezeConstants.buttonRadius
-                                    visible: clipboardChip.focused
+                                    visible: chip.focused
                                     color: PlasmaKeyboard.BreezeConstants.navigationHighlightColor
                                     border.width: 2
                                     border.color: PlasmaKeyboard.BreezeConstants.navigationHighlightBorderColor
                                 }
 
                                 Text {
-                                    id: label
-                                    anchors.fill: parent
-                                    anchors.leftMargin: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin * 2
-                                    anchors.rightMargin: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin * 2
-
-                                    verticalAlignment: Text.AlignVCenter
-                                    // Entries can be multi-line: show them as a single line.
-                                    text: clipboardChip.text.replace(/\s+/g, " ")
-                                    elide: Text.ElideRight
+                                    id: chipLabel
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    // The suggestion takes the width of its text
+                                    // (the chip is measured from it); a clipboard
+                                    // entry takes the width of the chip and is cut
+                                    // off when it is longer.
+                                    width: chip.modelData.suggestion ? implicitWidth : Math.max(0, chip.width - chip.chipPadding * 2)
+                                    // The completed part of a suggestion is
+                                    // underlined, the way Qt Virtual Keyboard
+                                    // underlines it in its own candidate bar. An
+                                    // entry can be multi-line: show it as one line.
+                                    text: chip.completes ? chip.modelData.text.slice(0, -chip.modelData.completion) + "<u>" + chip.modelData.text.slice(-chip.modelData.completion) + "</u>" : chip.modelData.text.replace(/\s+/g, " ")
+                                    textFormat: chip.completes ? Text.RichText : Text.PlainText
+                                    elide: chip.completes ? Text.ElideNone : Text.ElideRight
                                     maximumLineCount: 1
                                     color: PlasmaKeyboard.BreezeConstants.keyTextColor
                                     font {
                                         family: PlasmaKeyboard.BreezeConstants.fontFamily
-                                        pixelSize: clipboardRow.kbdStyle ? 60 * (clipboardRow.kbdStyle.targetKeyboardHeight / clipboardRow.kbdStyle.keyboardDesignHeight) * clipboardRow.fontScale : Kirigami.Units.gridUnit
+                                        pixelSize: suggestionsRow.kbdStyle ? 60 * (suggestionsRow.kbdStyle.targetKeyboardHeight / suggestionsRow.kbdStyle.keyboardDesignHeight) * suggestionsRow.fontScale : Kirigami.Units.gridUnit
                                     }
                                 }
                             }
@@ -690,64 +844,133 @@ InputPanelWindow {
                             MouseArea {
                                 id: chipHandler
                                 anchors.fill: parent
-                                onClicked: thing.commitText(clipboardChip.text)
+                                onClicked: suggestionsRow.activate(chip.index)
                             }
                         }
                     }
                 }
             }
 
-            // Clearing the whole history: always in the right corner, as a
-            // regular key (square, key background) next to the lighter entries.
-            Item {
-                id: clearButton
+            // The keys in the right corner: the one that switches between the
+            // suggestions and the clipboard entries, and the one that clears
+            // the history. Both are regular keys (square, key background) next
+            // to the lighter entries.
+            Row {
+                id: cornerKeys
 
-                //! Selected with the gamepad (the last column of the row).
-                readonly property bool focused: root.extraRowFocus === root.zoneOf("clipboard") && root.extraColumn === thing.clipboardHistory.count
+                //! Column of the switching key in the row, -1 when it is hidden.
+                readonly property int switchColumn: suggestionsRow.hasSwitchButton ? suggestionsRow.rowItems.length : -1
+
+                //! Column of the key that clears the history, -1 when it is hidden.
+                readonly property int clearColumn: suggestionsRow.hasClearButton ? suggestionsRow.rowItems.length + (suggestionsRow.hasSwitchButton ? 1 : 0) : -1
 
                 anchors.right: parent.right
                 anchors.top: parent.top
-                width: clipboardRow.rowHeight
-                height: clipboardRow.rowHeight
+                height: suggestionsRow.rowHeight
 
-                Kirigami.ShadowedRectangle {
-                    anchors.fill: parent
-                    anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
-                    radius: PlasmaKeyboard.BreezeConstants.buttonRadius
+                // Switching to the clipboard (and back to the suggestions).
+                Item {
+                    id: switchButton
 
-                    readonly property var outline: PlasmaKeyboard.Theme.current.keyOutlineFor("normal")
-                    readonly property real shadowStrength: PlasmaKeyboard.Theme.current.keyShadowFor("normal")
+                    visible: suggestionsRow.hasSwitchButton
+                    width: suggestionsRow.rowHeight
+                    height: suggestionsRow.rowHeight
 
-                    color: PlasmaKeyboard.Theme.current.keyColorFor("normal", clearHandler.pressed ? "pressed" : "normal")
+                    readonly property bool focused: root.extraRowFocus === root.zoneOf("suggestions") && root.extraColumn === cornerKeys.switchColumn
 
-                    border.width: outline.width
-                    border.color: outline.color
-                    shadow.size: 3 * shadowStrength
-                    shadow.yOffset: 1 * shadowStrength
-                    shadow.color: Qt.rgba(0, 0, 0, 0.2 * shadowStrength)
-
-                    Rectangle {
+                    Kirigami.ShadowedRectangle {
                         anchors.fill: parent
+                        anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
                         radius: PlasmaKeyboard.BreezeConstants.buttonRadius
-                        visible: clearButton.focused
-                        color: PlasmaKeyboard.BreezeConstants.navigationHighlightColor
-                        border.width: 2
-                        border.color: PlasmaKeyboard.BreezeConstants.navigationHighlightBorderColor
+
+                        readonly property var outline: PlasmaKeyboard.Theme.current.keyOutlineFor("normal")
+                        readonly property real shadowStrength: PlasmaKeyboard.Theme.current.keyShadowFor("normal")
+
+                        color: PlasmaKeyboard.Theme.current.keyColorFor("normal", switchHandler.pressed ? "pressed" : "normal")
+
+                        border.width: outline.width
+                        border.color: outline.color
+                        shadow.size: 3 * shadowStrength
+                        shadow.yOffset: 1 * shadowStrength
+                        shadow.color: Qt.rgba(0, 0, 0, 0.2 * shadowStrength)
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: PlasmaKeyboard.BreezeConstants.buttonRadius
+                            visible: switchButton.focused
+                            color: PlasmaKeyboard.BreezeConstants.navigationHighlightColor
+                            border.width: 2
+                            border.color: PlasmaKeyboard.BreezeConstants.navigationHighlightBorderColor
+                        }
+
+                        Kirigami.Icon {
+                            anchors.centerIn: parent
+                            width: Math.round(suggestionsRow.rowHeight * 0.6)
+                            height: width
+                            // The clipboard while the suggestions are shown, the
+                            // suggestions while the clipboard is shown.
+                            source: suggestionsRow.showingSuggestions ? "edit-paste" : "tools-check-spelling"
+                            color: PlasmaKeyboard.BreezeConstants.keyTextColor
+                        }
                     }
 
-                    Kirigami.Icon {
-                        anchors.centerIn: parent
-                        width: Math.round(clipboardRow.rowHeight * 0.6)
-                        height: width
-                        source: "edit-clear-history"
-                        color: PlasmaKeyboard.BreezeConstants.keyTextColor
+                    MouseArea {
+                        id: switchHandler
+                        anchors.fill: parent
+                        onClicked: suggestionsRow.clipboardChosen = !suggestionsRow.clipboardChosen
                     }
                 }
 
-                MouseArea {
-                    id: clearHandler
-                    anchors.fill: parent
-                    onClicked: thing.clipboardHistory.clear()
+                // Clearing the whole clipboard history.
+                Item {
+                    id: clearButton
+
+                    visible: suggestionsRow.hasClearButton
+                    width: suggestionsRow.rowHeight
+                    height: suggestionsRow.rowHeight
+
+                    //! Selected with the gamepad (the last column of the row).
+                    readonly property bool focused: root.extraRowFocus === root.zoneOf("suggestions") && root.extraColumn === cornerKeys.clearColumn
+
+                    Kirigami.ShadowedRectangle {
+                        anchors.fill: parent
+                        anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
+                        radius: PlasmaKeyboard.BreezeConstants.buttonRadius
+
+                        readonly property var outline: PlasmaKeyboard.Theme.current.keyOutlineFor("normal")
+                        readonly property real shadowStrength: PlasmaKeyboard.Theme.current.keyShadowFor("normal")
+
+                        color: PlasmaKeyboard.Theme.current.keyColorFor("normal", clearHandler.pressed ? "pressed" : "normal")
+
+                        border.width: outline.width
+                        border.color: outline.color
+                        shadow.size: 3 * shadowStrength
+                        shadow.yOffset: 1 * shadowStrength
+                        shadow.color: Qt.rgba(0, 0, 0, 0.2 * shadowStrength)
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: PlasmaKeyboard.BreezeConstants.buttonRadius
+                            visible: clearButton.focused
+                            color: PlasmaKeyboard.BreezeConstants.navigationHighlightColor
+                            border.width: 2
+                            border.color: PlasmaKeyboard.BreezeConstants.navigationHighlightBorderColor
+                        }
+
+                        Kirigami.Icon {
+                            anchors.centerIn: parent
+                            width: Math.round(suggestionsRow.rowHeight * 0.6)
+                            height: width
+                            source: "edit-clear-history"
+                            color: PlasmaKeyboard.BreezeConstants.keyTextColor
+                        }
+                    }
+
+                    MouseArea {
+                        id: clearHandler
+                        anchors.fill: parent
+                        onClicked: thing.clipboardHistory.clear()
+                    }
                 }
             }
         }
@@ -769,7 +992,7 @@ InputPanelWindow {
             // itself keeps a cell margin of about half a key margin.
             readonly property real sideMargin: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin / 2
             anchors {
-                top: clipboardRow.visible ? clipboardRow.bottom : parent.top
+                top: suggestionsRow.visible ? suggestionsRow.bottom : parent.top
                 topMargin: parent.padding
                 horizontalCenter: parent.horizontalCenter
             }
@@ -835,13 +1058,13 @@ InputPanelWindow {
         // Never let width & height to be 0, otherwise it can cause problems for setting interactiveRegion
         width: inputPanel.width > 0 ? (inputPanel.width + padding * 2) : 100
         height: inputPanel.height > 0
-            ? (inputPanel.height + padding * 2 + (functionKeyRow.visible ? functionKeyRow.height : 0) + (clipboardRow.visible ? clipboardRow.height : 0))
+            ? (inputPanel.height + padding * 2 + (functionKeyRow.visible ? functionKeyRow.height : 0) + (suggestionsRow.visible ? suggestionsRow.height : 0))
             : 100
 
         InputPanel {
             id: inputPanel
             anchors {
-                top: functionKeyRow.visible ? functionKeyRow.bottom : (clipboardRow.visible ? clipboardRow.bottom : parent.top)
+                top: functionKeyRow.visible ? functionKeyRow.bottom : (suggestionsRow.visible ? suggestionsRow.bottom : parent.top)
                 // Keep the vertical rhythm of the keyboard rows when the F-key
                 // row is shown.
                 topMargin: functionKeyRow.visible ? -functionKeyRow.sideMargin : parent.padding

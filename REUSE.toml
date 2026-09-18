@@ -7,3 +7,12 @@ path = "**.json"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "KDE contributors"
 SPDX-License-Identifier = "GPL-2.0-or-later"
+
+# The word lists of the predictive text input are generated from the
+# FrequencyWords lists (https://github.com/hermitdave/FrequencyWords), which
+# Hermit Dave publishes under the MIT licence.
+[[annotations]]
+path = "src/prediction/data/**.bin"
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>", "2016 Hermit Dave"]
+SPDX-License-Identifier = "MIT"

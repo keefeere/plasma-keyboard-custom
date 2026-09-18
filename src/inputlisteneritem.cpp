@@ -17,6 +17,7 @@
 #include "overlay/overlaycontroller.h"
 #include "overlay/prefixquerytrigger.h"
 #include "overlay/textexpansiontrigger.h"
+#include "prediction/wordatcursor.h"
 
 #include <QLoggingCategory>
 #include <QTextFormat>
@@ -158,6 +159,8 @@ InputListenerItem::InputListenerItem()
     connect(&m_input, &InputPlugin::contextChanged, this, [this] {
         const bool hasContext = m_input.hasContext();
 
+        updatePredictionPrefix();
+
         // Cancel any pending overlay state when the input context changes (focus loss or target swap)
         if (m_overlayController) {
             m_overlayController->cancelOverlay();
@@ -191,6 +194,10 @@ InputListenerItem::InputListenerItem()
         }
     });
     connect(&m_input, &InputPlugin::surroundingTextChanged, this, [this] {
+        // The word being typed changed with the text around the cursor, so the
+        // suggestions have to follow it.
+        updatePredictionPrefix();
+
         // Notify the overlay controller first so it can cancel the overlay if an
         // external cursor movement is detected (e.g. user tapped elsewhere in the
         // text field while the diacritics overlay was open or the hold timer was
@@ -214,11 +221,17 @@ InputListenerItem::InputListenerItem()
             }
         }
     });
+    connect(&m_input, &InputPlugin::cursorChanged, this, [this] {
+        // Moving the cursor moves the word that is being typed.
+        updatePredictionPrefix();
+    });
+
     connect(&m_input, &InputPlugin::deactivate, this, [this] {
         m_touchHold.disarm();
         // The input context is gone: the next activation may show the keyboard
         // again, even if the user had hidden it.
         m_hiddenByUser = false;
+        updatePredictionPrefix();
         QGuiApplication::inputMethod()->setVisible(false);
         QGuiApplication::inputMethod()->reset();
     });
@@ -335,6 +348,54 @@ void InputListenerItem::commitText(const QString &text)
     }
 
     m_input.commit(text);
+}
+
+QString InputListenerItem::predictionPrefix() const
+{
+    if (!m_input.hasContext()) {
+        return {};
+    }
+
+    // The cursor position is in bytes, the word is cut in characters.
+    const QByteArray surrounding = m_input.surroundingText().toUtf8();
+    const int cursorBytes = qBound(0, int(m_input.cursorPos()), surrounding.size());
+    return wordBeforeCursor(QString::fromUtf8(surrounding.first(cursorBytes)));
+}
+
+void InputListenerItem::updatePredictionPrefix()
+{
+    const QString prefix = predictionPrefix();
+    if (prefix == m_predictionPrefix) {
+        return;
+    }
+    m_predictionPrefix = prefix;
+    Q_EMIT predictionPrefixChanged();
+}
+
+void InputListenerItem::applyPrediction(const QString &word)
+{
+    if (word.isEmpty() || !m_input.hasContext()) {
+        return;
+    }
+
+    // A picked word is typed as a whole, with the space after it so that the
+    // next word can be typed right away, the way the on-screen keyboards do it.
+    const QString committed = word + QLatin1Char(' ');
+
+    const QString prefix = predictionPrefix();
+    if (prefix.isEmpty()) {
+        commitText(committed);
+        return;
+    }
+
+    qCDebug(PlasmaKeyboard) << "applyPrediction: replacing" << prefix << "with" << committed;
+
+    // Replace the word that was typed with the suggestion: the replacement is
+    // what the clients expect for a completion, and inputMethodEvent() already
+    // knows how to send it over the wayland protocol.
+    QInputMethodEvent event;
+    event.setCommitString(committed, -prefix.size(), prefix.size());
+    inputMethodEvent(&event);
 }
 
 void InputListenerItem::setEngine(QVirtualKeyboardInputEngine *engine)

@@ -1,0 +1,12 @@
+<!DOCTYPE RCC>
+<!--
+    SPDX-FileCopyrightText: 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>
+
+    SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+-->
+<RCC version="1.0">
+    <qresource prefix="/prediction">
+        <file alias="en.bin">prediction/data/en.bin</file>
+        <file alias="ru.bin">prediction/data/ru.bin</file>
+    </qresource>
+</RCC>

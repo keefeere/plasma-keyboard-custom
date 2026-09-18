@@ -313,6 +313,42 @@ KCM.SimpleKCM {
                     return i18nc("duration in milliseconds", "%1 ms", value);
                 }
             }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormSwitchDelegate {
+                id: predictiveTextCheckbox
+                text: i18n("Word suggestions")
+                description: i18n("Offer words that continue what is being typed")
+
+                checked: kcm.predictiveTextEnabled
+                onCheckedChanged: {
+                    kcm.predictiveTextEnabled = checked;
+                    checked = Qt.binding(() => kcm.predictiveTextEnabled)
+                }
+            }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormSpinBoxDelegate {
+                label: i18n("Suggestions at once")
+                description: i18n("How many word suggestions are offered at the same time")
+                from: 1
+                to: 5
+                enabled: predictiveTextCheckbox.checked
+                value: kcm.predictiveSuggestionCount
+                onValueChanged: kcm.predictiveSuggestionCount = value
+            }
+
+            FormCard.FormSpinBoxDelegate {
+                label: i18n("Letters before suggesting")
+                description: i18n("How many letters have to be typed before word suggestions appear")
+                from: 1
+                to: 4
+                enabled: predictiveTextCheckbox.checked
+                value: kcm.predictiveMinPrefixLength
+                onValueChanged: kcm.predictiveMinPrefixLength = value
+            }
         }
 
         FormCard.FormHeader {

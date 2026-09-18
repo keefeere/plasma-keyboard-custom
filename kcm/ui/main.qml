@@ -304,6 +304,54 @@ KCM.AbstractKCM {
             }
 
             QQC2.CheckBox {
+                id: predictiveTextCheckbox
+                Kirigami.FormData.label: i18n("Word suggestions:")
+                text: i18n("Offer words that continue what is being typed")
+
+                checked: kcm.predictiveTextEnabled
+                onCheckedChanged: {
+                    kcm.predictiveTextEnabled = checked;
+                    checked = Qt.binding(() => kcm.predictiveTextEnabled);
+                }
+            }
+
+            QQC2.SpinBox {
+                id: predictiveSuggestionCountSpinBox
+                Kirigami.FormData.label: i18n("Suggestions at once:")
+                from: 1
+                to: 5
+                enabled: predictiveTextCheckbox.checked
+                value: kcm.predictiveSuggestionCount
+
+                onValueChanged: {
+                    kcm.predictiveSuggestionCount = value;
+                    value = Qt.binding(() => kcm.predictiveSuggestionCount);
+                }
+            }
+
+            QQC2.SpinBox {
+                id: predictiveMinPrefixLengthSpinBox
+                Kirigami.FormData.label: i18n("Letters before suggesting:")
+                from: 1
+                to: 4
+                enabled: predictiveTextCheckbox.checked
+                value: kcm.predictiveMinPrefixLength
+
+                textFromValue: function (value) {
+                    return i18np("%1 letter", "%1 letters", value);
+                }
+                valueFromText: function (text) {
+                    const number = parseInt(text);
+                    return isNaN(number) ? kcm.predictiveMinPrefixLength : number;
+                }
+
+                onValueChanged: {
+                    kcm.predictiveMinPrefixLength = value;
+                    value = Qt.binding(() => kcm.predictiveMinPrefixLength);
+                }
+            }
+
+            QQC2.CheckBox {
                 id: soundsEnabled
                 Kirigami.FormData.label: i18n("Key press feedback:")
                 text: i18n("Sound")
