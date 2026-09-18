@@ -165,4 +165,9 @@ private:
     ClipboardHistory *m_clipboardHistory = nullptr;
     TouchHoldWatcher m_touchHold;
     bool m_keyboardNavigationActive = false;
+
+    //! True after the keyboard was hidden (by the user or by the system) and
+    //! until the next input activation. A focused text field keeps sending
+    //! updates, and those must not bring the panel back on their own.
+    bool m_hiddenByUser = false;
 };

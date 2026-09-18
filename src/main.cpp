@@ -212,7 +212,19 @@ public Q_SLOTS:
     // reaches the bottom of the screen, and restore them afterwards.
     void updatePanelVisibility()
     {
-        if (PlasmaKeyboardSettings::self()->hidePanelWhenKeyboardVisible() && kwinVisible()) {
+        const bool keyboardVisible = kwinVisible();
+
+        // Keep the input method in step with the compositor, but only when the
+        // compositor actually changed the panel state. Calling show() on every
+        // poll while the panel is visible would undo a hide: right after the
+        // user closed the keyboard the compositor is still visible for a
+        // moment, and the next poll would bring the panel straight back.
+        if (keyboardVisible != m_lastKeyboardVisible) {
+            m_lastKeyboardVisible = keyboardVisible;
+            QGuiApplication::inputMethod()->setVisible(keyboardVisible);
+        }
+
+        if (PlasmaKeyboardSettings::self()->hidePanelWhenKeyboardVisible() && keyboardVisible) {
             hidePanels();
         } else {
             restorePanels();
@@ -276,6 +288,7 @@ private:
     KConfigWatcher::Ptr m_settingsWatcher;
     QHash<int, QString> m_panelHidingModes;
     bool m_panelsHidden = false;
+    bool m_lastKeyboardVisible = false;
 };
 
 // signal handler for SIGINT & SIGTERM

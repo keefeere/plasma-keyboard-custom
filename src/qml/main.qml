@@ -22,7 +22,13 @@ InputPanelWindow {
     color: 'transparent'
 
     onVisibleChanged: {
-        if (!visible) {
+        if (visible) {
+            // The window is unmapped while the keyboard is hidden, which also
+            // drops the input focus inside it. Qt Virtual Keyboard delivers the
+            // typed text to the input item, so it has to be focused again or
+            // the keys would be tapped without anything appearing in the field.
+            thing.forceActiveFocus();
+        } else {
             // Reset keyboard navigation when hidden
             // Note: keyboard property is internal Qt API
             if (inputPanel.keyboard.navigationModeActive) {

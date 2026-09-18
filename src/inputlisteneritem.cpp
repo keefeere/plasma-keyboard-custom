@@ -164,6 +164,10 @@ InputListenerItem::InputListenerItem()
         }
 
         if (hasContext) {
+            // A new activation is a new request to type: the keyboard may be
+            // shown again even if it was hidden before.
+            m_hiddenByUser = false;
+
             QGuiApplication::inputMethod()->update(Qt::ImQueryAll);
             // In long-press mode the keyboard stays hidden until a touch is
             // held on the screen long enough; fall back to the immediate
@@ -197,8 +201,10 @@ InputListenerItem::InputListenerItem()
         }
 
         if (m_input.hasContext()) {
-            // Re-activate when text input activates, and there is context
-            if (!m_touchHold.isArmed() && !window()->isVisible()) {
+            // Re-activate when text input activates, and there is context.
+            // Never do it while the keyboard was hidden on purpose: the field
+            // keeps sending updates and the panel would pop up again at once.
+            if (!m_hiddenByUser && !m_touchHold.isArmed() && !window()->isVisible()) {
                 QGuiApplication::inputMethod()->setVisible(true);
             }
 
@@ -210,19 +216,30 @@ InputListenerItem::InputListenerItem()
     });
     connect(&m_input, &InputPlugin::deactivate, this, [this] {
         m_touchHold.disarm();
+        // The input context is gone: the next activation may show the keyboard
+        // again, even if the user had hidden it.
+        m_hiddenByUser = false;
         QGuiApplication::inputMethod()->setVisible(false);
         QGuiApplication::inputMethod()->reset();
     });
 
     connect(&m_touchHold, &TouchHoldWatcher::longPress, this, [this] {
         qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: long press detected, showing keyboard";
+        m_hiddenByUser = false;
         QGuiApplication::inputMethod()->show();
     });
     connect(&m_input, &InputPlugin::resetRequested, this, [] {
         QGuiApplication::inputMethod()->reset();
     });
     connect(QGuiApplication::inputMethod(), &QInputMethod::visibleChanged, this, [this] {
-        window()->setVisible(QGuiApplication::inputMethod()->isVisible());
+        const bool visible = QGuiApplication::inputMethod()->isVisible();
+        if (!visible) {
+            // The keyboard was hidden (by the user, or because the input
+            // context went away). Remember it, so that a text field which keeps
+            // sending updates cannot bring the panel back on its own.
+            m_hiddenByUser = true;
+        }
+        window()->setVisible(visible);
     });
 
     connect(&m_input, &InputPlugin::keyPressed, this, [this](QKeyEvent *keyEvent) {
