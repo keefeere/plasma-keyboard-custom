@@ -15,6 +15,8 @@
 
 #include <qqmlintegration.h>
 
+#include "hunspelldictionary.h"
+
 /**
  * Word completion for the predictive text input.
  *
@@ -123,5 +125,17 @@ private:
      */
     std::shared_ptr<const WordList> listFor(const QString &locale) const;
 
+    /**
+     * The corrections of @p word from the hunspell dictionary of @p locale,
+     * asked when the word lists have nothing to offer or have no words for the
+     * language at all. Empty when no dictionary is installed or the word is
+     * spelled right.
+     */
+    QStringList correctWithHunspell(const QString &word, int limit, const QString &locale) const;
+
     mutable QHash<QString, std::shared_ptr<const WordList>> m_lists;
+
+    //! The hunspell dictionaries installed in the system, if any. They spell
+    //! the words and suggest the corrections of a typo.
+    HunspellDictionary m_hunspell;
 };

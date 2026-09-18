@@ -114,7 +114,12 @@ std::shared_ptr<const PredictiveDictionary::WordList> PredictiveDictionary::list
 bool PredictiveDictionary::supports(const QString &locale) const
 {
     const auto list = listFor(locale);
-    return list && list->isValid();
+    if (list && list->isValid()) {
+        return true;
+    }
+    // A language the word lists have none for may still be covered by an
+    // installed hunspell dictionary.
+    return m_hunspell.isAvailable(locale);
 }
 
 QStringList PredictiveDictionary::complete(const QString &prefix, int limit, const QString &locale) const
@@ -125,7 +130,9 @@ QStringList PredictiveDictionary::complete(const QString &prefix, int limit, con
 
     const auto list = listFor(locale);
     if (!list || !list->isValid()) {
-        return {};
+        // The word lists have no words for this language; an installed hunspell
+        // dictionary may still have some.
+        return m_hunspell.complete(prefix, limit, locale);
     }
 
     const QByteArray needle = lookupKey(prefix);
@@ -188,7 +195,9 @@ QStringList PredictiveDictionary::correct(const QString &word, int limit, const 
 
     const auto list = listFor(locale);
     if (!list || !list->isValid()) {
-        return {};
+        // The language has no word list of its own: the hunspell dictionary, if
+        // one is installed, is the only thing that knows its words.
+        return correctWithHunspell(word, limit, locale);
     }
 
     const QString alphabet = alphabetFor(languageOf(locale));
@@ -238,6 +247,12 @@ QStringList PredictiveDictionary::correct(const QString &word, int limit, const 
         }
     }
 
+    // The word list found nothing one typo away, so the word may have more than
+    // one typo in it: hunspell looks further than the word list does.
+    if (matches.isEmpty()) {
+        return correctWithHunspell(word, limit, locale);
+    }
+
     const auto moreFrequent = [list](quint32 left, quint32 right) {
         return list->frequency(left) > list->frequency(right);
     };
@@ -254,4 +269,25 @@ QStringList PredictiveDictionary::correct(const QString &word, int limit, const 
         candidates.append(matchCase(QString::fromUtf8(list->word(index)), word));
     }
     return candidates;
+}
+
+QStringList PredictiveDictionary::correctWithHunspell(const QString &word, int limit, const QString &locale) const
+{
+    // The word lists know how frequent their words are, so they rank the
+    // corrections better than hunspell does; this is what is asked when they
+    // have nothing to offer, or when the language has no word list at all.
+    if (!m_hunspell.isAvailable(locale)) {
+        return {};
+    }
+
+    // A word hunspell knows is spelled right, there is nothing to correct.
+    if (m_hunspell.spell(word, locale)) {
+        return {};
+    }
+
+    QStringList suggestions = m_hunspell.suggest(word, limit, locale);
+    for (QString &suggestion : suggestions) {
+        suggestion = matchCase(suggestion, word);
+    }
+    return suggestions;
 }

@@ -26,6 +26,8 @@ private Q_SLOTS:
     void suggestsNothingWithoutAPrefix();
     void suggestsNothingForAnUnknownLanguage();
     void knowsWhichLanguagesItHas();
+    void completesThroughHunspellWithoutAWordList();
+    void correctsThroughHunspellWithoutAWordList();
     void correctsAMistypedRussianWord();
     void correctsAMistypedEnglishWord();
     void appliesTheCaseToACorrection();
@@ -91,7 +93,8 @@ void PredictiveDictionaryTest::suggestsNothingWithoutAPrefix()
 
 void PredictiveDictionaryTest::suggestsNothingForAnUnknownLanguage()
 {
-    QVERIFY(dictionary.complete(QStringLiteral("str"), 3, QStringLiteral("de_DE")).isEmpty());
+    // Neither a word list nor a hunspell dictionary covers this language.
+    QVERIFY(dictionary.complete(QStringLiteral("str"), 3, QStringLiteral("xx_XX")).isEmpty());
     QVERIFY(dictionary.complete(QStringLiteral("str"), 3, QString()).isEmpty());
 }
 
@@ -100,7 +103,36 @@ void PredictiveDictionaryTest::knowsWhichLanguagesItHas()
     QVERIFY(dictionary.supports(QStringLiteral("ru_RU")));
     QVERIFY(dictionary.supports(QStringLiteral("en")));
     QVERIFY(dictionary.supports(QStringLiteral("en-US")));
-    QVERIFY(!dictionary.supports(QStringLiteral("de_DE")));
+    // Neither a word list nor a hunspell dictionary covers this one.
+    QVERIFY(!dictionary.supports(QStringLiteral("xx_XX")));
+}
+
+void PredictiveDictionaryTest::correctsThroughHunspellWithoutAWordList()
+{
+    if (!dictionary.supports(QStringLiteral("de_DE"))) {
+        QSKIP("no hunspell dictionary for German is installed");
+    }
+
+    // A word the dictionary knows needs no correction.
+    QVERIFY(dictionary.correct(QStringLiteral("Haus"), 5, QStringLiteral("de_DE")).isEmpty());
+    // A word it does not know gets the words close to it.
+    QVERIFY(dictionary.correct(QStringLiteral("Hauss"), 5, QStringLiteral("de_DE")).contains(QStringLiteral("Haus")));
+}
+
+void PredictiveDictionaryTest::completesThroughHunspellWithoutAWordList()
+{
+    // German has no compiled word list; an installed hunspell dictionary is
+    // what its words are offered from.
+    if (!dictionary.supports(QStringLiteral("de_DE"))) {
+        QSKIP("no hunspell dictionary for German is installed");
+    }
+
+    const QStringList candidates = dictionary.complete(QStringLiteral("sch"), 3, QStringLiteral("de_DE"));
+    QVERIFY(!candidates.isEmpty());
+    QVERIFY(candidates.size() <= 3);
+    for (const QString &candidate : candidates) {
+        QVERIFY(candidate.startsWith(QStringLiteral("sch"), Qt::CaseInsensitive));
+    }
 }
 
 void PredictiveDictionaryTest::correctsAMistypedRussianWord()
@@ -127,7 +159,7 @@ void PredictiveDictionaryTest::appliesTheCaseToACorrection()
 
 void PredictiveDictionaryTest::correctsNothingForAnUnknownLanguage()
 {
-    QVERIFY(dictionary.correct(QStringLiteral("привт"), 3, QStringLiteral("de_DE")).isEmpty());
+    QVERIFY(dictionary.correct(QStringLiteral("привт"), 3, QStringLiteral("xx_XX")).isEmpty());
     QVERIFY(dictionary.correct(QStringLiteral("привт"), 3, QString()).isEmpty());
 }
 

@@ -1,0 +1,322 @@
+/*
+    SPDX-FileCopyrightText: 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>
+
+    SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+*/
+
+#include "hunspelldictionary.h"
+
+#include "wordlookup.h"
+
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QLoggingCategory>
+#include <QStandardPaths>
+#include <QStringDecoder>
+
+#include <algorithm>
+
+#ifdef HAVE_HUNSPELL
+// pkg-config puts the directory of the headers on the include path.
+#include <hunspell.h>
+#endif
+
+Q_LOGGING_CATEGORY(lcHunspell, "org.kde.plasma.keyboard.custom.prediction.hunspell")
+
+namespace
+{
+#ifdef HAVE_HUNSPELL
+struct HunspellDeleter {
+    void operator()(Hunhandle *handle) const
+    {
+        Hunspell_destroy(handle);
+    }
+};
+#endif
+
+//! The directories a dictionary may be installed in.
+QStringList dictionaryDirectories()
+{
+    QStringList directories;
+    const QStringList dataDirectories = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
+    for (const QString &dataDirectory : dataDirectories) {
+        directories.append(dataDirectory + QStringLiteral("/hunspell"));
+    }
+    // The directories of the classic spell checkers and of Qt Virtual
+    // Keyboard's own hunspell plugin, which does not use the standard ones.
+    directories.append(QStringLiteral("/usr/share/myspell"));
+    directories.append(QStringLiteral("/usr/share/myspell/dicts"));
+    directories.append(QStringLiteral("/usr/share/qt6/qtvirtualkeyboard/hunspell"));
+    directories.append(QDir::homePath() + QStringLiteral("/.hunspell"));
+    directories.removeDuplicates();
+    return directories;
+}
+
+//! The names a dictionary of @p locale may be installed under: the whole
+//! locale first ("ru_RU"), then the language alone ("ru").
+QStringList dictionaryNames(const QString &locale)
+{
+    QStringList names;
+    QString normalized = locale;
+    normalized.replace(QChar(u'-'), QChar(u'_'));
+    if (!normalized.isEmpty()) {
+        names.append(normalized);
+    }
+    const QString language = languageOf(locale);
+    if (!language.isEmpty()) {
+        names.append(language);
+    }
+    names.removeDuplicates();
+    return names;
+}
+
+//! The .aff/.dic pair of @p locale, empty when none is installed.
+QPair<QString, QString> dictionaryFiles(const QString &locale)
+{
+    const QStringList directories = dictionaryDirectories();
+    const QStringList names = dictionaryNames(locale);
+    for (const QString &directory : directories) {
+        for (const QString &name : names) {
+            const QString affix = directory + QLatin1Char('/') + name + QStringLiteral(".aff");
+            const QString dictionary = directory + QLatin1Char('/') + name + QStringLiteral(".dic");
+            if (QFileInfo::exists(affix) && QFileInfo::exists(dictionary)) {
+                return {affix, dictionary};
+            }
+        }
+    }
+    return {};
+}
+} // namespace
+
+struct HunspellDictionary::Handle {
+#ifdef HAVE_HUNSPELL
+    //! The opened dictionary, null when it could not be opened.
+    std::shared_ptr<Hunhandle> hunspell;
+#endif
+    //! The .dic file, read for the list of words.
+    QString dictionaryPath;
+    bool valid = false;
+};
+
+HunspellDictionary::HunspellDictionary() = default;
+
+HunspellDictionary::~HunspellDictionary() = default;
+
+bool HunspellDictionary::isCompiledIn()
+{
+#ifdef HAVE_HUNSPELL
+    return true;
+#else
+    return false;
+#endif
+}
+
+std::shared_ptr<HunspellDictionary::Handle> HunspellDictionary::handleFor(const QString &locale) const
+{
+    const auto cached = m_handles.constFind(locale);
+    if (cached != m_handles.constEnd()) {
+        return *cached;
+    }
+
+    auto handle = std::make_shared<Handle>();
+    const QPair<QString, QString> files = dictionaryFiles(locale);
+    if (!files.first.isEmpty()) {
+        handle->dictionaryPath = files.second;
+#ifdef HAVE_HUNSPELL
+        handle->hunspell = std::shared_ptr<Hunhandle>(Hunspell_create(files.first.toUtf8().constData(), files.second.toUtf8().constData()), HunspellDeleter());
+        handle->valid = handle->hunspell != nullptr;
+        if (!handle->valid) {
+            qCWarning(lcHunspell) << "could not open the hunspell dictionary" << files.first;
+        }
+#else
+        // The dictionary is installed, but this build has no libhunspell to
+        // read it with.
+        handle->valid = false;
+#endif
+    }
+
+    m_handles.insert(locale, handle);
+    return handle;
+}
+
+bool HunspellDictionary::isAvailable(const QString &locale) const
+{
+    const auto handle = handleFor(locale);
+    return handle && handle->valid;
+}
+
+bool HunspellDictionary::spell(const QString &word, const QString &locale) const
+{
+    if (word.isEmpty()) {
+        return false;
+    }
+
+    const auto handle = handleFor(locale);
+    if (!handle || !handle->valid) {
+        return false;
+    }
+
+#ifdef HAVE_HUNSPELL
+    return Hunspell_spell(handle->hunspell.get(), word.toUtf8().constData()) != 0;
+#else
+    return false;
+#endif
+}
+
+QStringList HunspellDictionary::suggest(const QString &word, int limit, const QString &locale) const
+{
+    if (word.isEmpty() || limit <= 0) {
+        return {};
+    }
+
+    const auto handle = handleFor(locale);
+    if (!handle || !handle->valid) {
+        return {};
+    }
+
+#ifdef HAVE_HUNSPELL
+    char **suggestions = nullptr;
+    const int count = Hunspell_suggest(handle->hunspell.get(), &suggestions, word.toUtf8().constData());
+    QStringList words;
+    for (int index = 0; index < count && words.size() < limit; ++index) {
+        words.append(QString::fromUtf8(suggestions[index]));
+    }
+    Hunspell_free_list(handle->hunspell.get(), &suggestions, count);
+    return words;
+#else
+    return {};
+#endif
+}
+
+std::shared_ptr<const QStringList> HunspellDictionary::wordsFor(const QString &locale) const
+{
+    const auto cached = m_words.constFind(locale);
+    if (cached != m_words.constEnd()) {
+        return *cached;
+    }
+
+    auto words = std::make_shared<QStringList>();
+    const auto handle = handleFor(locale);
+    if (handle && handle->valid && !handle->dictionaryPath.isEmpty()) {
+        QFile file(handle->dictionaryPath);
+        if (file.open(QIODevice::ReadOnly)) {
+            QByteArray encoding = "UTF-8";
+#ifdef HAVE_HUNSPELL
+            if (const char *name = Hunspell_get_dic_encoding(handle->hunspell.get())) {
+                encoding = name;
+            }
+#endif
+            // The .dic files are usually UTF-8; an encoding Qt cannot decode
+            // falls back to UTF-8, which is what the dictionaries we ship with
+            // use.
+            QStringDecoder decoder(encoding.constData());
+            if (!decoder.isValid()) {
+                decoder = QStringDecoder(QStringDecoder::Utf8);
+            }
+
+            const QString text = decoder(file.readAll());
+            const QStringList lines = text.split(QChar(u'\n'));
+            // The first line is the number of words.
+            for (int index = 1; index < lines.size(); ++index) {
+                QString line = lines.at(index).trimmed();
+                if (line.isEmpty()) {
+                    continue;
+                }
+                // A line is the word, the flags after a slash and, sometimes,
+                // the morphology after a tab or a space.
+                int cut = line.indexOf(QChar(u'/'));
+                if (cut < 0) {
+                    cut = line.indexOf(QChar(u'\t'));
+                }
+                if (cut < 0) {
+                    cut = line.indexOf(QChar(u' '));
+                }
+                if (cut >= 0) {
+                    line = line.left(cut);
+                }
+                line = line.trimmed();
+                if (!line.isEmpty()) {
+                    words->append(line);
+                }
+            }
+            words->removeDuplicates();
+            std::sort(words->begin(), words->end(), [](const QString &left, const QString &right) {
+                return lookupKey(left) < lookupKey(right);
+            });
+        } else {
+            qCWarning(lcHunspell) << "could not read the hunspell word list" << handle->dictionaryPath;
+        }
+    }
+
+    m_words.insert(locale, words);
+    return words;
+}
+
+QStringList HunspellDictionary::complete(const QString &prefix, int limit, const QString &locale) const
+{
+    if (prefix.isEmpty() || limit <= 0) {
+        return {};
+    }
+
+    const auto words = wordsFor(locale);
+    if (!words || words->isEmpty()) {
+        return {};
+    }
+
+    const QByteArray needle = lookupKey(prefix);
+    if (needle.isEmpty()) {
+        return {};
+    }
+
+    // The words are ordered by the lookup key, so the words starting with the
+    // prefix are one range of it.
+    const auto lowerBound = [words](const QByteArray &value) {
+        int low = 0;
+        int high = words->size();
+        while (low < high) {
+            const int middle = low + (high - low) / 2;
+            if (lookupKey(words->at(middle)) < value) {
+                low = middle + 1;
+            } else {
+                high = middle;
+            }
+        }
+        return low;
+    };
+
+    QByteArray upper = needle;
+    upper.append(char(0xff));
+    const int first = lowerBound(needle);
+    const int last = lowerBound(upper);
+
+    QList<int> matches;
+    matches.reserve(last - first);
+    for (int index = first; index < last; ++index) {
+        matches.append(index);
+    }
+
+    // There are no frequencies to rank the words with, so the shorter ones come
+    // first: what is typed is more likely to be completed by a short word.
+    const auto shorterFirst = [words](int left, int right) {
+        const int leftLength = words->at(left).size();
+        const int rightLength = words->at(right).size();
+        if (leftLength != rightLength) {
+            return leftLength < rightLength;
+        }
+        return words->at(left) < words->at(right);
+    };
+    if (matches.size() > limit) {
+        std::partial_sort(matches.begin(), matches.begin() + limit, matches.end(), shorterFirst);
+        matches.resize(limit);
+    } else {
+        std::sort(matches.begin(), matches.end(), shorterFirst);
+    }
+
+    QStringList candidates;
+    candidates.reserve(matches.size());
+    for (const int index : std::as_const(matches)) {
+        candidates.append(matchCase(words->at(index), prefix));
+    }
+    return candidates;
+}

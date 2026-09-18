@@ -85,6 +85,19 @@ ecm_setup_version(${PROJECT_VERSION} VARIABLE_PREFIX PLASMA_KEYBOARD VERSION_HEA
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(XKBCommon REQUIRED IMPORTED_TARGET xkbcommon)
 
+# The hunspell dictionaries installed in the system are used for the spelling
+# and for the corrections of the predictive text input, and they cover the
+# languages the compiled word lists have none for. Without libhunspell the
+# build simply has no dictionaries of its own to ask (-DWITH_HUNSPELL=OFF).
+option(WITH_HUNSPELL "Use the hunspell dictionaries installed in the system" ON)
+set(PLASMA_KEYBOARD_HUNSPELL_FOUND FALSE)
+if(WITH_HUNSPELL)
+    pkg_check_modules(HUNSPELL QUIET IMPORTED_TARGET hunspell)
+    if(HUNSPELL_FOUND)
+        set(PLASMA_KEYBOARD_HUNSPELL_FOUND TRUE)
+    endif()
+endif()
+
 find_package(Wayland 1.2 REQUIRED COMPONENTS Client)
 find_package(QtWaylandScanner REQUIRED ${QT_MIN_VERSION})
 find_package(WaylandProtocols 1.19 REQUIRED)

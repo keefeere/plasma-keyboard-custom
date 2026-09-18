@@ -30,6 +30,7 @@ qt6_generate_wayland_protocol_server_sources(mockinputmethodcompositor
 # of the application sources, and the test only needs the word lists.
 ecm_add_test(predictivedictionarytest.cpp
     ../src/prediction/predictivedictionary.cpp
+    ../src/prediction/hunspelldictionary.cpp
     ../src/prediction/wordlookup.cpp
     TEST_NAME predictivedictionarytest
     LINK_LIBRARIES
@@ -41,6 +42,13 @@ ecm_add_test(predictivedictionarytest.cpp
 target_include_directories(predictivedictionarytest PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction
 )
+
+# The engine asks the hunspell dictionaries of the system only when the library
+# was found; without it the test simply has none to ask.
+if(PLASMA_KEYBOARD_HUNSPELL_FOUND)
+    target_compile_definitions(predictivedictionarytest PRIVATE HAVE_HUNSPELL)
+    target_link_libraries(predictivedictionarytest PkgConfig::HUNSPELL)
+endif()
 
 # The word lists are normally compiled into the application (src/prediction.qrc);
 # the test reads the same files from the resources.
@@ -88,3 +96,23 @@ ecm_add_test(wordatcursortest.cpp
 target_include_directories(wordatcursortest PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction
 )
+
+# The hunspell dictionaries of the system: the test asks the ones that are
+# installed and skips what cannot be checked without them.
+ecm_add_test(hunspelldictionarytest.cpp
+    ../src/prediction/hunspelldictionary.cpp
+    ../src/prediction/wordlookup.cpp
+    TEST_NAME hunspelldictionarytest
+    LINK_LIBRARIES
+        Qt::Core
+        Qt::Test
+)
+
+target_include_directories(hunspelldictionarytest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction
+)
+
+if(PLASMA_KEYBOARD_HUNSPELL_FOUND)
+    target_compile_definitions(hunspelldictionarytest PRIVATE HAVE_HUNSPELL)
+    target_link_libraries(hunspelldictionarytest PkgConfig::HUNSPELL)
+endif()
