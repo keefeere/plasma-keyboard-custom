@@ -500,6 +500,22 @@ msgid "How many letters have to be typed before word suggestions appear"
 msgstr "Сколько букв нужно набрать до появления подсказок"
 
 #: ui/main.qml
+msgid "Offer words that may follow the typed one"
+msgstr "Предлагать слова, которые могут идти за набранным"
+
+#: ui/main.qml
+msgid "Offer to correct a mistyped word"
+msgstr "Предлагать исправление опечатки"
+
+#: ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Next word"
+msgstr "Следующее слово"
+
+#: ui/main_handset.qml ui/main_mediacenter.qml
+msgid "Typo correction"
+msgstr "Исправление опечаток"
+
+#: ui/main.qml
 msgid "%1 letter"
 msgid_plural "%1 letters"
 msgstr[0] "%1 буква"

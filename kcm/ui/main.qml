@@ -352,6 +352,30 @@ KCM.AbstractKCM {
             }
 
             QQC2.CheckBox {
+                id: predictiveNextWordCheckbox
+                text: i18n("Offer words that may follow the typed one")
+
+                enabled: predictiveTextCheckbox.checked
+                checked: kcm.predictiveNextWordEnabled
+                onCheckedChanged: {
+                    kcm.predictiveNextWordEnabled = checked;
+                    checked = Qt.binding(() => kcm.predictiveNextWordEnabled);
+                }
+            }
+
+            QQC2.CheckBox {
+                id: predictiveTypoCorrectionCheckbox
+                text: i18n("Offer to correct a mistyped word")
+
+                enabled: predictiveTextCheckbox.checked
+                checked: kcm.predictiveTypoCorrectionEnabled
+                onCheckedChanged: {
+                    kcm.predictiveTypoCorrectionEnabled = checked;
+                    checked = Qt.binding(() => kcm.predictiveTypoCorrectionEnabled);
+                }
+            }
+
+            QQC2.CheckBox {
                 id: soundsEnabled
                 Kirigami.FormData.label: i18n("Key press feedback:")
                 text: i18n("Sound")

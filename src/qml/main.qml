@@ -55,30 +55,77 @@ InputPanelWindow {
     property int extraRowFocus: 0
     property int extraColumn: 0
 
-    //! Words that continue what is being typed, most frequent first. The row
-    //! above the keyboard offers them while a word is being typed and inserts
-    //! the chosen one in place of it.
+    //! What the row above the keyboard offers for what is being typed, most
+    //! frequent first. Every entry is a record with the word itself, where it
+    //! came from ("complete" — the word being typed, continued; "correct" — the
+    //! word being typed, with the typo it may have; "next" — the word that may
+    //! follow the previous one) and how much of it would be added to the text.
     property var predictions: []
 
-    //! The word lists the suggestions are looked up in.
+    //! The word lists the completions and the corrections are looked up in.
     PredictiveDictionary {
         id: predictor
     }
 
-    //! Re-reads the suggestions for the word that is being typed. The language
-    //! is the one the text field asked for.
+    //! The bigram lists the next-word predictions are looked up in.
+    WordPredictor {
+        id: nextWordPredictor
+    }
+
+    //! @p words as the entries of the row, told where they came from.
+    function predictionItems(words, kind) {
+        const typedLength = kind === "complete" ? thing.predictionPrefix.length : 0;
+        return words.map(word => ({
+            "text": word,
+            "kind": kind,
+            "completion": kind === "complete" ? Math.max(0, word.length - typedLength) : 0
+        }));
+    }
+
+    //! Re-reads what the row above the keyboard offers. What is being typed
+    //! comes first: the words that continue it, or the word it may have been
+    //! meant to be when nothing continues it. With no word being typed, the
+    //! words that may follow the previous one are offered. The language is the
+    //! one the text field asked for.
     function updatePredictions() {
-        if (!PlasmaKeyboardSettings.predictiveTextEnabled
-            || thing.predictionPrefix.length < PlasmaKeyboardSettings.predictiveMinPrefixLength) {
+        if (!PlasmaKeyboardSettings.predictiveTextEnabled) {
             predictions = [];
             return;
         }
-        predictions = predictor.complete(thing.predictionPrefix, PlasmaKeyboardSettings.predictiveSuggestionCount, inputPanel.InputContext.locale);
+
+        const locale = inputPanel.InputContext.locale;
+        const prefix = thing.predictionPrefix;
+        if (prefix.length >= PlasmaKeyboardSettings.predictiveMinPrefixLength) {
+            const completions = predictor.complete(prefix, PlasmaKeyboardSettings.predictiveSuggestionCount, locale);
+            if (completions.length > 0) {
+                predictions = predictionItems(completions, "complete");
+                return;
+            }
+            // Nothing continues what is typed, so the word may have a typo in
+            // it. One or two letters are too little to tell a typo from the
+            // beginning of a word, so only longer words are corrected.
+            if (PlasmaKeyboardSettings.predictiveTypoCorrectionEnabled && prefix.length >= 2) {
+                predictions = predictionItems(predictor.correct(prefix, PlasmaKeyboardSettings.predictiveSuggestionCount, locale), "correct");
+                return;
+            }
+            predictions = [];
+            return;
+        }
+
+        if (prefix.length === 0 && PlasmaKeyboardSettings.predictiveNextWordEnabled) {
+            predictions = predictionItems(nextWordPredictor.predict(thing.predictionContext, PlasmaKeyboardSettings.predictiveSuggestionCount, locale), "next");
+            return;
+        }
+
+        predictions = [];
     }
 
     Connections {
         target: thing
         function onPredictionPrefixChanged() {
+            root.updatePredictions();
+        }
+        function onPredictionContextChanged() {
             root.updatePredictions();
         }
     }
@@ -92,6 +139,12 @@ InputPanelWindow {
             root.updatePredictions();
         }
         function onPredictiveSuggestionCountChanged() {
+            root.updatePredictions();
+        }
+        function onPredictiveNextWordEnabledChanged() {
+            root.updatePredictions();
+        }
+        function onPredictiveTypoCorrectionEnabledChanged() {
             root.updatePredictions();
         }
     }
@@ -620,9 +673,6 @@ InputPanelWindow {
             readonly property int chipColumns: showingSuggestions ? Math.max(visibleChips, rowItems.length) : visibleChips
             readonly property real chipWidth: width / chipColumns
 
-            //! The word being typed, which the suggestions complete.
-            readonly property string prefix: thing.predictionPrefix
-
             //! Whether there is something to suggest for the word being typed.
             readonly property bool hasSuggestions: root.predictions.length > 0
 
@@ -639,9 +689,12 @@ InputPanelWindow {
             //! be added to the word) or the clipboard entries.
             readonly property var rowItems: {
                 if (showingSuggestions) {
-                    return root.predictions.map(word => ({
-                                "text": word,
-                                "completion": Math.max(0, word.length - prefix.length),
+                    // What the engine offered is taken as it is: only a
+                    // completion has a part to add, a correction and a
+                    // prediction replace or insert the whole word.
+                    return root.predictions.map(item => ({
+                                "text": item.text,
+                                "completion": item.completion,
                                 "suggestion": true
                             }));
                 }

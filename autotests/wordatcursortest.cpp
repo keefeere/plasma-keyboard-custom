@@ -20,11 +20,19 @@ private Q_SLOTS:
     void keepsSeparatorsAtTheEndOfWords();
     void doesNotStartAWordWithASeparator();
     void knowsLettersOutsideLatinAndCyrillic();
+    void takesTheWordBeforeTheWordBeingTyped();
+    void skipsSeparatorsBetweenWords();
+    void hasNoPreviousWordWithoutOne();
 
 private:
     static QString word(const QString &text)
     {
         return wordBeforeCursor(text);
+    }
+
+    static QString previous(const QString &text)
+    {
+        return previousWordBeforeCursor(text);
     }
 };
 
@@ -72,6 +80,37 @@ void WordAtCursorTest::knowsLettersOutsideLatinAndCyrillic()
 {
     QCOMPARE(word(QStringLiteral("café")), QStringLiteral("café"));
     QCOMPARE(word(QStringLiteral("日本語")), QStringLiteral("日本語"));
+}
+
+void WordAtCursorTest::takesTheWordBeforeTheWordBeingTyped()
+{
+    // The predictions of the next word are looked up with the word before the
+    // one that is being typed.
+    QCOMPARE(previous(QStringLiteral("привет как")), QStringLiteral("привет"));
+    QCOMPARE(previous(QStringLiteral("привет ка")), QStringLiteral("привет"));
+    QCOMPARE(previous(QStringLiteral("hello wor")), QStringLiteral("hello"));
+    QCOMPARE(previous(QStringLiteral("одно два три")), QStringLiteral("два"));
+    // A cursor right after a space still has a word before it.
+    QCOMPARE(previous(QStringLiteral("привет ")), QStringLiteral("привет"));
+    QCOMPARE(previous(QStringLiteral("привет как ")), QStringLiteral("как"));
+}
+
+void WordAtCursorTest::skipsSeparatorsBetweenWords()
+{
+    QCOMPARE(previous(QStringLiteral("привет, как")), QStringLiteral("привет"));
+    QCOMPARE(previous(QStringLiteral("привет! как")), QStringLiteral("привет"));
+    QCOMPARE(previous(QStringLiteral("hello, wor")), QStringLiteral("hello"));
+    QCOMPARE(previous(QStringLiteral("что-то по-")), QStringLiteral("что-то"));
+    QCOMPARE(previous(QStringLiteral("don't it's")), QStringLiteral("don't"));
+}
+
+void WordAtCursorTest::hasNoPreviousWordWithoutOne()
+{
+    QCOMPARE(previous(QString()), QString());
+    QCOMPARE(previous(QStringLiteral("привет")), QString());
+    QCOMPARE(previous(QStringLiteral("   ")), QString());
+    QCOMPARE(previous(QStringLiteral("... ")), QString());
+    QCOMPARE(previous(QStringLiteral("123 ")), QString());
 }
 
 QTEST_GUILESS_MAIN(WordAtCursorTest)

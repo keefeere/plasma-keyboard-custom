@@ -349,6 +349,36 @@ KCM.SimpleKCM {
                 value: kcm.predictiveMinPrefixLength
                 onValueChanged: kcm.predictiveMinPrefixLength = value
             }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormSwitchDelegate {
+                id: predictiveNextWordCheckbox
+                text: i18n("Next word")
+                description: i18n("Offer words that may follow the typed one")
+
+                enabled: predictiveTextCheckbox.checked
+                checked: kcm.predictiveNextWordEnabled
+                onCheckedChanged: {
+                    kcm.predictiveNextWordEnabled = checked;
+                    checked = Qt.binding(() => kcm.predictiveNextWordEnabled)
+                }
+            }
+
+            FormCard.FormDelegateSeparator {}
+
+            FormCard.FormSwitchDelegate {
+                id: predictiveTypoCorrectionCheckbox
+                text: i18n("Typo correction")
+                description: i18n("Offer to correct a mistyped word")
+
+                enabled: predictiveTextCheckbox.checked
+                checked: kcm.predictiveTypoCorrectionEnabled
+                onCheckedChanged: {
+                    kcm.predictiveTypoCorrectionEnabled = checked;
+                    checked = Qt.binding(() => kcm.predictiveTypoCorrectionEnabled)
+                }
+            }
         }
 
         FormCard.FormHeader {

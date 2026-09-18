@@ -8,5 +8,7 @@
     <qresource prefix="/prediction">
         <file alias="en.bin">prediction/data/en.bin</file>
         <file alias="ru.bin">prediction/data/ru.bin</file>
+        <file alias="en.ngrams">prediction/data/en.ngrams</file>
+        <file alias="ru.ngrams">prediction/data/ru.ngrams</file>
     </qresource>
 </RCC>

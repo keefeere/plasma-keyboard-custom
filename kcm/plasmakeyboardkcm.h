@@ -43,6 +43,9 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(bool predictiveTextEnabled READ predictiveTextEnabled WRITE setPredictiveTextEnabled NOTIFY predictiveTextEnabledChanged)
     Q_PROPERTY(int predictiveSuggestionCount READ predictiveSuggestionCount WRITE setPredictiveSuggestionCount NOTIFY predictiveSuggestionCountChanged)
     Q_PROPERTY(int predictiveMinPrefixLength READ predictiveMinPrefixLength WRITE setPredictiveMinPrefixLength NOTIFY predictiveMinPrefixLengthChanged)
+    Q_PROPERTY(bool predictiveNextWordEnabled READ predictiveNextWordEnabled WRITE setPredictiveNextWordEnabled NOTIFY predictiveNextWordEnabledChanged)
+    Q_PROPERTY(bool predictiveTypoCorrectionEnabled READ predictiveTypoCorrectionEnabled WRITE setPredictiveTypoCorrectionEnabled NOTIFY
+                   predictiveTypoCorrectionEnabledChanged)
 
 public:
     PlasmaKeyboardKcm(QObject *parent, const KPluginMetaData &metaData);
@@ -131,6 +134,12 @@ public:
     int predictiveMinPrefixLength() const;
     void setPredictiveMinPrefixLength(int length);
 
+    bool predictiveNextWordEnabled() const;
+    void setPredictiveNextWordEnabled(bool enabled);
+
+    bool predictiveTypoCorrectionEnabled() const;
+    void setPredictiveTypoCorrectionEnabled(bool enabled);
+
     bool isSaveNeeded() const override;
 
 public Q_SLOTS:
@@ -162,6 +171,8 @@ Q_SIGNALS:
     void predictiveTextEnabledChanged();
     void predictiveSuggestionCountChanged();
     void predictiveMinPrefixLengthChanged();
+    void predictiveNextWordEnabledChanged();
+    void predictiveTypoCorrectionEnabledChanged();
 
 private:
     bool m_soundEnabled = false;
@@ -185,6 +196,8 @@ private:
     bool m_predictiveTextEnabled = true;
     int m_predictiveSuggestionCount = 3;
     int m_predictiveMinPrefixLength = 1;
+    bool m_predictiveNextWordEnabled = true;
+    bool m_predictiveTypoCorrectionEnabled = true;
 
     bool m_saveNeeded = false;
 

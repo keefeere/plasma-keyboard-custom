@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>
 // SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
 
+#include <QElapsedTimer>
 #include <QTest>
 
 #include "predictivedictionary.h"
@@ -25,6 +26,12 @@ private Q_SLOTS:
     void suggestsNothingWithoutAPrefix();
     void suggestsNothingForAnUnknownLanguage();
     void knowsWhichLanguagesItHas();
+    void correctsAMistypedRussianWord();
+    void correctsAMistypedEnglishWord();
+    void appliesTheCaseToACorrection();
+    void correctsNothingForAnUnknownLanguage();
+    void neverCorrectsMoreThanTheLimit();
+    void correctsQuickly();
 
 private:
     PredictiveDictionary dictionary;
@@ -94,6 +101,57 @@ void PredictiveDictionaryTest::knowsWhichLanguagesItHas()
     QVERIFY(dictionary.supports(QStringLiteral("en")));
     QVERIFY(dictionary.supports(QStringLiteral("en-US")));
     QVERIFY(!dictionary.supports(QStringLiteral("de_DE")));
+}
+
+void PredictiveDictionaryTest::correctsAMistypedRussianWord()
+{
+    // A letter is missing, a letter is swapped with its neighbour and a letter
+    // is typed instead of the right one.
+    QCOMPARE(dictionary.correct(QStringLiteral("привт"), 1, QStringLiteral("ru_RU")), QStringList({QStringLiteral("привет")}));
+    QVERIFY(dictionary.correct(QStringLiteral("првиет"), 3, QStringLiteral("ru_RU")).contains(QStringLiteral("привет")));
+    QVERIFY(dictionary.correct(QStringLiteral("превет"), 3, QStringLiteral("ru_RU")).contains(QStringLiteral("привет")));
+    // A letter is typed too many.
+    QVERIFY(dictionary.correct(QStringLiteral("привтет"), 3, QStringLiteral("ru_RU")).contains(QStringLiteral("привет")));
+}
+
+void PredictiveDictionaryTest::correctsAMistypedEnglishWord()
+{
+    QVERIFY(dictionary.correct(QStringLiteral("helo"), 5, QStringLiteral("en_US")).contains(QStringLiteral("hello")));
+    QVERIFY(dictionary.correct(QStringLiteral("thier"), 5, QStringLiteral("en_US")).contains(QStringLiteral("their")));
+}
+
+void PredictiveDictionaryTest::appliesTheCaseToACorrection()
+{
+    QCOMPARE(dictionary.correct(QStringLiteral("Привт"), 1, QStringLiteral("ru_RU")), QStringList({QStringLiteral("Привет")}));
+}
+
+void PredictiveDictionaryTest::correctsNothingForAnUnknownLanguage()
+{
+    QVERIFY(dictionary.correct(QStringLiteral("привт"), 3, QStringLiteral("de_DE")).isEmpty());
+    QVERIFY(dictionary.correct(QStringLiteral("привт"), 3, QString()).isEmpty());
+}
+
+void PredictiveDictionaryTest::neverCorrectsMoreThanTheLimit()
+{
+    QVERIFY(dictionary.correct(QStringLiteral("превет"), 2, QStringLiteral("ru_RU")).size() <= 2);
+    QVERIFY(dictionary.correct(QStringLiteral("превет"), 1, QStringLiteral("ru_RU")).size() <= 1);
+    QVERIFY(dictionary.correct(QStringLiteral("превет"), 0, QStringLiteral("ru_RU")).isEmpty());
+    QVERIFY(dictionary.correct(QStringLiteral("превет"), -1, QStringLiteral("ru_RU")).isEmpty());
+}
+
+void PredictiveDictionaryTest::correctsQuickly()
+{
+    // The corrections are looked for on every letter that is typed, so the
+    // lookup has to stay far below the time a key press takes. A hundred
+    // corrections of a seven letter word is a generous upper bound.
+    QElapsedTimer timer;
+    timer.start();
+    for (int i = 0; i < 100; ++i) {
+        dictionary.correct(QStringLiteral("превет"), 3, QStringLiteral("ru_RU"));
+    }
+    const qint64 elapsed = timer.elapsed();
+    qInfo() << "100 corrections of a seven letter word:" << elapsed << "ms";
+    QVERIFY(elapsed < 2000);
 }
 
 QTEST_GUILESS_MAIN(PredictiveDictionaryTest)

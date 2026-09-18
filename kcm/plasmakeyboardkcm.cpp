@@ -476,6 +476,40 @@ void PlasmaKeyboardKcm::setPredictiveMinPrefixLength(int length)
     setNeedsSave(true);
 }
 
+bool PlasmaKeyboardKcm::predictiveNextWordEnabled() const
+{
+    return m_predictiveNextWordEnabled;
+}
+
+void PlasmaKeyboardKcm::setPredictiveNextWordEnabled(bool enabled)
+{
+    if (enabled == m_predictiveNextWordEnabled) {
+        return;
+    }
+
+    m_predictiveNextWordEnabled = enabled;
+    Q_EMIT predictiveNextWordEnabledChanged();
+
+    setNeedsSave(true);
+}
+
+bool PlasmaKeyboardKcm::predictiveTypoCorrectionEnabled() const
+{
+    return m_predictiveTypoCorrectionEnabled;
+}
+
+void PlasmaKeyboardKcm::setPredictiveTypoCorrectionEnabled(bool enabled)
+{
+    if (enabled == m_predictiveTypoCorrectionEnabled) {
+        return;
+    }
+
+    m_predictiveTypoCorrectionEnabled = enabled;
+    Q_EMIT predictiveTypoCorrectionEnabledChanged();
+
+    setNeedsSave(true);
+}
+
 bool PlasmaKeyboardKcm::isSaveNeeded() const
 {
     return m_saveNeeded;
@@ -508,6 +542,8 @@ void PlasmaKeyboardKcm::load()
     setPredictiveTextEnabled(PlasmaKeyboardSettings::self()->predictiveTextEnabled());
     setPredictiveSuggestionCount(PlasmaKeyboardSettings::self()->predictiveSuggestionCount());
     setPredictiveMinPrefixLength(PlasmaKeyboardSettings::self()->predictiveMinPrefixLength());
+    setPredictiveNextWordEnabled(PlasmaKeyboardSettings::self()->predictiveNextWordEnabled());
+    setPredictiveTypoCorrectionEnabled(PlasmaKeyboardSettings::self()->predictiveTypoCorrectionEnabled());
 
     setNeedsSave(false);
 }
@@ -537,6 +573,8 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setPredictiveTextEnabled(m_predictiveTextEnabled);
     PlasmaKeyboardSettings::self()->setPredictiveSuggestionCount(m_predictiveSuggestionCount);
     PlasmaKeyboardSettings::self()->setPredictiveMinPrefixLength(m_predictiveMinPrefixLength);
+    PlasmaKeyboardSettings::self()->setPredictiveNextWordEnabled(m_predictiveNextWordEnabled);
+    PlasmaKeyboardSettings::self()->setPredictiveTypoCorrectionEnabled(m_predictiveTypoCorrectionEnabled);
     PlasmaKeyboardSettings::self()->save();
 
     setNeedsSave(false);

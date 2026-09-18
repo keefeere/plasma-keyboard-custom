@@ -119,5 +119,13 @@
             <max>4</max>
             <default>1</default>
         </entry>
+        <entry key="predictiveNextWordEnabled" type="Bool">
+            <label>Whether the words that may follow the typed one are offered above the keyboard.</label>
+            <default>true</default>
+        </entry>
+        <entry key="predictiveTypoCorrectionEnabled" type="Bool">
+            <label>Whether a word that is not the beginning of any known word is offered to be corrected.</label>
+            <default>true</default>
+        </entry>
     </group>
 </kcfg>

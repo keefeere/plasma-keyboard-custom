@@ -21,3 +21,16 @@
  * @return The word, empty when the cursor is not right after one.
  */
 QString wordBeforeCursor(const QString &textBeforeCursor);
+
+/**
+ * The word before the word the cursor is at the end of, in @p textBeforeCursor.
+ *
+ * It is the word the predictive text input looks the predictions up with: what
+ * was typed before the current word, with the separators between the two words
+ * left out («привет, как» gives «привет»).
+ *
+ * @param textBeforeCursor The text of the field from its beginning up to the
+ * cursor.
+ * @return The word, empty when there is no word before the current one.
+ */
+QString previousWordBeforeCursor(const QString &textBeforeCursor);

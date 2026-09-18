@@ -106,6 +106,14 @@ class InputListenerItem : public QQuickItem
      */
     Q_PROPERTY(QString predictionPrefix READ predictionPrefix NOTIFY predictionPrefixChanged)
 
+    /**
+     * The word before the one being typed: the last word of the text before
+     * the current one, with the separators between them left out («привет, как»
+     * gives «привет»). Empty when there is no word before the current one. It
+     * is what the next-word predictions are looked up with.
+     */
+    Q_PROPERTY(QString predictionContext READ predictionContext NOTIFY predictionContextChanged)
+
 public:
     InputListenerItem();
 
@@ -133,6 +141,12 @@ public:
      * The word being typed, as offered to the predictive text input.
      */
     QString predictionPrefix() const;
+
+    /**
+     * The word before the word being typed, as offered to the next-word
+     * predictions.
+     */
+    QString predictionContext() const;
 
     /**
      * Replaces the word being typed with @p word, the way a suggestion is
@@ -168,6 +182,7 @@ Q_SIGNALS:
     void keyNavigationPressed(int key);
     void keyNavigationReleased(int key);
     void predictionPrefixChanged();
+    void predictionContextChanged();
 
 private:
     /**
@@ -179,8 +194,12 @@ private:
      */
     bool handleModifiedKey(QKeyEvent *event, bool press);
 
-    //! Re-reads the word being typed and tells QML when it changed.
-    void updatePredictionPrefix();
+    //! Re-reads the word being typed and the word before it, and tells QML
+    //! when either of them changed.
+    void updatePredictionWords();
+
+    //! The text of the field from its beginning up to the cursor.
+    QString textBeforeCursor() const;
 
     InputPlugin m_input;
     OverlayController *m_overlayController = nullptr;
@@ -190,6 +209,9 @@ private:
 
     //! The word the predictive text input currently suggests for.
     QString m_predictionPrefix;
+
+    //! The word the next-word predictions are currently looked up with.
+    QString m_predictionContext;
 
     //! True after the keyboard was hidden (by the user or by the system) and
     //! until the next input activation. A focused text field keeps sending

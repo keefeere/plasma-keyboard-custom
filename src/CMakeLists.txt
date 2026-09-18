@@ -58,6 +58,10 @@ target_sources(plasma-keyboard-custom PRIVATE
     prediction/predictivedictionary.h
     prediction/wordatcursor.cpp
     prediction/wordatcursor.h
+    prediction/wordlookup.cpp
+    prediction/wordlookup.h
+    prediction/wordpredictor.cpp
+    prediction/wordpredictor.h
 )
 
 if(PLASMA_KEYBOARD_VIBRATION_ENABLED)

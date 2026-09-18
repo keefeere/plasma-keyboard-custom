@@ -6,8 +6,11 @@
 
 #include "predictivedictionary.h"
 
+#include "wordlookup.h"
+
 #include <QFile>
 #include <QLoggingCategory>
+#include <QSet>
 #include <QtEndian>
 
 #include <algorithm>
@@ -16,64 +19,17 @@ Q_LOGGING_CATEGORY(lcPrediction, "org.kde.plasma.keyboard.custom.prediction")
 
 namespace
 {
-
-//! The UTF-8 of «ё» and of «е»: the keyboards type «е» and the word lists keep
-//! the «ё», so the two have to be compared as the same letter.
-const QByteArrayView yo("\xd1\x91", 2);
-const QByteArrayView ye("\xd0\xb5", 2);
-
-//! The form a word is looked up in: lower case, with «ё» as «е».
-QByteArray lookupKey(QByteArrayView word)
+//! The letters a word of the language is typed with. The corrections put them
+//! in place of the letters that were typed, add one of them or drop one.
+QString alphabetFor(const QString &language)
 {
-    QByteArray key(word.data(), word.size());
-    key.replace(yo, ye);
-    return key;
-}
-
-//! The same form for what has been typed.
-QByteArray lookupKey(const QString &word)
-{
-    QByteArray key = word.toLower().toUtf8();
-    key.replace(yo, ye);
-    return key;
-}
-
-//! The language part of a locale ("ru_RU", "ru-RU" and "ru" all give "ru").
-QString languageOf(const QString &locale)
-{
-    int separator = locale.indexOf(QChar(u'_'));
-    if (separator < 0) {
-        separator = locale.indexOf(QChar(u'-'));
+    if (language == QLatin1String("ru")) {
+        return QStringLiteral("абвгдеёжзийклмнопрстуфхцчшщъыьэюя");
     }
-    const QString language = separator > 0 ? locale.left(separator) : locale;
-    return language.toLower();
+    // The apostrophe belongs to the English words that are written with one
+    // («don't»), and a correction may be the one that was left out.
+    return QStringLiteral("abcdefghijklmnopqrstuvwxyz'");
 }
-
-//! @p word with the case of @p prefix: what was typed in upper case stays in
-//! upper case, a capitalised word keeps its capital letter.
-QString matchCase(const QString &word, const QString &prefix)
-{
-    bool startsUpper = false;
-    bool allUpper = true;
-    for (const QChar character : prefix) {
-        if (!character.isLetter()) {
-            continue;
-        }
-        startsUpper = startsUpper || character.isUpper();
-        allUpper = allUpper && character.isUpper();
-    }
-
-    if (allUpper && prefix.size() > 1) {
-        return word.toUpper();
-    }
-    if (startsUpper && !word.isEmpty()) {
-        QString capitalized = word;
-        capitalized[0] = capitalized.at(0).toUpper();
-        return capitalized;
-    }
-    return word;
-}
-
 } // namespace
 
 quint32 PredictiveDictionary::WordList::offset(quint32 index) const
@@ -92,6 +48,27 @@ QByteArrayView PredictiveDictionary::WordList::word(quint32 index) const
     const qsizetype pool = 8 + qsizetype(count + 1) * 4;
     const quint32 start = offset(index);
     return QByteArrayView(data.constData() + pool + start, offset(index + 1) - start);
+}
+
+quint32 PredictiveDictionary::WordList::indexOf(const QByteArray &needle) const
+{
+    // The words are ordered by the lookup key, so the word itself is one binary
+    // search away.
+    quint32 low = 0;
+    quint32 high = count;
+    while (low < high) {
+        const quint32 middle = low + (high - low) / 2;
+        if (lookupKey(word(middle)) < needle) {
+            low = middle + 1;
+        } else {
+            high = middle;
+        }
+    }
+
+    if (low < count && lookupKey(word(low)) == needle) {
+        return low;
+    }
+    return count;
 }
 
 PredictiveDictionary::PredictiveDictionary(QObject *parent)
@@ -199,6 +176,82 @@ QStringList PredictiveDictionary::complete(const QString &prefix, int limit, con
     candidates.reserve(matches.size());
     for (const quint32 index : std::as_const(matches)) {
         candidates.append(matchCase(QString::fromUtf8(list->word(index)), prefix));
+    }
+    return candidates;
+}
+
+QStringList PredictiveDictionary::correct(const QString &word, int limit, const QString &locale) const
+{
+    if (word.isEmpty() || limit <= 0) {
+        return {};
+    }
+
+    const auto list = listFor(locale);
+    if (!list || !list->isValid()) {
+        return {};
+    }
+
+    const QString alphabet = alphabetFor(languageOf(locale));
+    const QString typed = word.toLower();
+
+    QList<quint32> matches;
+    QSet<quint32> seen;
+    // A correction is a word of the list itself: a word that is one typo away
+    // from what was typed.
+    const auto consider = [&](const QString &candidate) {
+        const quint32 index = list->indexOf(lookupKey(candidate));
+        if (index == list->count || seen.contains(index)) {
+            return;
+        }
+        seen.insert(index);
+        matches.append(index);
+    };
+
+    // A letter was dropped («привет» -> «привт»).
+    for (int position = 0; position < typed.size(); ++position) {
+        QString candidate = typed;
+        candidate.remove(position, 1);
+        consider(candidate);
+    }
+    // Two neighbouring letters were swapped («привет» -> «првиет»).
+    for (int position = 0; position + 1 < typed.size(); ++position) {
+        QString candidate = typed;
+        const QChar first = candidate.at(position);
+        candidate[position] = candidate.at(position + 1);
+        candidate[position + 1] = first;
+        consider(candidate);
+    }
+    // A letter was typed instead of another one («привет» -> «превет»).
+    for (int position = 0; position < typed.size(); ++position) {
+        for (const QChar letter : alphabet) {
+            QString candidate = typed;
+            candidate[position] = letter;
+            consider(candidate);
+        }
+    }
+    // A letter was typed too many («привет» -> «привтет»).
+    for (int position = 0; position <= typed.size(); ++position) {
+        for (const QChar letter : alphabet) {
+            QString candidate = typed;
+            candidate.insert(position, letter);
+            consider(candidate);
+        }
+    }
+
+    const auto moreFrequent = [list](quint32 left, quint32 right) {
+        return list->frequency(left) > list->frequency(right);
+    };
+    if (matches.size() > limit) {
+        std::partial_sort(matches.begin(), matches.begin() + limit, matches.end(), moreFrequent);
+        matches.resize(limit);
+    } else {
+        std::sort(matches.begin(), matches.end(), moreFrequent);
+    }
+
+    QStringList candidates;
+    candidates.reserve(matches.size());
+    for (const quint32 index : std::as_const(matches)) {
+        candidates.append(matchCase(QString::fromUtf8(list->word(index)), word));
     }
     return candidates;
 }

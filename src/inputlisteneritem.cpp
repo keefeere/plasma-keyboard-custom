@@ -159,7 +159,7 @@ InputListenerItem::InputListenerItem()
     connect(&m_input, &InputPlugin::contextChanged, this, [this] {
         const bool hasContext = m_input.hasContext();
 
-        updatePredictionPrefix();
+        updatePredictionWords();
 
         // Cancel any pending overlay state when the input context changes (focus loss or target swap)
         if (m_overlayController) {
@@ -196,7 +196,7 @@ InputListenerItem::InputListenerItem()
     connect(&m_input, &InputPlugin::surroundingTextChanged, this, [this] {
         // The word being typed changed with the text around the cursor, so the
         // suggestions have to follow it.
-        updatePredictionPrefix();
+        updatePredictionWords();
 
         // Notify the overlay controller first so it can cancel the overlay if an
         // external cursor movement is detected (e.g. user tapped elsewhere in the
@@ -223,7 +223,7 @@ InputListenerItem::InputListenerItem()
     });
     connect(&m_input, &InputPlugin::cursorChanged, this, [this] {
         // Moving the cursor moves the word that is being typed.
-        updatePredictionPrefix();
+        updatePredictionWords();
     });
 
     connect(&m_input, &InputPlugin::deactivate, this, [this] {
@@ -231,7 +231,7 @@ InputListenerItem::InputListenerItem()
         // The input context is gone: the next activation may show the keyboard
         // again, even if the user had hidden it.
         m_hiddenByUser = false;
-        updatePredictionPrefix();
+        updatePredictionWords();
         QGuiApplication::inputMethod()->setVisible(false);
         QGuiApplication::inputMethod()->reset();
     });
@@ -350,7 +350,7 @@ void InputListenerItem::commitText(const QString &text)
     m_input.commit(text);
 }
 
-QString InputListenerItem::predictionPrefix() const
+QString InputListenerItem::textBeforeCursor() const
 {
     if (!m_input.hasContext()) {
         return {};
@@ -359,17 +359,32 @@ QString InputListenerItem::predictionPrefix() const
     // The cursor position is in bytes, the word is cut in characters.
     const QByteArray surrounding = m_input.surroundingText().toUtf8();
     const int cursorBytes = qBound(0, int(m_input.cursorPos()), surrounding.size());
-    return wordBeforeCursor(QString::fromUtf8(surrounding.first(cursorBytes)));
+    return QString::fromUtf8(surrounding.first(cursorBytes));
 }
 
-void InputListenerItem::updatePredictionPrefix()
+QString InputListenerItem::predictionPrefix() const
+{
+    return wordBeforeCursor(textBeforeCursor());
+}
+
+QString InputListenerItem::predictionContext() const
+{
+    return previousWordBeforeCursor(textBeforeCursor());
+}
+
+void InputListenerItem::updatePredictionWords()
 {
     const QString prefix = predictionPrefix();
-    if (prefix == m_predictionPrefix) {
-        return;
+    if (prefix != m_predictionPrefix) {
+        m_predictionPrefix = prefix;
+        Q_EMIT predictionPrefixChanged();
     }
-    m_predictionPrefix = prefix;
-    Q_EMIT predictionPrefixChanged();
+
+    const QString context = predictionContext();
+    if (context != m_predictionContext) {
+        m_predictionContext = context;
+        Q_EMIT predictionContextChanged();
+    }
 }
 
 void InputListenerItem::applyPrediction(const QString &word)

@@ -16,3 +16,13 @@ path = "src/prediction/data/**.bin"
 precedence = "aggregate"
 SPDX-FileCopyrightText = ["2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>", "2016 Hermit Dave"]
 SPDX-License-Identifier = "MIT"
+
+# The bigram lists of the predictive text input are counted in the Tatoeba
+# sentence corpus (https://tatoeba.org), whose sentences Tatoeba publishes under
+# the Creative Commons Attribution 2.0 France licence (CC BY 2.0 FR). The
+# licence has no SPDX identifier of its own, so it is referred to by name.
+[[annotations]]
+path = "src/prediction/data/*.ngrams"
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>", "Tatoeba contributors"]
+SPDX-License-Identifier = "LicenseRef-CC-BY-2.0-FR"

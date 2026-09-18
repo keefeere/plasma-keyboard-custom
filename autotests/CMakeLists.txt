@@ -30,6 +30,7 @@ qt6_generate_wayland_protocol_server_sources(mockinputmethodcompositor
 # of the application sources, and the test only needs the word lists.
 ecm_add_test(predictivedictionarytest.cpp
     ../src/prediction/predictivedictionary.cpp
+    ../src/prediction/wordlookup.cpp
     TEST_NAME predictivedictionarytest
     LINK_LIBRARIES
         Qt::Core
@@ -49,6 +50,30 @@ qt_add_resources(predictivedictionarytest "prediction_dictionaries"
     FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction/data/en.bin"
         "${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction/data/ru.bin"
+)
+
+# The bigram engine is compiled into the test directly as well, together with
+# the bigram lists it looks the predictions up in.
+ecm_add_test(wordpredictortest.cpp
+    ../src/prediction/wordpredictor.cpp
+    ../src/prediction/wordlookup.cpp
+    TEST_NAME wordpredictortest
+    LINK_LIBRARIES
+        Qt::Core
+        Qt::Qml
+        Qt::Test
+)
+
+target_include_directories(wordpredictortest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction
+)
+
+qt_add_resources(wordpredictortest "prediction_ngrams"
+    PREFIX "/prediction"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction/data"
+    FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction/data/en.ngrams"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction/data/ru.ngrams"
 )
 
 # Cutting the word being typed out of the text in front of the cursor.

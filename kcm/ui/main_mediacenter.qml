@@ -296,6 +296,32 @@ KCM.SimpleKCM {
             }
         }
 
+        Bigscreen.SwitchDelegate {
+            id: predictiveNextWordButton
+            text: i18n("Next word")
+            KeyNavigation.up: predictiveTextButton
+            enabled: predictiveTextButton.checked
+
+            checked: kcm.predictiveNextWordEnabled
+            onCheckedChanged: {
+                kcm.predictiveNextWordEnabled = checked;
+                checked = Qt.binding(() => kcm.predictiveNextWordEnabled);
+            }
+        }
+
+        Bigscreen.SwitchDelegate {
+            id: predictiveTypoCorrectionButton
+            text: i18n("Typo correction")
+            KeyNavigation.up: predictiveNextWordButton
+            enabled: predictiveTextButton.checked
+
+            checked: kcm.predictiveTypoCorrectionEnabled
+            onCheckedChanged: {
+                kcm.predictiveTypoCorrectionEnabled = checked;
+                checked = Qt.binding(() => kcm.predictiveTypoCorrectionEnabled);
+            }
+        }
+
         LocaleSelectorSidebar {
             id: localeSelectorSidebar
             onClosed: changeLanguagesButton.forceActiveFocus()

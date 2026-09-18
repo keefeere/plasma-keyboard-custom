@@ -236,14 +236,18 @@ The settings page in System Settings:
   long or multi-line entries are shortened to a single line. While a word is being typed the same row offers the word
   suggestions (below), and the key at its right edge switches the row between the two; the row appears and disappears
   together with them.
-- **Predictive text (word suggestions)**: while a word is being typed, the words that continue it are offered above the
-  keyboard, the most frequent first (three at a time by default, 1–5 in the settings). The words come from frequency
-  dictionaries of Russian and English (about 1.18 M and 1.03 M word forms, FrequencyWords data, MIT licence), and the
+- **Predictive text (word suggestions)**: the words that fit what is being typed are offered above the keyboard, the most
+  frequent first (three at a time by default, 1–5 in the settings). Three things are offered. While a word is being typed,
+  the words that continue it (about 1.18 M Russian and 1.03 M English word forms from the FrequencyWords data, MIT
+  licence); when what is typed is not the beginning of any word, a correction of the typo — the words one typo away from
+  it (a replaced, swapped, missing or extra letter); and with no word being typed yet (the cursor right after a space),
+  the words that may follow the previous one (bigrams counted in the Tatoeba sentence corpus, CC BY 2.0 FR licence). The
   prediction engine is our own — the hunspell plugin of Qt Virtual Keyboard stays deliberately switched off. Suggestions
   start with the first letter (the threshold is configurable, 1–4), the chips are as wide as their text and sit on the
-  left, and the part that would complete the word is underlined. Taking a chip (or **A** on a gamepad) replaces the word
-  being typed as a whole and **adds a space**, so that the next word can be typed right away. It works with touch, mouse
-  and gamepad (D-pad along the row, **A** to take), and is configured on the *Typing* tab.
+  left, and the part that would complete the word is underlined (a correction and a prediction have nothing to underline).
+  Taking a chip (or **A** on a gamepad) applies it: a completion replaces the word being typed, a correction and a
+  prediction are inserted as a whole, and a space is **added** after it, so that the next word can be typed right away. It
+  works with touch, mouse and gamepad (D-pad along the row, **A** to take), and is configured on the *Typing* tab.
 - **Single instance**: a second process exits right away, so a stale instance can never keep an old panel around.
 - **Settings page** (`plasma-keyboard-custom` in System Settings), organised in tabs — *Layouts* (languages),
   *Opening* (long press, mouse focus, hiding the Plasma panel),   *Appearance* (height, font, F1–F12 row, clipboard row) and
@@ -252,7 +256,8 @@ The settings page in System Settings:
   - whether the keyboard opens when a text field is focused with a mouse (otherwise it only opens on touch or via the shortcut),
   - open on long press with its threshold, the F1–F12 row, the keyboard font, hiding the Plasma panel while the
     keyboard is visible,
-  - word suggestions: on or off, how many are offered at once (1–5) and how many letters it takes for them to appear (1–4),
+  - word suggestions: on or off, how many are offered at once (1–5), how many letters it takes for them to appear (1–4),
+    next-word prediction and typo correction,
   - which of the enabled layouts opens by default — a star next to it in the layout list; without a choice the layout
     the system asks for decides, falling back to the first enabled one,
   - the page and its options are translated (the `kcm_plasmakeyboardcustom` translation domain is shipped with the

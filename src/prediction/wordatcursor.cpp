@@ -28,3 +28,23 @@ QString wordBeforeCursor(const QString &textBeforeCursor)
 
     return textBeforeCursor.mid(start);
 }
+
+QString previousWordBeforeCursor(const QString &textBeforeCursor)
+{
+    // The word being typed is what stands right before the cursor; what is
+    // looked for is the one before it.
+    const QString current = wordBeforeCursor(textBeforeCursor);
+    int end = textBeforeCursor.size() - current.size();
+
+    // The separators between the two words (spaces, punctuation) are skipped,
+    // the way wordBeforeCursor() skips them at the end of a word.
+    while (end > 0) {
+        const QChar character = textBeforeCursor.at(end - 1);
+        if (character.isLetter() || character == QChar(u'-') || character == QChar(u'\'')) {
+            break;
+        }
+        --end;
+    }
+
+    return wordBeforeCursor(textBeforeCursor.left(end));
+}

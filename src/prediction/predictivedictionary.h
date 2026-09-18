@@ -51,6 +51,25 @@ public:
     Q_INVOKABLE QStringList complete(const QString &prefix, int limit, const QString &locale) const;
 
     /**
+     * The words @p word may have been meant to be, most frequent first.
+     *
+     * The words that are one typo away from @p word are looked for in the word
+     * list: a letter deleted, two neighbouring letters swapped, a letter
+     * replaced or one letter too many. What is offered is a word of the list
+     * itself, with the case of @p word applied to it, so that a mistyped word
+     * can be replaced by the word that was meant.
+     *
+     * @param word What has been typed. An empty word has no corrections, and so
+     * has a locale without a word list.
+     * @param limit The maximum number of words to return.
+     * @param locale The input locale ("ru_RU", "en_US", ...); only the
+     * language part is used.
+     * @return Up to @p limit words, or an empty list when nothing is close
+     * enough to @p word.
+     */
+    Q_INVOKABLE QStringList correct(const QString &word, int limit, const QString &locale) const;
+
+    /**
      * Whether a word list for @p locale is compiled into the binary.
      */
     Q_INVOKABLE bool supports(const QString &locale) const;
@@ -89,6 +108,12 @@ public:
         quint32 offset(quint32 index) const;
         quint32 frequency(quint32 index) const;
         QByteArrayView word(quint32 index) const;
+
+        /**
+         * The index of the word @p needle, or count when the list has no such
+         * word. @p needle is a lookup key (see wordlookup.h).
+         */
+        quint32 indexOf(const QByteArray &needle) const;
     };
 
 private:
