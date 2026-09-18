@@ -12,8 +12,21 @@
 name: Update pacman repository
 
 on:
-  # Automatic run: fired by "Publish release" (and by any later manual publish
-  # of a draft), which is exactly when the package asset exists.
+  # Normal path: release.yml calls this workflow as a reusable one right after
+  # it published the release, so the repository is updated inside that same run.
+  # It cannot be left to the event below: a release created with the default
+  # GITHUB_TOKEN starts no workflows at all. A reusable call, in contrast, runs
+  # in the caller's run, where its result is awaited and its failure fails that
+  # run instead of silently leaving the repository behind.
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Release tag to publish, empty = re-index all releases'
+        required: false
+        default: ''
+        type: string
+  # Only fires for a publish done by a person (a draft published from the UI),
+  # which is exactly when the package asset exists and no reusable call did it.
   release:
     types: [published]
   # Manual run, mostly to repair the repository after a failed deployment or
@@ -43,9 +56,9 @@ jobs:
     name: Publish package to gh-pages
     runs-on: ubuntu-latest
     env:
-      # Tag of the release that carries the package (release event or manual
-      # input). Empty on a manual run without a tag: the repository is then
-      # rebuilt from every published release.
+      # Tag of the release that carries the package (reusable call, release
+      # event or manual input). Empty when nothing was passed: the repository
+      # is then rebuilt from every published release.
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
       # Base name of the package, and therefore of both pacman databases.
       PKG: plasma-keyboard-custom
@@ -114,7 +127,8 @@ jobs:
           }
 
           if [ -n "$TAG" ]; then
-            # Triggered by a published release: take that release's package.
+            # A tag was passed (reusable call, release event or manual run):
+            # take that release's package.
             fetch "$TAG"
           else
             # Re-index: rebuild the repository from every published release,

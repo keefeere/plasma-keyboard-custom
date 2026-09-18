@@ -152,8 +152,9 @@ Older versions also stay attached to their GitHub releases and in `/var/cache/pa
 `pacman -Sc`.
 
 The repository is maintained automatically by
-[`.github/workflows/deploy-repo.yml`](.github/workflows/deploy-repo.yml) whenever a release is
-published; the workflow can also be re-run by hand from the Actions tab — with a release tag it
+[`.github/workflows/deploy-repo.yml`](.github/workflows/deploy-repo.yml), which the release workflow
+calls as a reusable one, so it runs — and has to succeed — inside the same run that publishes the
+release. The workflow can also be re-run by hand from the Actions tab: with a release tag it
 republishes that release, without one it re-indexes every published release (useful after a failed
 run, or if the branch was lost).
 
