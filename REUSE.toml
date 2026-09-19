@@ -26,3 +26,25 @@ path = "src/prediction/data/*.ngrams"
 precedence = "aggregate"
 SPDX-FileCopyrightText = ["2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>", "Tatoeba contributors"]
 SPDX-License-Identifier = "LicenseRef-CC-BY-2.0-FR"
+
+# The keyboard icons are shipped inside the application so that the look of the
+# keyboard does not depend on the icon theme of the system.
+#
+# Most of them are taken from the Papirus icon theme
+# (https://github.com/PapirusDevelopmentTeam/papirus-icon-theme), which the
+# Papirus Development Team publishes under the GPL-3.0-only. The icons that
+# Papirus does not have (the Shift states, hiding the keyboard and the text
+# selection mode) are taken from the Breeze icon theme
+# (https://invent.kde.org/frameworks/breeze-icons), which KDE publishes under
+# the LGPL-3.0-or-later.
+[[annotations]]
+path = "src/icons/papirus/**.svg"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Papirus Development Team"
+SPDX-License-Identifier = "GPL-3.0-only"
+
+[[annotations]]
+path = "src/icons/breeze/**.svg"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "KDE contributors"
+SPDX-License-Identifier = "LGPL-3.0-or-later"

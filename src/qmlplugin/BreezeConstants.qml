@@ -69,4 +69,21 @@ QtObject {
 
     readonly property real buttonRadius: _theme.buttonRadius
     readonly property real popupRadius: _theme.popupRadius
+
+    //! The path of an icon shipped inside the application. The keyboard has to
+    //! look the same whatever icon theme the system uses, so the icons are
+    //! compiled into the binary and Kirigami.Icon recolours them with the
+    //! colour of the current theme.
+    //!
+    //! Most of the icons come from the Papirus icon theme (GPL-3.0-only); the
+    //! icons that Papirus does not have (the Shift states, hiding the keyboard
+    //! and the text selection mode) stay from Breeze (LGPL-3.0-or-later) and
+    //! are requested through breezeIcon().
+    function icon(name) {
+        return "qrc:/icons/papirus/" + name + ".svg";
+    }
+
+    function breezeIcon(name) {
+        return "qrc:/icons/breeze/" + name + ".svg";
+    }
 }

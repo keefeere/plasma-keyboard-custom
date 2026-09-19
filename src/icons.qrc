@@ -1,0 +1,28 @@
+<!DOCTYPE RCC>
+<!--
+    SPDX-FileCopyrightText: 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>
+
+    SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+-->
+<RCC version="1.0">
+    <qresource prefix="/">
+        <!-- Icons of the Papirus icon theme (GPL-3.0-only) -->
+        <file>icons/papirus/draw-freehand-symbolic.svg</file>
+        <file>icons/papirus/edit-clear-all-symbolic.svg</file>
+        <file>icons/papirus/edit-clear-symbolic.svg</file>
+        <file>icons/papirus/edit-paste-symbolic.svg</file>
+        <file>icons/papirus/globe-symbolic.svg</file>
+        <file>icons/papirus/keyboard-enter-symbolic.svg</file>
+        <file>icons/papirus/object-select-symbolic.svg</file>
+        <file>icons/papirus/preferences-system-symbolic.svg</file>
+        <file>icons/papirus/search-symbolic.svg</file>
+        <file>icons/papirus/selection-end-symbolic.svg</file>
+        <file>icons/papirus/tools-check-spelling-symbolic.svg</file>
+        <!-- Icons of the Breeze icon theme (LGPL-3.0-or-later) -->
+        <file>icons/breeze/edit-select-text-symbolic.svg</file>
+        <file>icons/breeze/input-keyboard-virtual-hide-symbolic.svg</file>
+        <file>icons/breeze/keyboard-caps-disabled-symbolic.svg</file>
+        <file>icons/breeze/keyboard-caps-enabled-symbolic.svg</file>
+        <file>icons/breeze/keyboard-caps-locked-symbolic.svg</file>
+    </qresource>
+</RCC>

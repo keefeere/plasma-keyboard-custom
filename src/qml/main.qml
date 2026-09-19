@@ -961,8 +961,12 @@ InputPanelWindow {
                             width: Math.round(suggestionsRow.rowHeight * 0.6)
                             height: width
                             // The clipboard while the suggestions are shown, the
-                            // suggestions while the clipboard is shown.
-                            source: suggestionsRow.showingSuggestions ? "edit-paste" : "tools-check-spelling"
+                            // suggestions while the clipboard is shown. The
+                            // symbolic variants are the ones Kirigami.Icon can
+                            // recolour with keyTextColor; the plain names are
+                            // taken from the icon theme as they are and vanish on
+                            // a light background.
+                            source: PlasmaKeyboard.BreezeConstants.icon(suggestionsRow.showingSuggestions ? "edit-paste-symbolic" : "tools-check-spelling-symbolic")
                             color: PlasmaKeyboard.BreezeConstants.keyTextColor
                         }
                     }
@@ -1014,7 +1018,7 @@ InputPanelWindow {
                             anchors.centerIn: parent
                             width: Math.round(suggestionsRow.rowHeight * 0.6)
                             height: width
-                            source: "edit-clear-history"
+                            source: PlasmaKeyboard.BreezeConstants.icon("edit-clear-all-symbolic")
                             color: PlasmaKeyboard.BreezeConstants.keyTextColor
                         }
                     }
@@ -1177,7 +1181,7 @@ InputPanelWindow {
             }
 
             Component.onCompleted: {
-                VirtualKeyboardSettings.styleName = "PlasmaBreeze";
+                VirtualKeyboardSettings.styleName = "PlasmaBreezeCustom";
                 PlasmaKeyboard.Theme.setThemeId(PlasmaKeyboardSettings.theme);
                 // Enable Qt Virtual Keyboard's arrow-key navigation so the
                 // gamepad can move the highlight and activate keys.

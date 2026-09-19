@@ -211,7 +211,8 @@ The settings page in System Settings:
   Cyrillic and Greek ones) use the same rows as `ru_RU` — `Esc` and a hide-keyboard key, `Ctrl`/`Alt`, a numeric row,
   physical inverted-T arrow cluster, `Del`/`Shift`/`&123` sized like `Tab`, no right Shift; the Latvian layout keeps its
   long-press diacritics. Multi-mode layouts (Japanese, Korean, Chinese, Thai, Arabic, Hebrew) are left as upstream.
-- **Breeze style**: installed as `PlasmaBreeze` (so it is not shadowed by the system one), configurable keyboard height,
+- **Breeze style**: installed as `PlasmaBreezeCustom` (so it is shadowed neither by the system `Breeze` nor by the
+  `PlasmaBreeze` of our own package, which matters for local builds), configurable keyboard height,
   bold function/modifier keys, monochrome globe for the language key, capitalized language name on the space key.
 - **Themes**: ten built-in themes (system, light/dark, iOS, Material and Google in their light and dark variants, and Catppuccin Mocha) plus
   user themes imported as plain JSON (palette, geometry, background, key style and per-category key colours), selectable
@@ -472,6 +473,11 @@ built on the [Qt Virtual Keyboard](https://doc.qt.io/qt-6/qtvirtualkeyboard-inde
 to the plasma-keyboard authors and to the KDE community for the original application, the Breeze
 style, the layouts and the translations, and to The Qt Company for the virtual keyboard framework —
 this fork would not exist without their work.
+
+The keyboard icons come from two icon themes: most of them from
+[Papirus](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme) (© the Papirus Development
+Team, GPL-3.0-only), and the ones Papirus does not have (the Shift states, hiding the keyboard and
+the text selection mode) from Breeze (© KDE contributors, LGPL-3.0-or-later).
 
 The fork is maintained as
 [mops1k/plasma-keyboard-custom](https://github.com/mops1k/plasma-keyboard-custom); bug reports and

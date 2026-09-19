@@ -54,6 +54,7 @@ target_sources(plasma-keyboard-custom PRIVATE
     overlay/textexpansiontrigger.cpp
     overlay/textexpansiontrigger.h
     prediction.qrc
+    icons.qrc
     prediction/predictivedictionary.cpp
     prediction/predictivedictionary.h
     prediction/hunspelldictionary.cpp

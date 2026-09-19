@@ -77,7 +77,7 @@ KeyboardStyle {
         Kirigami.Icon {
             implicitWidth: 80 * theme.keyIconScale
             implicitHeight: 80 * theme.keyIconScale
-            source: "settings-configure"
+            source: PlasmaKeyboard.BreezeConstants.icon("preferences-system-symbolic")
         }
     }
 
@@ -222,7 +222,7 @@ KeyboardStyle {
                 anchors.centerIn: parent
                 implicitHeight: 88 * theme.keyIconScale
                 implicitWidth: implicitHeight
-                source: "edit-clear-symbolic"
+                source: PlasmaKeyboard.BreezeConstants.icon("edit-clear-symbolic")
             }
         }
 
@@ -258,7 +258,7 @@ KeyboardStyle {
                 color: theme.keyTextColorFor(languageKeyPanel.category)
                 anchors.centerIn: parent
                 implicitHeight: 96 * theme.keyIconScale
-                source: "globe-symbolic"
+                source: PlasmaKeyboard.BreezeConstants.icon("globe-symbolic")
             }
         }
 
@@ -318,11 +318,11 @@ KeyboardStyle {
                     case EnterKeyAction.Send:
                     case EnterKeyAction.Next:
                     case EnterKeyAction.Done:
-                        return "checkmark"
+                        return PlasmaKeyboard.BreezeConstants.icon("object-select-symbolic")
                     case EnterKeyAction.Search:
-                        return "search-symbolic"
+                        return PlasmaKeyboard.BreezeConstants.icon("search-symbolic")
                     default:
-                        return "keyboard-enter-symbolic"
+                        return PlasmaKeyboard.BreezeConstants.icon("keyboard-enter-symbolic")
                     }
                 }
             }
@@ -383,7 +383,7 @@ KeyboardStyle {
                 color: theme.keyTextColorFor(hideKeyPanel.category)
                 anchors.centerIn: parent
                 implicitHeight: 96 * theme.keyIconScale
-                source: "input-keyboard-virtual-hide-symbolic"
+                source: PlasmaKeyboard.BreezeConstants.breezeIcon("input-keyboard-virtual-hide-symbolic")
             }
         }
 
@@ -421,11 +421,11 @@ KeyboardStyle {
                 implicitHeight: 134 * theme.keyIconScale
                 source: {
                     if (InputContext.capsLockActive) {
-                        return "keyboard-caps-locked-symbolic";
+                        return PlasmaKeyboard.BreezeConstants.breezeIcon("keyboard-caps-locked-symbolic");
                     } else if (InputContext.shiftActive) {
-                        return "keyboard-caps-enabled-symbolic";
+                        return PlasmaKeyboard.BreezeConstants.breezeIcon("keyboard-caps-enabled-symbolic");
                     }
-                    return "keyboard-caps-disabled-symbolic";
+                    return PlasmaKeyboard.BreezeConstants.breezeIcon("keyboard-caps-disabled-symbolic");
                 }
             }
         }
@@ -602,7 +602,7 @@ KeyboardStyle {
                 isMask: true
                 anchors.centerIn: parent
                 implicitHeight: 127 * theme.keyIconScale
-                source: (keyboard.handwritingMode ? "edit-select-text-symbolic" : "draw-freehand-symbolic")
+                source: keyboard.handwritingMode ? PlasmaKeyboard.BreezeConstants.breezeIcon("edit-select-text-symbolic") : PlasmaKeyboard.BreezeConstants.icon("draw-freehand-symbolic")
             }
         }
 
@@ -1116,7 +1116,7 @@ KeyboardStyle {
 
     selectionHandle: Kirigami.Icon {
         implicitWidth: 20
-        source: "selection-end-symbolic" // TODO: better icon?
+        source: PlasmaKeyboard.BreezeConstants.icon("selection-end-symbolic") // TODO: better icon?
     }
 
     fullScreenInputContainerBackground: Rectangle {
@@ -1153,11 +1153,11 @@ KeyboardStyle {
             source: {
                 switch (keyboardFunction) {
                 case QtVirtualKeyboard.KeyboardFunction.HideInputPanel:
-                    return "input-keyboard-virtual-hide-symbolic"
+                    return PlasmaKeyboard.BreezeConstants.breezeIcon("input-keyboard-virtual-hide-symbolic")
                 case QtVirtualKeyboard.KeyboardFunction.ChangeLanguage:
-                    return "globe-symbolic"
+                    return PlasmaKeyboard.BreezeConstants.icon("globe-symbolic")
                 case QtVirtualKeyboard.KeyboardFunction.ToggleHandwritingMode:
-                    return (keyboard.handwritingMode ? "edit-select-text-symbolic" : "draw-freehand-symbolic") // TODO: better icons?
+                    return keyboard.handwritingMode ? PlasmaKeyboard.BreezeConstants.breezeIcon("edit-select-text-symbolic") : PlasmaKeyboard.BreezeConstants.icon("draw-freehand-symbolic") // TODO: better icons?
                 }
             }
         }

@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 # The style is installed under a unique name so that it can coexist with the
-# Breeze style shipped by the official plasma-keyboard package. Qt Virtual
-# Keyboard resolves the style by scanning the QML import paths and would
-# otherwise prefer the system-installed "Breeze".
-ecm_add_qml_module(breezestyle URI QtQuick.VirtualKeyboard.Styles.PlasmaBreeze GENERATE_PLUGIN_SOURCE DEPENDENCIES QtQuick)
+# Breeze style shipped by the official plasma-keyboard package and with the
+# PlasmaBreeze style of our own package. Qt Virtual Keyboard resolves the style
+# by scanning the QML import paths and would otherwise prefer the
+# system-installed one, which would make the local build show the system style.
+ecm_add_qml_module(breezestyle URI QtQuick.VirtualKeyboard.Styles.PlasmaBreezeCustom GENERATE_PLUGIN_SOURCE DEPENDENCIES QtQuick)
 
 ecm_target_qml_sources(breezestyle SOURCES
     breeze/style.qml
