@@ -38,6 +38,3 @@ Testing/
 
 # Local session data: plans and downloaded word list sources
 /.dsh/
-
-# Long-term memory pages written by dsh-llm-memory
-/.harness/
