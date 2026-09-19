@@ -112,3 +112,7 @@ msgstr "Material (светлая)"
 #: qmlplugin/Theme.qml:21
 msgid "Material (dark)"
 msgstr "Material (тёмная)"
+
+#: qmlplugin/Theme.qml:22
+msgid "Catppuccin Mocha"
+msgstr "Catppuccin Mocha"

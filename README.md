@@ -213,7 +213,7 @@ The settings page in System Settings:
   long-press diacritics. Multi-mode layouts (Japanese, Korean, Chinese, Thai, Arabic, Hebrew) are left as upstream.
 - **Breeze style**: installed as `PlasmaBreeze` (so it is not shadowed by the system one), configurable keyboard height,
   bold function/modifier keys, monochrome globe for the language key, capitalized language name on the space key.
-- **Themes**: seven built-in themes (system, light/dark, and iOS and Material in their light and dark variants) plus
+- **Themes**: eight built-in themes (system, light/dark, and iOS and Material in their light and dark variants, and Catppuccin Mocha) plus
   user themes imported as plain JSON (palette, geometry, background, key style and per-category key colours), selectable
   live from the settings page. A theme file is data and never code — see [Themes](#themes).
 - **Working sound feedback**: upstream declares its CMake option as `PLASMA_KEYBOARD_SOUNDS_ENABLED` while everything
@@ -297,7 +297,7 @@ To use Qt's built-in keyboard layouts rather than the ones we supply in `plasma-
 
 ## Themes
 
-Plasma Keyboard (custom) paints the keyboard from a palette. Seven themes ship with it, and you can add your own as JSON files. A theme carries only colours and a few geometry/style values, so a theme file is **data and never code** — importing a file written by someone else cannot execute anything.
+Plasma Keyboard (custom) paints the keyboard from a palette. Eight themes ship with it, and you can add your own as JSON files. A theme carries only colours and a few geometry/style values, so a theme file is **data and never code** — importing a file written by someone else cannot execute anything.
 
 Pick a theme in **System Settings → Plasma Keyboard (custom) → Appearance → Theme**. It is applied to a running keyboard immediately, without a restart.
 
@@ -312,6 +312,7 @@ Pick a theme in **System Settings → Plasma Keyboard (custom) → Appearance �
 | `ios-dark` | iOS (dark) | The dark iOS variant. |
 | `material-light` | Material (light) | Material 3 "Default": white keys on a light surface, blue-grey accents, 12 px corners, no outline. |
 | `material-dark` | Material (dark) | The dark Material 3 variant. |
+| `catppuccin-mocha` | Catppuccin Mocha | The dark [Catppuccin Mocha](https://catppuccin.com/palette) palette: a near-black panel, mantle letter keys, surface0 special keys and a blue action key; flat keys without an outline or a shadow, and narrow gaps between them. |
 
 ### User themes
 
@@ -328,7 +329,7 @@ A theme is a JSON object. Only the keys below are accepted — an unknown key or
 | Key | Type | Meaning |
 | --- | --- | --- |
 | `name` | string | The display name. Optional; without it the file name is used. |
-| `base` | string | The built-in theme the unspecified values come from. Optional, defaults to `system`; when present it must be one of the seven ids above. |
+| `base` | string | The built-in theme the unspecified values come from. Optional, defaults to `system`; when present it must be one of the eight ids above. |
 | `palette` | object | Palette properties to override (see the list below). |
 | `geometry` | object | `keyBackgroundMargin`, `keyContentMargin`, `keyIconScale`, `buttonRadius`, `popupRadius` — all numbers. The keyboard font is **not** part of a theme; it is the separate *Keyboard font* setting. |
 | `background` | object | `type` (`"color"` or `"gradient"`), `start` and `end` (colours), and `angle`. The angle accepts only `0`, `90`, `180` or `270` (it is only meaningful for a gradient): `0`/`180` draw vertically and `90`/`270` horizontally, because Qt's `Rectangle.gradient` supports only those two orientations. |

@@ -26,6 +26,7 @@ QtObject {
     readonly property Component iosDarkPaletteComponent: Component { ThemeIosDarkPalette {} }
     readonly property Component materialLightPaletteComponent: Component { ThemeMaterialLightPalette {} }
     readonly property Component materialDarkPaletteComponent: Component { ThemeMaterialDarkPalette {} }
+    readonly property Component catppuccinMochaPaletteComponent: Component { ThemeCatppuccinMochaPalette {} }
 
     // A theme was installed/removed/renamed. If the selected theme is gone
     // (for instance its file was deleted) fall back to the system palette.
@@ -62,6 +63,8 @@ QtObject {
             return materialLightPaletteComponent;
         } else if (id === "material-dark") {
             return materialDarkPaletteComponent;
+        } else if (id === "catppuccin-mocha") {
+            return catppuccinMochaPaletteComponent;
         }
         return systemPaletteComponent;
     }

@@ -26,6 +26,7 @@ ecm_target_qml_sources(keyboardlib SOURCES
     ThemeIosDarkPalette.qml
     ThemeMaterialLightPalette.qml
     ThemeMaterialDarkPalette.qml
+    ThemeCatppuccinMochaPalette.qml
 )
 
 target_link_libraries(keyboardlib
