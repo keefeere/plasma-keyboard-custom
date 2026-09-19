@@ -405,6 +405,14 @@ msgstr "Material (тёмная)"
 msgid "Catppuccin Mocha"
 msgstr "Catppuccin Mocha"
 
+#: plasmakeyboardkcm.cpp:280
+msgid "Google Light"
+msgstr "Google Light"
+
+#: plasmakeyboardkcm.cpp:281
+msgid "Google Dark"
+msgstr "Google Dark"
+
 # Translations for user themes (import/export/remove)
 
 #: ui/main.qml

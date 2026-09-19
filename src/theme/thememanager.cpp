@@ -239,6 +239,8 @@ bool ThemeManager::isBuiltinId(const QString &id)
         QStringLiteral("material-light"),
         QStringLiteral("material-dark"),
         QStringLiteral("catppuccin-mocha"),
+        QStringLiteral("google-light"),
+        QStringLiteral("google-dark"),
     };
     return ids.contains(id);
 }
@@ -280,6 +282,8 @@ QVariantList ThemeManager::builtinThemes()
         entry("material-light", i18n("Material (light)")),
         entry("material-dark", i18n("Material (dark)")),
         entry("catppuccin-mocha", i18n("Catppuccin Mocha")),
+        entry("google-light", i18n("Google Light")),
+        entry("google-dark", i18n("Google Dark")),
     };
 }
 

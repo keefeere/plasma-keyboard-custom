@@ -27,6 +27,8 @@ QtObject {
     readonly property Component materialLightPaletteComponent: Component { ThemeMaterialLightPalette {} }
     readonly property Component materialDarkPaletteComponent: Component { ThemeMaterialDarkPalette {} }
     readonly property Component catppuccinMochaPaletteComponent: Component { ThemeCatppuccinMochaPalette {} }
+    readonly property Component googleLightPaletteComponent: Component { ThemeGoogleLightPalette {} }
+    readonly property Component googleDarkPaletteComponent: Component { ThemeGoogleDarkPalette {} }
 
     // A theme was installed/removed/renamed. If the selected theme is gone
     // (for instance its file was deleted) fall back to the system palette.
@@ -65,6 +67,10 @@ QtObject {
             return materialDarkPaletteComponent;
         } else if (id === "catppuccin-mocha") {
             return catppuccinMochaPaletteComponent;
+        } else if (id === "google-light") {
+            return googleLightPaletteComponent;
+        } else if (id === "google-dark") {
+            return googleDarkPaletteComponent;
         }
         return systemPaletteComponent;
     }
