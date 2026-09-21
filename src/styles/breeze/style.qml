@@ -278,7 +278,9 @@ KeyboardStyle {
         ]
     }
 
-    floatingKeyPanel: PlasmaKeyboard.BreezeKeyPanel {
+    // Not part of KeyboardStyle: a style of its own for the key that switches
+    // the floating mode, so it has to be declared as a new property.
+    property Component floatingKeyPanel: PlasmaKeyboard.BreezeKeyPanel {
         id: floatingKeyPanel
 
         Item {
