@@ -1,5 +1,6 @@
 /*
     SPDX-FileCopyrightText: 2025 Devin Lin <devin@kde.org>
+    SPDX-FileCopyrightText: 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
 */
@@ -11,40 +12,36 @@ import QtQuick.Layouts
 import QtQuick.VirtualKeyboard
 import QtQuick.VirtualKeyboard.Settings
 
-import org.kde.kitemmodels
 import org.kde.kirigami as Kirigami
 
+import "localeutils.js" as LocaleUtils
+
+/**
+ * The layouts the keyboard switches between, shown the way the system keyboard
+ * KCM shows physical layouts: flag, name, locale code, the "open by default"
+ * mark, removal and a drag handle that reorders the switch ring. Layouts are
+ * added through LocaleChooserDialog, not by ticking every known language.
+ */
 ListView {
     id: root
 
-    property var sourceModel: []
-    property string searchText: ''
+    //! Every locale the keyboard ships, needed by the "Add Layout" dialog.
+    property var availableLocales: []
 
-    model: sourceModel
+    model: kcm.enabledLocales
 
-    function updateModel() {
-        let list = [];
-        for (let locale of sourceModel) {
-            const localeText = Qt.locale(locale).nativeLanguageName;
-            if (searchText.length === 0 || localeText.toLowerCase().indexOf(searchText.toLowerCase()) !== -1) {
-                list.push(locale)
-            }
-        }
-        model = list;
-    }
-    onSearchTextChanged: updateModel()
-    onSourceModelChanged: updateModel()
+    // HACK: needed to populate VirtualKeyboardSettings.availableLocales
+    InputPanel {}
+
+    Component.onCompleted: availableLocales = VirtualKeyboardSettings.availableLocales
 
     Connections {
         target: VirtualKeyboardSettings
 
         function onAvailableLocalesChanged() {
-            root.sourceModel = VirtualKeyboardSettings.availableLocales;
+            root.availableLocales = VirtualKeyboardSettings.availableLocales;
         }
     }
-
-    // HACK: needed to populate VirtualKeyboardSettings.availableLocales
-    InputPanel {}
 
     headerPositioning: ListView.OverlayHeader
     header: QQC2.ToolBar {
@@ -61,23 +58,21 @@ ListView {
         Kirigami.Theme.colorSet: Kirigami.Theme.Window
 
         contentItem: ColumnLayout {
-            spacing: 0
+            spacing: Kirigami.Units.smallSpacing
 
-            Kirigami.SearchField {
-                id: searchField
-                placeholderText: i18n("Filter languages…")
-                Accessible.name: i18n("Filter languages")
+            RowLayout {
+                QQC2.Button {
+                    text: i18n("Add…")
+                    icon.name: "list-add"
+                    onClicked: layoutDialog.open()
+                }
 
-                Layout.fillWidth: true
-
-                onTextChanged: {
-                    root.searchText = text;
-                    searchField.forceActiveFocus();
+                Item {
+                    Layout.fillWidth: true
                 }
             }
 
             Kirigami.InlineMessage {
-                Layout.topMargin: Kirigami.Units.smallSpacing
                 Layout.fillWidth: true
                 text: i18n("No languages selected. The default keyboard layout for the system will be used.")
                 type: Kirigami.MessageType.Information
@@ -86,37 +81,87 @@ ListView {
         }
     }
 
-    delegate: RowLayout {
-        width: root.width
-        spacing: 0
+    delegate: Item {
+        id: itemDelegate
 
-        QQC2.CheckDelegate {
-            Layout.fillWidth: true
-            text: Qt.locale(modelData).nativeLanguageName
-            checked: kcm.enabledLocales.includes(modelData)
-            onCheckedChanged: {
-                if (checked) {
-                    kcm.enableLocale(modelData);
-                } else {
-                    kcm.disableLocale(modelData);
+        width: ListView.view.width
+        implicitHeight: layoutDelegate.implicitHeight
+
+        readonly property var view: ListView.view
+
+        required property string modelData
+        required property int index
+
+        QQC2.ItemDelegate {
+            id: layoutDelegate
+            width: itemDelegate.width
+
+            // There's no need for a list item to ever be selected
+            down: false
+            highlighted: false
+
+            contentItem: RowLayout {
+                spacing: Kirigami.Units.smallSpacing
+
+                Kirigami.ListItemDragHandle {
+                    listItem: layoutDelegate
+                    listView: itemDelegate.view
+                    onMoveRequested: (oldIndex, newIndex) => kcm.moveLocale(itemDelegate.modelData, newIndex)
+                    visible: itemDelegate.view.count > 1
+                }
+
+                QQC2.Label {
+                    text: LocaleUtils.flagForLocale(itemDelegate.modelData)
+                    font.pixelSize: Kirigami.Units.iconSizes.smallMedium
+                    visible: text.length > 0
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    QQC2.Label {
+                        Layout.fillWidth: true
+                        text: Qt.locale(itemDelegate.modelData).nativeLanguageName
+                        elide: Text.ElideRight
+                    }
+
+                    QQC2.Label {
+                        text: itemDelegate.modelData
+                        font: Kirigami.Theme.smallFont
+                        opacity: 0.6
+                    }
+                }
+
+                // Marks the layout the keyboard opens with.
+                QQC2.ToolButton {
+                    Layout.alignment: Qt.AlignVCenter
+                    icon.name: kcm.defaultLocale === itemDelegate.modelData ? "starred" : "non-starred"
+                    checkable: true
+                    checked: kcm.defaultLocale === itemDelegate.modelData
+                    onClicked: kcm.setDefaultLocale(checked ? itemDelegate.modelData : "")
+                    Accessible.name: i18n("Open this layout by default")
+                    QQC2.ToolTip.text: i18n("Open by default")
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                }
+
+                QQC2.ToolButton {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.rightMargin: Kirigami.Units.smallSpacing
+                    icon.name: "edit-delete"
+                    onClicked: kcm.disableLocale(itemDelegate.modelData)
+                    Accessible.name: i18n("Remove this layout")
+                    QQC2.ToolTip.text: i18n("Remove")
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                 }
             }
         }
+    }
 
-        // Marks the layout the keyboard opens with. Only an enabled locale can
-        // be chosen, and picking one makes it win over the system locale.
-        QQC2.ToolButton {
-            Layout.alignment: Qt.AlignVCenter
-            Layout.rightMargin: Kirigami.Units.smallSpacing
-            visible: kcm.enabledLocales.includes(modelData)
-            icon.name: kcm.defaultLocale === modelData ? "starred" : "non-starred"
-            checkable: true
-            checked: kcm.defaultLocale === modelData
-            onClicked: kcm.setDefaultLocale(checked ? modelData : "")
-            Accessible.name: i18n("Open this layout by default")
-            QQC2.ToolTip.text: i18n("Open by default")
-            QQC2.ToolTip.visible: hovered
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-        }
+    LocaleChooserDialog {
+        id: layoutDialog
+        availableLocales: root.availableLocales
     }
 }

@@ -72,6 +72,9 @@ public:
     //! Choose which of the enabled locales opens by default; empty lets the system locale decide.
     Q_INVOKABLE void setDefaultLocale(const QString &locale);
 
+    //! Reorder an enabled locale; the order is the keyboard's switch ring.
+    Q_INVOKABLE void moveLocale(const QString &locale, int newIndex);
+
     bool keyboardNavigationEnabled() const;
     void setKeyboardNavigationEnabled(bool keyboardNavigationEnabled);
 

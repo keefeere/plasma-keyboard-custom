@@ -140,6 +140,24 @@ void PlasmaKeyboardKcm::setDefaultLocale(const QString &locale)
     setNeedsSave(true);
 }
 
+void PlasmaKeyboardKcm::moveLocale(const QString &locale, int newIndex)
+{
+    const int oldIndex = m_enabledLocales.indexOf(locale);
+    if (oldIndex < 0) {
+        return;
+    }
+
+    const int targetIndex = qBound(0, newIndex, m_enabledLocales.size() - 1);
+    if (oldIndex == targetIndex) {
+        return;
+    }
+
+    m_enabledLocales.move(oldIndex, targetIndex);
+    Q_EMIT enabledLocalesChanged();
+
+    setNeedsSave(true);
+}
+
 bool PlasmaKeyboardKcm::keyboardNavigationEnabled() const
 {
     return m_keyboardNavigationEnabled;

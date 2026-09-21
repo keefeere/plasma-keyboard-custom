@@ -18,15 +18,15 @@ msgstr ""
 "%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
 "X-Generator: Lokalize 25.12.3\n"
 
-#: ui/LocaleSelectorListView.qml:68
+#: ui/LocaleChooserDialog.qml
 msgid "Filter languages…"
 msgstr "Фильтр языков…"
 
-#: ui/LocaleSelectorListView.qml:69
+#: ui/LocaleChooserDialog.qml
 msgid "Filter languages"
 msgstr "Фильтр языков"
 
-#: ui/LocaleSelectorListView.qml:82
+#: ui/LocaleSelectorListView.qml ui/LocaleSelectorSidebar.qml
 msgid ""
 "No languages selected. The default keyboard layout for the system will be "
 "used."
@@ -498,6 +498,24 @@ msgstr "Открывать по умолчанию"
 #: ui/LocaleSelectorListView.qml ui/LocaleSelectorSidebar.qml
 msgid "Open this layout by default"
 msgstr "Открывать эту раскладку по умолчанию"
+
+# Translations for the layout picker (KCM "Layouts" tab)
+
+#: ui/LocaleSelectorListView.qml ui/LocaleSelectorSidebar.qml
+msgid "Add…"
+msgstr "Добавить…"
+
+#: ui/LocaleChooserDialog.qml
+msgid "Add Layout"
+msgstr "Добавление раскладки"
+
+#: ui/LocaleSelectorListView.qml ui/LocaleSelectorSidebar.qml
+msgid "Remove"
+msgstr "Удалить"
+
+#: ui/LocaleSelectorListView.qml ui/LocaleSelectorSidebar.qml
+msgid "Remove this layout"
+msgstr "Удалить раскладку"
 
 #: ui/main.qml
 msgid "Word suggestions:"
