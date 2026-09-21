@@ -117,11 +117,13 @@ jobs:
 
       - name: Install build dependencies
         run: |
+          # layer-shell-qt is needed at build time: makepkg runs with --nodeps,
+          # so everything the CMake configure step looks for has to be here.
           pacman -Syyuu --noconfirm --needed --overwrite '*' \
             cmake extra-cmake-modules gettext ninja plasma-wayland-protocols \
             qt6-wayland wayland-protocols pkgconf \
             kcmutils kconfig kcoreaddons kcrash kglobalaccel ki18n \
-            kirigami kirigami-addons kitemmodels libplasma \
+            kirigami kirigami-addons kitemmodels layer-shell-qt libplasma \
             qt6-base qt6-declarative qt6-virtualkeyboard
           # Report what actually landed: if the snapshot pinning ever stops
           # working, the Qt stamp guard below fails the run, and this is the
