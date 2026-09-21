@@ -30,6 +30,8 @@ target_sources(plasma-keyboard-custom PRIVATE
     inputplugin.cpp
     restartwatcher.cpp
     restartwatcher.h
+    settingsreloader.cpp
+    settingsreloader.h
     touchholdwatcher.cpp
     inputplugin.h
     theme/thememanager.cpp

@@ -144,6 +144,18 @@ KCM.SimpleKCM {
 
             FormCard.FormDelegateSeparator {}
 
+            FormCard.FormSpinBoxDelegate {
+                label: i18n("Floating keyboard opacity (%)")
+                description: i18n("Percentage of opacity, 100% is fully opaque")
+                from: 20
+                to: 100
+                stepSize: 5
+                value: kcm.floatingKeyboardOpacity
+                onValueChanged: kcm.floatingKeyboardOpacity = value
+            }
+
+            FormCard.FormDelegateSeparator {}
+
             FormCard.FormComboBoxDelegate {
                 id: keyboardFontComboBox
                 text: i18n("Keyboard font")

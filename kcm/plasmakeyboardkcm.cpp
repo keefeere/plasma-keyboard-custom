@@ -358,6 +358,23 @@ void PlasmaKeyboardKcm::setFloatingKeyboardWidthPercent(int percent)
     setNeedsSave(true);
 }
 
+int PlasmaKeyboardKcm::floatingKeyboardOpacity() const
+{
+    return m_floatingKeyboardOpacity;
+}
+
+void PlasmaKeyboardKcm::setFloatingKeyboardOpacity(int percent)
+{
+    if (percent == m_floatingKeyboardOpacity) {
+        return;
+    }
+
+    m_floatingKeyboardOpacity = percent;
+    Q_EMIT floatingKeyboardOpacityChanged();
+
+    setNeedsSave(true);
+}
+
 bool PlasmaKeyboardKcm::clipboardEnabled() const
 {
     return m_clipboardEnabled;
@@ -553,6 +570,7 @@ void PlasmaKeyboardKcm::load()
     setTheme(PlasmaKeyboardSettings::self()->theme());
     setKeyboardHeightPercent(PlasmaKeyboardSettings::self()->keyboardHeightPercent());
     setFloatingKeyboardWidthPercent(PlasmaKeyboardSettings::self()->floatingKeyboardWidthPercent());
+    setFloatingKeyboardOpacity(PlasmaKeyboardSettings::self()->floatingKeyboardOpacity());
     setDiacriticsPopupEnabled(PlasmaKeyboardSettings::self()->diacriticsPopupEnabled());
     setDiacriticsHoldThresholdMs(PlasmaKeyboardSettings::self()->diacriticsHoldThresholdMs());
     setGamepadAlternatesEnabled(PlasmaKeyboardSettings::self()->gamepadAlternatesEnabled());
@@ -585,6 +603,7 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setTheme(m_theme);
     PlasmaKeyboardSettings::self()->setKeyboardHeightPercent(m_keyboardHeightPercent);
     PlasmaKeyboardSettings::self()->setFloatingKeyboardWidthPercent(m_floatingKeyboardWidthPercent);
+    PlasmaKeyboardSettings::self()->setFloatingKeyboardOpacity(m_floatingKeyboardOpacity);
     PlasmaKeyboardSettings::self()->setDiacriticsPopupEnabled(m_diacriticsPopupEnabled);
     PlasmaKeyboardSettings::self()->setDiacriticsHoldThresholdMs(m_diacriticsHoldThresholdMs);
     PlasmaKeyboardSettings::self()->setGamepadAlternatesEnabled(m_gamepadAlternatesEnabled);

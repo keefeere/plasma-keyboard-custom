@@ -227,6 +227,14 @@ msgstr "Ширина плавающей клавиатуры (%)"
 msgid "Percentage of the screen width"
 msgstr "Процент от ширины экрана"
 
+#: main_handset.qml:148
+msgid "Floating keyboard opacity (%)"
+msgstr "Прозрачность плавающей клавиатуры (%)"
+
+#: main_handset.qml:149
+msgid "Percentage of opacity, 100% is fully opaque"
+msgstr "Процент непрозрачности, 100 % — полностью непрозрачно"
+
 #: main.qml:110
 msgid "Keyboard height:"
 msgstr "Высота клавиатуры:"
@@ -234,6 +242,10 @@ msgstr "Высота клавиатуры:"
 #: main.qml:145
 msgid "Floating keyboard width:"
 msgstr "Ширина плавающей клавиатуры:"
+
+#: main.qml:158
+msgid "Floating keyboard opacity:"
+msgstr "Прозрачность плавающей клавиатуры:"
 
 #: main.qml:22
 msgid "Layouts"

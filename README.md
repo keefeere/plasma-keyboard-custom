@@ -258,7 +258,8 @@ The settings page in System Settings:
 - **Single instance**: a second process exits right away, so a stale instance can never keep an old panel around.
 - **Floating keyboard**: a key with arrows in the layout (next to the language key) switches the keyboard between the
   panel docked to the bottom and a floating one. The floating panel can be dragged by its free background (the margins
-  around the keys) anywhere on the screen, its width is a percentage of the screen width (20–100%, 80% by default) on the
+  around the keys) anywhere on the screen, its width is a percentage of the screen width (20–100%, 80% by default) and its
+  opacity is a percentage (20–100%, 100% by default, so the window is fully opaque) on the
   *Appearance* tab, and its position is remembered and restored after a restart. The floating keyboard is drawn above
   other windows, does not move the window below it and does not hide the Plasma panel (it does not take the bottom of
   the screen).
@@ -267,6 +268,7 @@ The settings page in System Settings:
   *Typing* (auto-capitalization, word suggestions, alternate characters, sound, vibration, navigation, a test field):
   - keyboard height as a percentage of the screen (20–80%),
   - floating keyboard width as a percentage of the screen width (20–100%),
+  - floating keyboard opacity as a percentage (20–100%, 100% is fully opaque),
   - whether the keyboard opens when a text field is focused with a mouse (otherwise it only opens on touch or via the shortcut),
   - open on long press with its threshold, the F1–F12 row, the keyboard font, hiding the Plasma panel while the
     keyboard is visible,

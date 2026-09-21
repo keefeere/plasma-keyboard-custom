@@ -720,6 +720,11 @@ InputPanelWindow {
 
         Component.onCompleted: updatePanelStub()
 
+        // The floating panel can be made translucent in the settings; the docked
+        // panel always stays opaque.
+        readonly property real floatingOpacity: floating ? PlasmaKeyboardSettings.floatingKeyboardOpacity / 100 : 1
+        opacity: floatingOpacity
+
         color: PlasmaKeyboard.Theme.current.backgroundType === "gradient" ? "transparent" : PlasmaKeyboard.BreezeConstants.keyboardBackgroundColor
 
         // Themed gradient background, used when the theme asks for one. The

@@ -152,6 +152,28 @@ KCM.AbstractKCM {
                 }
             }
 
+            QQC2.SpinBox {
+                id: floatingKeyboardOpacitySpinBox
+                Kirigami.FormData.label: i18n("Floating keyboard opacity:")
+                from: 20
+                to: 100
+                stepSize: 5
+                value: kcm.floatingKeyboardOpacity
+
+                textFromValue: function (value) {
+                    return i18nc("keyboard opacity in percent", "%1%", value);
+                }
+                valueFromText: function (text) {
+                    const number = parseInt(text);
+                    return isNaN(number) ? kcm.floatingKeyboardOpacity : number;
+                }
+
+                onValueChanged: {
+                    kcm.floatingKeyboardOpacity = value;
+                    value = Qt.binding(() => kcm.floatingKeyboardOpacity);
+                }
+            }
+
             QQC2.ComboBox {
                 id: keyboardFontComboBox
                 Kirigami.FormData.label: i18n("Keyboard font:")

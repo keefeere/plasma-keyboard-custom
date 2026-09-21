@@ -61,6 +61,12 @@
             <max>100</max>
             <default>80</default>
         </entry>
+        <entry key="floatingKeyboardOpacity" type="Int">
+            <label>Opacity of the floating keyboard as a percentage; 100 is fully opaque.</label>
+            <min>20</min>
+            <max>100</max>
+            <default>100</default>
+        </entry>
         <entry key="keyboardHeightPercent" type="Int">
             <label>Keyboard height as a percentage of the screen height.</label>
             <min>20</min>

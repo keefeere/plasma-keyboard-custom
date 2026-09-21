@@ -12,13 +12,13 @@
 #include "logging.h"
 #include "plasmakeyboardsettings.h"
 #include "restartwatcher.h"
+#include "settingsreloader.h"
 #include "thememanager.h"
 #include <plasma_keyboard_version.h>
 
 #include <KAboutData>
 #include <KConfig>
 #include <KConfigGroup>
-#include <KConfigWatcher>
 #include <KCrash>
 #include <KGlobalAccel>
 #include <KLocalizedQmlContext>
@@ -353,10 +353,10 @@ public:
         connect(pollTimer, &QTimer::timeout, this, &KeyboardHotkeyController::updatePanelVisibility);
         pollTimer->start();
 
-        // Apply the configured input mode on startup and when it changes.
-        m_settingsWatcher = KConfigWatcher::create(PlasmaKeyboardSettings::self()->sharedConfig());
-        connect(m_settingsWatcher.get(), &KConfigWatcher::configChanged, this, [this](const KConfigGroup &, const QByteArrayList &) {
-            PlasmaKeyboardSettings::self()->load();
+        // Apply the configured input mode on startup and whenever the settings
+        // are re-read from disk. KConfigWatcher does not deliver the change in
+        // this application, so SettingsReloader watches the file itself.
+        connect(&m_settingsReloader, &SettingsReloader::settingsReloaded, this, [this] {
             applyConfiguredMode();
             updatePanelVisibility();
         });
@@ -480,7 +480,7 @@ private:
             blocking);
     }
 
-    KConfigWatcher::Ptr m_settingsWatcher;
+    SettingsReloader m_settingsReloader;
     QPointer<KeyboardWindowBridge> m_bridge;
     QHash<int, QString> m_panelHidingModes;
     bool m_panelsHidden = false;
@@ -576,17 +576,8 @@ int main(int argc, char **argv)
         PlasmaKeyboardSettings::self()->setVibrationEnabled(false);
     }
 
-    // Listen to config updates from kcm, and reparse
-    auto watcher = KConfigWatcher::create(PlasmaKeyboardSettings::self()->sharedConfig());
-    // clang-format off
-    QObject::connect(watcher.get(),
-        &KConfigWatcher::configChanged,
-        &application,
-        [](const KConfigGroup &, const QByteArrayList &) {
-            PlasmaKeyboardSettings::self()->sharedConfig()->reparseConfiguration();
-            PlasmaKeyboardSettings::self()->load();
-        });
-    // clang-format on
+    // Settings changed on disk are re-read by the settings reloader, which also
+    // re-reads the configuration file itself (see SettingsReloader).
 
     // Expose the Ctrl/Alt latch state to the keyboard layouts.
     qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "Modifiers", KeyboardModifiers::instance());
