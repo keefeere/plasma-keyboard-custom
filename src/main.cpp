@@ -644,8 +644,14 @@ int main(int argc, char **argv)
         layerShell->setExclusiveZone(0);
         layerShell->setScope(QStringLiteral("plasma-keyboard"));
         // The keyboard must not take the focus away from the field it types into.
+        // Both calls need a newer layer-shell-qt than the one the package is
+        // built against for older systems, so they are guarded by the version.
+#ifdef HAVE_LAYERSHELLQT_ACTIVATE_ON_SHOW
         layerShell->setActivateOnShow(false);
+#endif
+#ifdef HAVE_LAYERSHELLQT_WANTS_ACTIVE_SCREEN
         layerShell->setWantsToBeOnActiveScreen(true);
+#endif
 
         qCDebug(PlasmaKeyboard) << "keyboard window configured as a layer-shell overlay";
         keyboardWindowBridge->setLayerShellWindow(layerShell);

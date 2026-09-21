@@ -149,6 +149,17 @@ target_link_libraries(plasma-keyboard-custom
     Wayland::Client
 )
 
+# The layer-shell API grew over time: setActivateOnShow arrived in 6.5 and
+# setWantsToBeOnActiveScreen in 6.6. The package is also built against an older
+# layer-shell-qt (the Arch snapshot used for SteamOS 3.8 ships 6.4.3), so these
+# calls are compiled only where the interface provides them.
+if(LayerShellQt_VERSION VERSION_GREATER_EQUAL 6.5.0)
+    target_compile_definitions(plasma-keyboard-custom PRIVATE HAVE_LAYERSHELLQT_ACTIVATE_ON_SHOW)
+endif()
+if(LayerShellQt_VERSION VERSION_GREATER_EQUAL 6.6.0)
+    target_compile_definitions(plasma-keyboard-custom PRIVATE HAVE_LAYERSHELLQT_WANTS_ACTIVE_SCREEN)
+endif()
+
 # libhunspell is an optional dependency: the engine loads it while the
 # application runs, so nothing is linked against it here.
 
