@@ -9,6 +9,11 @@
 #include "../src/layoutpathhelper.h"
 #include "../src/theme/thememanager.h"
 
+#include <KGlobalAccel>
+#include <KLocalizedString>
+
+#include <QAction>
+#include <QKeySequence>
 #include <QVariantMap>
 #include <qqml.h>
 
@@ -32,6 +37,15 @@ PlasmaKeyboardKcm::PlasmaKeyboardKcm(QObject *parent, const KPluginMetaData &met
         PlasmaKeyboardSettings::self()
     );
     // clang-format on
+
+    // The keyboard process registers this action in KGlobalAccel (see
+    // src/main.cpp). Reusing its component and action names lets the KCM read
+    // and change the global shortcut that shows the keyboard.
+    m_showKeyboardAction = new QAction(this);
+    m_showKeyboardAction->setObjectName(QStringLiteral("show-virtual-keyboard"));
+    m_showKeyboardAction->setText(i18n("Show Virtual Keyboard"));
+    m_showKeyboardAction->setProperty("componentName", QStringLiteral("org.kde.plasma.keyboard.custom"));
+    m_showKeyboardAction->setProperty("componentDisplayName", i18n("Plasma Keyboard (custom)"));
 
     load();
 }
@@ -156,6 +170,45 @@ void PlasmaKeyboardKcm::moveLocale(const QString &locale, int newIndex)
     Q_EMIT enabledLocalesChanged();
 
     setNeedsSave(true);
+}
+
+QKeySequence PlasmaKeyboardKcm::defaultShortcut()
+{
+    return QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_K);
+}
+
+QKeySequence PlasmaKeyboardKcm::shortcut() const
+{
+    return m_shortcut;
+}
+
+void PlasmaKeyboardKcm::loadShortcut()
+{
+    const QList<QKeySequence> shortcuts =
+        KGlobalAccel::self()->globalShortcut(QStringLiteral("org.kde.plasma.keyboard.custom"), QStringLiteral("show-virtual-keyboard"));
+
+    m_shortcut = shortcuts.isEmpty() ? defaultShortcut() : shortcuts.constFirst();
+    if (m_shortcut.isEmpty()) {
+        m_shortcut = defaultShortcut();
+    }
+
+    Q_EMIT shortcutChanged();
+}
+
+void PlasmaKeyboardKcm::setShortcut(const QKeySequence &shortcut)
+{
+    if (shortcut == m_shortcut) {
+        return;
+    }
+
+    KGlobalAccel::self()->setShortcut(m_showKeyboardAction, QList<QKeySequence>{shortcut});
+    m_shortcut = shortcut;
+    Q_EMIT shortcutChanged();
+}
+
+void PlasmaKeyboardKcm::resetShortcut()
+{
+    setShortcut(defaultShortcut());
 }
 
 bool PlasmaKeyboardKcm::keyboardNavigationEnabled() const
@@ -576,6 +629,7 @@ void PlasmaKeyboardKcm::load()
     m_enabledLocales = PlasmaKeyboardSettings::self()->enabledLocales();
     Q_EMIT enabledLocalesChanged();
     setDefaultLocale(PlasmaKeyboardSettings::self()->defaultLocale());
+    loadShortcut();
     setKeyboardNavigationEnabled(PlasmaKeyboardSettings::self()->keyboardNavigationEnabled());
     setAutoCapitalizationEnabled(PlasmaKeyboardSettings::self()->autoCapitalizationEnabled());
     setShowOnMouseFocus(PlasmaKeyboardSettings::self()->showOnMouseFocus());

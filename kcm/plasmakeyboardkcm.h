@@ -9,10 +9,13 @@
 
 #include <KQuickManagedConfigModule>
 
+#include <QKeySequence>
 #include <QUrl>
 #include <QVariantList>
 
 #include "plasmakeyboardsettings.h"
+
+class QAction;
 
 class PlasmaKeyboardKcm : public KQuickManagedConfigModule
 {
@@ -22,6 +25,7 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(int vibrationStrength READ vibrationStrength WRITE setVibrationStrength NOTIFY vibrationStrengthChanged)
     Q_PROPERTY(QStringList enabledLocales READ enabledLocales NOTIFY enabledLocalesChanged)
     Q_PROPERTY(QString defaultLocale READ defaultLocale NOTIFY defaultLocaleChanged)
+    Q_PROPERTY(QKeySequence shortcut READ shortcut NOTIFY shortcutChanged)
     Q_PROPERTY(bool keyboardNavigationEnabled READ keyboardNavigationEnabled WRITE setKeyboardNavigationEnabled NOTIFY keyboardNavigationEnabledChanged)
     Q_PROPERTY(bool autoCapitalizationEnabled READ autoCapitalizationEnabled WRITE setAutoCapitalizationEnabled NOTIFY autoCapitalizationEnabledChanged)
     Q_PROPERTY(bool showOnMouseFocus READ showOnMouseFocus WRITE setShowOnMouseFocus NOTIFY showOnMouseFocusChanged)
@@ -74,6 +78,11 @@ public:
 
     //! Reorder an enabled locale; the order is the keyboard's switch ring.
     Q_INVOKABLE void moveLocale(const QString &locale, int newIndex);
+
+    //! Global shortcut that shows the keyboard, as registered by the keyboard process.
+    QKeySequence shortcut() const;
+    Q_INVOKABLE void setShortcut(const QKeySequence &shortcut);
+    Q_INVOKABLE void resetShortcut();
 
     bool keyboardNavigationEnabled() const;
     void setKeyboardNavigationEnabled(bool keyboardNavigationEnabled);
@@ -158,12 +167,18 @@ public Q_SLOTS:
     void load() override;
     void save() override;
 
+private:
+    void loadShortcut();
+
+    static QKeySequence defaultShortcut();
+
 Q_SIGNALS:
     void soundEnabledChanged();
     void vibrationEnabledChanged();
     void vibrationStrengthChanged();
     void enabledLocalesChanged();
     void defaultLocaleChanged();
+    void shortcutChanged();
     void keyboardNavigationEnabledChanged();
     void autoCapitalizationEnabledChanged();
     void showOnMouseFocusChanged();
@@ -219,6 +234,10 @@ private:
 
     QStringList m_enabledLocales;
     QString m_defaultLocale;
+
+    //! Registered in KGlobalAccel by src/main.cpp; the KCM reads and writes it.
+    QAction *m_showKeyboardAction = nullptr;
+    QKeySequence m_shortcut;
 
     PlasmaKeyboardSettings *m_settings = nullptr;
 };

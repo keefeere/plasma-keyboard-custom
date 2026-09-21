@@ -377,6 +377,62 @@ msgctxt "vibration strength in percent"
 msgid "%1%"
 msgstr "%1%"
 
+# Translations for the percent sliders
+
+#: main.qml
+msgid "Keyboard height"
+msgstr "Высота клавиатуры"
+
+#: main.qml
+msgid "Floating keyboard width"
+msgstr "Ширина плавающей клавиатуры"
+
+#: main.qml
+msgid "Floating keyboard opacity"
+msgstr "Прозрачность плавающей клавиатуры"
+
+#: main.qml
+msgctxt "keyboard width in percent"
+msgid "%1%"
+msgstr "%1%"
+
+#: main.qml
+msgctxt "keyboard opacity in percent"
+msgid "%1%"
+msgstr "%1%"
+
+# Translations for the settings hints
+
+#: main.qml
+msgid "Font used for the key labels"
+msgstr "Шрифт подписей клавиш"
+
+#: main.qml
+msgid "Colour scheme of the keyboard"
+msgstr "Цветовая схема клавиатуры"
+
+#: main.qml
+msgid "Import, export or remove a theme file"
+msgstr "Импорт, экспорт и удаление файла темы"
+
+#: ui/LocaleSelectorListView.qml
+msgid "Start typing to check the settings"
+msgstr "Начните печатать для проверки настроек"
+
+#: ui/LocaleSelectorListView.qml
+msgid "Shortcut for showing the keyboard:"
+msgstr "Сочетание клавиш для показа клавиатуры:"
+
+# Translations for the global shortcut (also used by the keyboard process)
+
+#: plasmakeyboardkcm.cpp
+msgid "Show Virtual Keyboard"
+msgstr "Показать экранную клавиатуру"
+
+#: plasmakeyboardkcm.cpp
+msgid "Plasma Keyboard (custom)"
+msgstr "Экранная клавиатура (custom)"
+
 #: ui/main.qml:157
 msgid "Clipboard:"
 msgstr "Буфер обмена:"

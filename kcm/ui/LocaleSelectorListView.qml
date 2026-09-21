@@ -13,6 +13,7 @@ import QtQuick.VirtualKeyboard
 import QtQuick.VirtualKeyboard.Settings
 
 import org.kde.kirigami as Kirigami
+import org.kde.kquickcontrols as KQuickControls
 
 import "localeutils.js" as LocaleUtils
 
@@ -58,7 +59,39 @@ ListView {
         Kirigami.Theme.colorSet: Kirigami.Theme.Window
 
         contentItem: ColumnLayout {
-            spacing: Kirigami.Units.smallSpacing
+            spacing: Kirigami.Units.largeSpacing
+
+            SettingsRow {
+                Layout.fillWidth: true
+                label: i18n("Try it:")
+                description: i18n("Start typing to check the settings")
+                controlFillWidth: true
+
+                QQC2.TextField {
+                    Layout.fillWidth: true
+                    placeholderText: i18n("Type here to see the keyboard")
+                }
+            }
+
+            SettingsRow {
+                Layout.fillWidth: true
+                label: i18n("Shortcut for showing the keyboard:")
+
+                KQuickControls.KeySequenceItem {
+                    id: shortcutItem
+                    keySequence: kcm.shortcut
+
+                    onKeySequenceModified: {
+                        kcm.setShortcut(keySequence);
+                        keySequence = Qt.binding(() => kcm.shortcut);
+                    }
+                }
+
+                QQC2.Button {
+                    text: i18n("Default")
+                    onClicked: kcm.resetShortcut()
+                }
+            }
 
             RowLayout {
                 QQC2.Button {

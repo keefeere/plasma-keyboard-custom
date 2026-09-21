@@ -27,4 +27,5 @@ target_link_libraries(kcm_plasmakeyboardcustom PRIVATE
     KF6::KCMUtilsQuick
     KF6::ConfigCore
     KF6::ConfigGui
+    KF6::GlobalAccel
 )
