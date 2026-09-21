@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>
+  SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="7" fill="#0d1017"/>
+  <g fill="none" stroke="#89b4fa" stroke-width="1.9" stroke-linecap="round">
+    <rect x="4.5" y="7.5" width="23" height="17" rx="3.5"/>
+    <path d="M9 13h1.5M13.5 13H15M18 13h1.5M22.5 13H24M9 17.5h1.5M13.5 17.5H15M18 17.5h1.5M22.5 17.5H24M11 21.5h10"/>
+  </g>
+</svg>

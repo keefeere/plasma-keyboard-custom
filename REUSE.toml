@@ -48,3 +48,11 @@ path = "src/icons/breeze/**.svg"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "KDE contributors"
 SPDX-License-Identifier = "LGPL-3.0-or-later"
+
+# The landing page published on the gh-pages branch; its sources live in site/.
+# The screenshots are of the keyboard itself, taken by the fork's author.
+[[annotations]]
+path = "site/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>"
+SPDX-License-Identifier = "GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL"

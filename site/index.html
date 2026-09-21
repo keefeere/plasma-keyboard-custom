@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<!--
+  SPDX-FileCopyrightText: 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>
+  SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+-->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="meta.title">Plasma Keyboard (custom) — виртуальная клавиатура для handheld</title>
+<meta name="description" data-i18n-content="meta.description" content="Форк KDE plasma-keyboard с навигацией геймпадом, плавающим режимом, темами, подсказками слов и рядом буфера обмена для KDE Plasma 6 на Wayland.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main" data-i18n="a11y.skip">К содержимому</a>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top">
+      <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="5" width="21" height="14" rx="3"/><path d="M5 9h1M8 9h1M11 9h1M14 9h1M17 9h1M5 12.5h1M8 12.5h1M11 12.5h1M14 12.5h1M17 12.5h1M7.5 16h9"/></svg>
+      <span>plasma-keyboard<em>-custom</em></span>
+    </a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#features" data-i18n="nav.features">Возможности</a>
+      <a href="#gallery" data-i18n="nav.gallery">Галерея</a>
+      <a href="#themes" data-i18n="nav.themes">Темы</a>
+      <a href="#gamepad" data-i18n="nav.gamepad">Геймпад</a>
+      <a href="#settings" data-i18n="nav.settings">Настройки</a>
+      <a href="#install" data-i18n="nav.install">Установка</a>
+    </nav>
+    <div class="nav-actions">
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="ru" class="is-active">RU</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <a class="btn btn-ghost nav-github" href="https://github.com/mops1k/plasma-keyboard-custom" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        <span>GitHub</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <span id="top"></span>
+
+  <!-- hero -->
+  <section class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <p class="badge">
+          <span class="dot" aria-hidden="true"></span>
+          <span data-i18n="hero.badge">Форк KDE plasma-keyboard · 6.7.90 · KDE Plasma 6 / Wayland</span>
+        </p>
+        <h1 data-i18n="hero.title">Виртуальная клавиатура, которой удобно управлять геймпадом</h1>
+        <p class="lead" data-i18n="hero.lead">Plasma Keyboard (custom) — форк KDE plasma-keyboard для handheld-консолей: навигация геймпадом, плавающий режим, десять тем, подсказки слов, ряд буфера обмена и свои раскладки в стиле ПК. Ставится рядом с официальным пакетом и не заменяет его.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#install" data-i18n="hero.install">Установить</a>
+          <a class="btn btn-outline" href="https://github.com/mops1k/plasma-keyboard-custom" target="_blank" rel="noopener" data-i18n="hero.source">Исходники</a>
+          <a class="btn btn-outline" href="https://github.com/mops1k/plasma-keyboard-custom/releases/latest" target="_blank" rel="noopener" data-i18n="hero.releases">Релизы</a>
+        </div>
+        <dl class="hero-stats">
+          <div><dt data-i18n="hero.stat1v">10</dt><dd data-i18n="hero.stat1">встроенных тем</dd></div>
+          <div><dt data-i18n="hero.stat2v">2,2 млн</dt><dd data-i18n="hero.stat2">словоформ для подсказок</dd></div>
+          <div><dt>Meta+Shift+K</dt><dd data-i18n="hero.stat3">показ клавиатуры по умолчанию</dd></div>
+        </dl>
+      </div>
+      <figure class="hero-shot">
+        <img src="assets/img/keyboard-en.png" width="1920" height="432" alt="Английская раскладка с глифами кнопок геймпада на клавишах" data-i18n-alt="alt.keyboardEn">
+        <figcaption data-i18n="hero.shotCaption">Глифы кнопок геймпада нарисованы прямо на назначенных клавишах</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- features -->
+  <section id="features" class="section">
+    <header class="section-head">
+      <h2 data-i18n="features.title">Что здесь есть</h2>
+      <p data-i18n="features.sub">Всё, что добавлено к upstream, и всё это работает на сенсорном экране, мышью и геймпадом.</p>
+    </header>
+    <div class="cards">
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10a5 5 0 0 1 0 10h-1.5l-1-2h-5l-1 2H7a5 5 0 0 1 0-10Z"/><path d="M9 11v4M7 13h4M16 12.5h.01M18 14.5h.01"/></svg>
+        <h3 data-i18n="feat.pad.t">Навигация геймпадом</h3>
+        <p data-i18n="feat.pad.d">D-pad и стик ходят по клавишам и рядам над клавиатурой, A выбирает, B закрывает, X — backspace, Y — пробел, LT/RT — Shift и Enter, LB/RB — символы и раскладка.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v6M12 20v-4"/><circle cx="12" cy="13" r="3"/><path d="M6 7h12"/></svg>
+        <h3 data-i18n="feat.hold.t">Удержание A — доп. символы</h3>
+        <p data-i18n="feat.hold.d">Долгое нажатие A открывает альтернативные символы подсвеченной клавиши — те же, что по долгому тапу (е → ё, 1 → !). Список появляется над клавишей и следует выбранной теме; задержка настраивается.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8"/></svg>
+        <h3 data-i18n="feat.float.t">Плавающая клавиатура</h3>
+        <p data-i18n="feat.float.d">Клавиша со стрелками переключает клавиатуру между нижней панелью и плавающим окном: его можно тащить за фон, ширина 20–100 %, прозрачность 20–100 %, позиция запоминается.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16Z"/></svg>
+        <h3 data-i18n="feat.themes.t">Десять встроенных тем</h3>
+        <p data-i18n="feat.themes.d">system, светлая и тёмная, iOS, Material 3, Google (Gboard) в двух вариантах и Catppuccin Mocha. Свои темы — обычный JSON: палитра, геометрия, фон и цвета клавиш по категориям.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="M17 15l3 3-3 3"/></svg>
+        <h3 data-i18n="feat.pred.t">Подсказки слов</h3>
+        <p data-i18n="feat.pred.d">Продолжение слова, исправление опечатки в один символ и предсказание следующего слова по биграммам. До пяти подсказок, порог появления — от 1 до 4 букв.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>
+        <h3 data-i18n="feat.clip.t">Ряд буфера обмена</h3>
+        <p data-i18n="feat.clip.d">Последние записи менеджера буфера обмена рабочего стола (klipper) над клавиатурой: три чипа, нажатие вставляет текст в сфокусированное поле, кнопка у края забывает историю.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h1M9 10h1M12 10h1M15 10h1M18 10h1M6 13.5h1M9 13.5h1M12 13.5h1M15 13.5h1M18 13.5h1"/></svg>
+        <h3 data-i18n="feat.fkeys.t">Ряд F1–F12</h3>
+        <p data-i18n="feat.fkeys.d">Необязательный ряд функциональных клавиш размером и стилем как обычные клавиши; панель растёт соответственно, а геймпад достаёт и до него.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 4v5c0 4-3 7.5-7 9-4-1.5-7-5-7-9V7Z"/><path d="M9 12l2 2 4-4"/></svg>
+        <h3 data-i18n="feat.latch.t">Защёлкивание модификаторов</h3>
+        <p data-i18n="feat.latch.d">Ctrl, Alt и Shift защёлкиваются до следующей клавиши и затем сбрасываются; повторное нажатие снимает защёлку. Одинаково для касания, навигации и геймпада.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h3M6 13h5M14 9h4M14 13h4"/></svg>
+        <h3 data-i18n="feat.layouts.t">Раскладки в стиле ПК</h3>
+        <p data-i18n="feat.layouts.d">Esc и клавиша скрытия, Ctrl/Alt, цифровой ряд, физический перевёрнутый T-блок стрелок, Del/Shift/&amp;123 размером как Tab, без правого Shift; диакритики по долгому нажатию сохранены.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v6"/><path d="M6.5 6.5a8 8 0 1 0 11 0"/></svg>
+        <h3 data-i18n="feat.touch.t">Открытие по долгому нажатию</h3>
+        <p data-i18n="feat.touch.d">Вместо всплытия при фокусе клавиатура может ждать долгого нажатия на сенсорном экране (100–5000 мс). Экран читается напрямую через evdev, глобальное сочетание клавиш показывает её сразу.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>
+        <h3 data-i18n="feat.kcm.t">Страница настроек</h3>
+        <p data-i18n="feat.kcm.d">Plasma Keyboard (custom) в Параметрах системы: Раскладки, Открытие, Внешний вид и Ввод — высота, шрифт, темы, подсказки, звук, вибрация, сочетание клавиш и тестовое поле.</p>
+      </article>
+      <article class="card">
+        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.7L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 15.5"/><path d="M4 20v-4.5h4.5"/></svg>
+        <h3 data-i18n="feat.update.t">Звук, вибрация, автообновление</h3>
+        <p data-i18n="feat.update.d">Исправлена звуковая обратная связь (в upstream опция не компилировалась вовсе), есть вибрация, а после обновления пакета клавиатура перезапускается сама — выходить из сеанса не нужно.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- gallery -->
+  <section id="gallery" class="section">
+    <header class="section-head">
+      <h2 data-i18n="gallery.title">Галерея</h2>
+      <p data-i18n="gallery.sub">Снято на MSI Claw A8 (1920×1200, KDE Plasma 6, Wayland). Нажмите на кадр, чтобы увеличить.</p>
+    </header>
+    <div class="gallery">
+      <button class="shot" data-full="assets/img/keyboard-en.png">
+        <img src="assets/img/keyboard-en.png" width="1920" height="432" loading="lazy" alt="Английская раскладка" data-i18n-alt="alt.keyboardEn">
+        <span data-i18n="gal.en">Английская раскладка и глифы геймпада</span>
+      </button>
+      <button class="shot" data-full="assets/img/keyboard-ru.png">
+        <img src="assets/img/keyboard-ru.png" width="1920" height="432" loading="lazy" alt="Русская раскладка" data-i18n-alt="alt.keyboardRu">
+        <span data-i18n="gal.ru">Русская раскладка в стиле ПК</span>
+      </button>
+      <button class="shot" data-full="assets/img/keyboard-fkeys.png">
+        <img src="assets/img/keyboard-fkeys.png" width="1920" height="476" loading="lazy" alt="Ряд F1–F12 над клавиатурой" data-i18n-alt="alt.fkeys">
+        <span data-i18n="gal.fkeys">Ряд F1–F12</span>
+      </button>
+      <button class="shot" data-full="assets/img/clipboard.png">
+        <img src="assets/img/clipboard.png" width="1920" height="490" loading="lazy" alt="Ряд буфера обмена с тремя чипами" data-i18n-alt="alt.clipboard">
+        <span data-i18n="gal.clipboard">Ряд буфера обмена</span>
+      </button>
+      <button class="shot" data-full="assets/img/floating.png">
+        <img src="assets/img/floating.png" width="1920" height="468" loading="lazy" alt="Плавающая клавиатура с прозрачностью 50 %" data-i18n-alt="alt.floating">
+        <span data-i18n="gal.floating">Плавающая клавиатура, прозрачность 50 %</span>
+      </button>
+      <button class="shot" data-full="assets/img/theme-catppuccin-mocha.png">
+        <img src="assets/img/theme-catppuccin-mocha.png" width="1920" height="432" loading="lazy" alt="Тема Catppuccin Mocha" data-i18n-alt="alt.catppuccin">
+        <span data-i18n="gal.catppuccin">Тема Catppuccin Mocha</span>
+      </button>
+      <button class="shot" data-full="assets/img/theme-google-dark.png">
+        <img src="assets/img/theme-google-dark.png" width="1920" height="432" loading="lazy" alt="Тема Google Dark" data-i18n-alt="alt.googleDark">
+        <span data-i18n="gal.googleDark">Тема Google Dark (Gboard)</span>
+      </button>
+      <button class="shot" data-full="assets/img/theme-ios.png">
+        <img src="assets/img/theme-ios.png" width="1920" height="432" loading="lazy" alt="Тема iOS" data-i18n-alt="alt.ios">
+        <span data-i18n="gal.ios">Тема iOS</span>
+      </button>
+      <button class="shot" data-full="assets/img/theme-material.png">
+        <img src="assets/img/theme-material.png" width="1920" height="432" loading="lazy" alt="Тема Material" data-i18n-alt="alt.material">
+        <span data-i18n="gal.material">Тема Material</span>
+      </button>
+      <button class="shot" data-full="assets/img/kcm-layouts.png">
+        <img src="assets/img/kcm-layouts.png" width="1012" height="664" loading="lazy" alt="Страница настроек, вкладка «Раскладки»" data-i18n-alt="alt.kcm">
+        <span data-i18n="gal.kcm">Настройки: раскладки и сочетание клавиш</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- themes -->
+  <section id="themes" class="section">
+    <header class="section-head">
+      <h2 data-i18n="themes.title">Темы</h2>
+      <p data-i18n="themes.sub">Тема — это данные, а не код: файл JSON только с цветами и геометрией. Импорт чужого файла ничего не исполняет. Тема применяется к работающей клавиатуре сразу, без перезапуска.</p>
+    </header>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th data-i18n="themes.thId">Id</th>
+            <th data-i18n="themes.thName">Название</th>
+            <th data-i18n="themes.thWhat">Что это</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>system</code></td><td data-i18n="themes.system.n">Системная</td><td data-i18n="themes.system.d">По умолчанию: ничего не переопределяет и следует цветовой схеме Plasma.</td></tr>
+          <tr><td><code>light</code></td><td data-i18n="themes.light.n">Светлая</td><td data-i18n="themes.light.d">Системная палитра с более светлыми клавишами.</td></tr>
+          <tr><td><code>dark</code></td><td data-i18n="themes.dark.n">Тёмная</td><td data-i18n="themes.dark.d">Системная палитра с более тёмными клавишами.</td></tr>
+          <tr><td><code>ios-light</code></td><td data-i18n="themes.iosLight.n">iOS (светлая)</td><td data-i18n="themes.iosLight.d">Белые клавиши на сером фоне, плоская, подписи заглавными, скругления 6 px.</td></tr>
+          <tr><td><code>ios-dark</code></td><td data-i18n="themes.iosDark.n">iOS (тёмная)</td><td data-i18n="themes.iosDark.d">Тёмный вариант iOS.</td></tr>
+          <tr><td><code>material-light</code></td><td data-i18n="themes.materialLight.n">Material (светлая)</td><td data-i18n="themes.materialLight.d">Material 3 «Default»: белые клавиши, сине-серые акценты, скругления 12 px, без контура.</td></tr>
+          <tr><td><code>material-dark</code></td><td data-i18n="themes.materialDark.n">Material (тёмная)</td><td data-i18n="themes.materialDark.d">Тёмный вариант Material 3.</td></tr>
+          <tr><td><code>catppuccin-mocha</code></td><td>Catppuccin Mocha</td><td data-i18n="themes.catppuccin.d">Почти чёрная панель, клавиши цвета mantle, спецклавиши surface0 и голубая клавиша действия; плоские клавиши, узкие зазоры.</td></tr>
+          <tr><td><code>google-light</code></td><td>Google Light</td><td data-i18n="themes.googleLight.d">Gboard в светлых цветах: белые клавиши на светло-серой панели, акцент Google Blue, плоские круглые клавиши.</td></tr>
+          <tr><td><code>google-dark</code></td><td>Google Dark</td><td data-i18n="themes.googleDark.d">Gboard в тёмных цветах: серо-синие клавиши, тёмные спецклавиши и бирюзовая клавиша действия.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="split">
+      <div>
+        <h3 data-i18n="themes.custom.t">Свои темы</h3>
+        <p data-i18n="themes.custom.d">Файл темы кладётся в <code>~/.local/share/plasma-keyboard/themes/*.json</code>, а имя файла становится её id. Строка «Файлы тем» на вкладке «Внешний вид» импортирует, экспортирует и удаляет их, показывая ошибки прямо под строкой.</p>
+      </div>
+      <pre class="code"><code>{
+  "name": "Midnight Ocean",
+  "base": "dark",
+  "palette": { "keyboardBackgroundColor": "#0b1020" },
+  "geometry": { "buttonRadius": 10 },
+  "background": { "type": "gradient", "start": "#101a33", "end": "#05070f", "angle": 180 },
+  "keyStyle": { "outlineWidth": 1, "labelCase": "normal" },
+  "keyColors": { "accent": { "normal": "#4c8dff" } }
+}</code></pre>
+    </div>
+  </section>
+
+  <!-- gamepad -->
+  <section id="gamepad" class="section">
+    <header class="section-head">
+      <h2 data-i18n="pad.title">Управление геймпадом</h2>
+      <p data-i18n="pad.sub">Пока клавиатура видна, геймпад перехватывается через InputPlumber (InterceptMode = GAMEPAD_ONLY), чтобы ввод не просачивался в игру или маппинг Steam. Прежний режим возвращается при скрытии клавиатуры.</p>
+    </header>
+    <div class="table-wrap">
+      <table class="table table-keys">
+        <tbody>
+          <tr><th><kbd>D-pad</kbd> / <kbd>стик</kbd></th><td data-i18n="pad.move">Движение по клавишам; вверх с верхнего ряда уводит в ряд F1–F12, оттуда — в ряд буфера обмена.</td></tr>
+          <tr><th><kbd>A</kbd></th><td data-i18n="pad.a">Активировать подсвеченный элемент; удержание открывает альтернативные символы клавиши.</td></tr>
+          <tr><th><kbd>B</kbd></th><td data-i18n="pad.b">Закрыть список альтернативных символов или клавиатуру.</td></tr>
+          <tr><th><kbd>X</kbd></th><td data-i18n="pad.x">Backspace; удержание продолжает удалять, как клавиша на аппаратной клавиатуре.</td></tr>
+          <tr><th><kbd>Y</kbd></th><td data-i18n="pad.y">Пробел.</td></tr>
+          <tr><th><kbd>LT</kbd> / <kbd>RT</kbd></th><td data-i18n="pad.lt">Shift и Enter.</td></tr>
+          <tr><th><kbd>LB</kbd> / <kbd>RB</kbd></th><td data-i18n="pad.lb">Символы и переключение раскладки.</td></tr>
+          <tr><th><kbd>Select</kbd></th><td data-i18n="pad.select">Перепрыгнуть в ряды над клавиатурой.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- prediction -->
+  <section id="prediction" class="section">
+    <header class="section-head">
+      <h2 data-i18n="pred.title">Подсказки слов</h2>
+      <p data-i18n="pred.sub">Собственный движок предсказаний — штатный плагин hunspell Qt Virtual Keyboard намеренно остаётся отключённым. Чипы появляются с первой буквы, часть, которая допишется к слову, подчёркнута.</p>
+    </header>
+    <div class="cards cards-3">
+      <article class="card">
+        <h3 data-i18n="pred.cont.t">Продолжение слова</h3>
+        <p data-i18n="pred.cont.d">Около 1,18 млн русских и 1,03 млн английских словоформ из частотных словарей FrequencyWords (MIT). Самые частые — первыми.</p>
+      </article>
+      <article class="card">
+        <h3 data-i18n="pred.fix.t">Исправление опечатки</h3>
+        <p data-i18n="pred.fix.d">Если набранное не начало ни одного слова, предлагаются слова в одной опечатке: замена, перестановка, лишняя или пропущенная буква.</p>
+      </article>
+      <article class="card">
+        <h3 data-i18n="pred.next.t">Следующее слово</h3>
+        <p data-i18n="pred.next.d">Сразу после пробела предлагаются слова, которые могут идти за предыдущим — биграммы, посчитанные по корпусу предложений Tatoeba (CC BY 2.0 FR).</p>
+      </article>
+    </div>
+    <p class="note" data-i18n="pred.note">Нажатие на чип (или A на геймпаде) применяет подсказку и добавляет пробел. Словари hunspell, установленные в системе, используются как дополнение: слова языка без встроенного списка берутся из них, и там же спрашивается исправление опечатки, если свои словари ничего не нашли. Без библиотеки или словарей всё работает как прежде.</p>
+  </section>
+
+  <!-- settings -->
+  <section id="settings" class="section">
+    <header class="section-head">
+      <h2 data-i18n="set.title">Страница настроек</h2>
+      <p data-i18n="set.sub">Параметры системы → Plasma Keyboard (custom). Четыре вкладки, всё на русском, страница переведена доменом <code>kcm_plasmakeyboardcustom</code>.</p>
+    </header>
+    <div class="split split-settings">
+      <ul class="tabs-list">
+        <li>
+          <h3 data-i18n="set.tab1.t">Раскладки</h3>
+          <p data-i18n="set.tab1.d">Включённые языки списком: флаг, название, код, звёздочка «открывать по умолчанию», удаление и перетаскивание порядка — именно он задаёт кольцо переключения.</p>
+        </li>
+        <li>
+          <h3 data-i18n="set.tab2.t">Открытие</h3>
+          <p data-i18n="set.tab2.d">Долгое нажатие и его порог, открытие при фокусе мыши, скрытие панели Plasma, пока клавиатура видна.</p>
+        </li>
+        <li>
+          <h3 data-i18n="set.tab3.t">Внешний вид</h3>
+          <p data-i18n="set.tab3.d">Высота клавиатуры (20–80 %), шрифт клавиатуры, тема и файлы тем, ряд F1–F12, ряд буфера обмена, ширина и прозрачность плавающей клавиатуры.</p>
+        </li>
+        <li>
+          <h3 data-i18n="set.tab4.t">Ввод</h3>
+          <p data-i18n="set.tab4.d">Подсказки слов (сколько и с какой буквы, предсказание следующего слова, исправление опечаток), альтернативные символы и задержка удержания, автозаглавные буквы, звук, вибрация, тестовое поле.</p>
+        </li>
+      </ul>
+      <figure class="settings-shot">
+        <img src="assets/img/kcm-layouts.png" width="1012" height="664" loading="lazy" alt="Страница настроек, вкладка «Раскладки»" data-i18n-alt="alt.kcm">
+        <figcaption data-i18n="set.caption">Вкладка «Раскладки»: список языков, сочетание клавиш и тестовое поле</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- install -->
+  <section id="install" class="section">
+    <header class="section-head">
+      <h2 data-i18n="inst.title">Установка</h2>
+      <p data-i18n="inst.sub">Клавиатура ставится рядом с официальным пакетом <code>plasma-keyboard</code> и не заменяет его: всё переименовано, поэтому обе видны в Параметрах системы → Виртуальная клавиатура.</p>
+    </header>
+    <div class="install-grid">
+      <article class="install-card install-primary">
+        <h3 data-i18n="inst.script.t">Скриптом — самый быстрый способ</h3>
+        <p data-i18n="inst.script.d">Скачивает новейший релиз, сверяет с опубликованным SHA256SUMS, ставит через pacman и перезапускает клавиатуру. Нужны только curl и pacman.</p>
+        <div class="code-row">
+          <pre class="code"><code>curl -fsSL https://raw.githubusercontent.com/mops1k/plasma-keyboard-custom/master/install.sh | sh</code></pre>
+          <button class="copy" type="button" data-copy aria-label="Copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button>
+        </div>
+        <p class="muted" data-i18n="inst.script.opts">Опции передаются через <code>sh -s --</code>: <code>--tag</code>, <code>--overwrite</code>, <code>--no-restart</code>, <code>--dry-run</code>, <code>--help</code>.</p>
+      </article>
+      <article class="install-card">
+        <h3 data-i18n="inst.manual.t">Вручную из релиза</h3>
+        <p data-i18n="inst.manual.d">Скачайте новейший пакет со страницы Releases, при желании сверьте контрольные суммы и установите.</p>
+        <div class="code-row">
+          <pre class="code"><code>curl -fsSLo /tmp/pkb.pkg.tar.zst \
+  "$(curl -fsSL https://api.github.com/repos/mops1k/plasma-keyboard-custom/releases/latest \
+     | grep -o 'https://[^"]*plasma-keyboard-custom-[0-9][^"]*\.pkg\.tar\.zst' | head -n1)"
+sudo pacman -U /tmp/pkb.pkg.tar.zst</code></pre>
+          <button class="copy" type="button" data-copy aria-label="Copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button>
+        </div>
+      </article>
+      <article class="install-card">
+        <h3 data-i18n="inst.repo.t">Из pacman-репозитория</h3>
+        <p data-i18n="inst.repo.d">Каждый релиз публикуется в небольшой репозиторий в ветке <code>gh-pages</code>. Добавьте его один раз — дальше обновление одной командой.</p>
+        <div class="code-row">
+          <pre class="code"><code>[plasma-keyboard-custom]
+SigLevel = Optional TrustAll
+Server = https://mops1k.github.io/plasma-keyboard-custom/repo/$arch</code></pre>
+          <button class="copy" type="button" data-copy aria-label="Copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button>
+        </div>
+        <div class="code-row">
+          <pre class="code"><code>sudo pacman -Sy plasma-keyboard-custom</code></pre>
+          <button class="copy" type="button" data-copy aria-label="Copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button>
+        </div>
+      </article>
+      <article class="install-card">
+        <h3 data-i18n="inst.steam.t">SteamOS</h3>
+        <p data-i18n="inst.steam.d">Готовый пакет собран против Qt 6.9 и требует SteamOS 3.8 или новее; 3.7 и старше несут Qt 6.7/6.8 — там собирайте из исходников. Система смонтирована только для чтения, поэтому скрипт сам снимает и возвращает <code>steamos-readonly</code>, а в репозиториях SteamOS нет <code>libstdc++</code>:</p>
+        <div class="code-row">
+          <pre class="code"><code>sudo pacman -S --assume-installed libstdc++ plasma-keyboard-custom</code></pre>
+          <button class="copy" type="button" data-copy aria-label="Copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button>
+        </div>
+      </article>
+    </div>
+    <p class="note" data-i18n="inst.after">После установки выберите <strong>plasma-keyboard-custom</strong> в Параметры системы → Виртуальная клавиатура. Обновления ставятся той же командой: версия и <code>pkgrel</code> растут с каждым релизом, а клавиатура перезапускается сама.</p>
+  </section>
+
+  <!-- notes -->
+  <section id="notes" class="section">
+    <header class="section-head">
+      <h2 data-i18n="notes.title">Хорошо знать</h2>
+    </header>
+    <ul class="notes">
+      <li data-i18n="notes.1">Открытие по долгому нажатию читает сенсорный экран напрямую через evdev — вместе с пакетом ставится правило udev с <code>uaccess</code>.</li>
+      <li data-i18n="notes.2">Второй экземпляр клавиатуры сразу завершается, поэтому устаревший процесс не сможет удержать старую панель.</li>
+      <li data-i18n="notes.3">Плавающая клавиатура рисуется поверх других окон, не сдвигает окно под собой и не убирает панель Plasma.</li>
+      <li data-i18n="notes.4">Иконки клавиатуры зашиты в приложение, поэтому её вид не зависит от темы иконок в системе.</li>
+      <li data-i18n="notes.5">По умолчанию KWin показывает клавиатуру только при касании текстового поля; <code>KWIN_IM_SHOW_ALWAYS=1</code> заставляет её всплывать всегда.</li>
+    </ul>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <p class="footer-title">plasma-keyboard-custom</p>
+      <p class="muted" data-i18n="foot.fork">Форк KDE plasma-keyboard (6.7.90), построенного на Qt Virtual Keyboard. Лицензия и авторские права upstream сохраняются.</p>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/mops1k/plasma-keyboard-custom" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/mops1k/plasma-keyboard-custom/releases" target="_blank" rel="noopener" data-i18n="foot.releases">Релизы</a>
+      <a href="https://invent.kde.org/plasma/plasma-keyboard" target="_blank" rel="noopener">KDE plasma-keyboard</a>
+      <a href="https://doc.qt.io/qt-6/qtvirtualkeyboard-overview.html" target="_blank" rel="noopener">Qt Virtual Keyboard</a>
+      <a href="https://github.com/mops1k/plasma-keyboard-custom/blob/master/LICENSES/GPL-3.0-only.txt" target="_blank" rel="noopener" data-i18n="foot.license">Лицензия</a>
+    </div>
+    <div class="footer-credits">
+      <p class="muted" data-i18n="foot.icons">Иконки: Papirus (© Papirus Development Team, GPL-3.0-only) и Breeze (© участники KDE, LGPL-3.0-or-later). Словари подсказок: FrequencyWords (MIT) и Tatoeba (CC BY 2.0 FR).</p>
+    </div>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lightbox-close" type="button" aria-label="Close" data-i18n-aria="a11y.close">&times;</button>
+  <img src="" alt="">
+</div>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>

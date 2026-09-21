@@ -1,0 +1,176 @@
+# Publish the landing page from site/ into the root of the gh-pages branch.
+#
+# The same branch also carries the pacman repository in repo/x86_64, which
+# deploy-repo.yml maintains. This workflow never writes there: repo/ is
+# excluded from the copy, and every run refuses to commit if anything under
+# repo/ changed. Both workflows share one concurrency group, so the two writers
+# to gh-pages queue up instead of racing each other.
+#
+# Enable it once under Settings -> Pages (Source: "Deploy from a branch",
+# Branch: gh-pages, Folder: / (root)) - the same setting the package repository
+# already needs.
+name: Deploy the landing page
+
+on:
+  # The page is published whenever its sources change on master.
+  push:
+    branches: [master]
+    paths:
+      - 'site/**'
+      - '.github/workflows/deploy-site.yml'
+  # Manual run, mostly to publish the page for the first time or to repair it.
+  workflow_dispatch:
+
+# The job pushes the page back to the same repository.
+permissions:
+  contents: write
+
+# Deliberately the same group as deploy-repo.yml: gh-pages has one writer at a
+# time, so a release that updates the pacman database and a page deployment can
+# never interleave. Queued runs are kept instead of cancelled.
+concurrency:
+  group: pacman-repository-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Publish the landing page to gh-pages
+    runs-on: ubuntu-latest
+    env:
+      # git authenticates with the workflow token.
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out the sources
+        uses: actions/checkout@v4
+        with:
+          path: src
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Adopt the gh-pages branch
+        run: |
+          set -euo pipefail
+          # The branch is adopted into work/, not into the checkout: this job
+          # only touches the page in the branch root, and a fresh repository
+          # with gh-pages fetched into it keeps the branch history without
+          # pulling the sources into it.
+          mkdir -p work
+          cd work
+          git init --initial-branch=gh-pages .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          # The branch may not exist yet (first deployment ever): then stay on
+          # the empty orphan branch, otherwise start from the published state.
+          if git fetch --depth=1 origin gh-pages; then
+            git reset --hard FETCH_HEAD
+            echo "Continuing from the published gh-pages branch."
+          else
+            echo "gh-pages does not exist yet, initialising an empty branch."
+          fi
+
+          # What the branch already contains decides the commit message and
+          # which safety checks make sense.
+          if [ -f index.html ]; then
+            echo "HAS_PAGE=yes" >> "$GITHUB_ENV"
+          else
+            echo "HAS_PAGE=no" >> "$GITHUB_ENV"
+          fi
+          if [ -d repo/x86_64 ]; then
+            echo "HAS_REPO=yes" >> "$GITHUB_ENV"
+          else
+            echo "HAS_REPO=no" >> "$GITHUB_ENV"
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Copy the page into the branch root
+        run: |
+          set -euo pipefail
+          # repo/ is excluded from the copy and from --delete, so the pacman
+          # repository is neither read nor removed here. .git keeps the branch
+          # repository itself; CNAME would be a Pages custom domain.
+          rsync -a --delete \
+            --exclude '/repo/' \
+            --exclude '/.git' \
+            --exclude '/CNAME' \
+            src/site/ work/
+
+          test -f work/index.html || { echo "::error::site/index.html did not arrive"; exit 1; }
+
+          # A missing or emptied package repository would mean this deployment
+          # just broke every pacman user, so fail before committing anything.
+          if [ "$HAS_REPO" = "yes" ]; then
+            test -d work/repo/x86_64 || { echo "::error::repo/x86_64 disappeared"; exit 1; }
+            shopt -s nullglob
+            pkgs=(work/repo/x86_64/*.pkg.tar.zst)
+            if [ "${#pkgs[@]}" -eq 0 ]; then
+              echo "::error::repo/x86_64 lost its packages"; exit 1
+            fi
+            echo "Package repository intact: ${#pkgs[@]} archive(s)."
+          fi
+
+          echo "--- branch root ---"
+          ls -la work | head -40
+
+      - name: Refuse to touch the package repository
+        run: |
+          set -euo pipefail
+          cd work
+          git add -A
+
+          # The copy above must not have changed a single byte under repo/.
+          # If it did, the deployment stops here with the offending paths in
+          # the log instead of publishing a broken pacman repository.
+          if [ -n "$(git status --porcelain -- repo/)" ]; then
+            echo "::error::This deployment would change repo/, refusing to commit."
+            git status --porcelain -- repo/ | head -20
+            exit 1
+          fi
+          echo "repo/ is untouched."
+
+      - name: Commit and push the page
+        run: |
+          set -euo pipefail
+          cd work
+
+          if git diff --cached --quiet; then
+            echo "The landing page is already up to date."
+            exit 0
+          fi
+
+          if [ "$HAS_PAGE" = "yes" ]; then
+            message="Update the landing page"
+          else
+            message="Add the project landing page"
+          fi
+          git commit -m "$message"
+
+          # The shared concurrency group keeps parallel writers apart; this
+          # loop additionally survives a push that still loses the race (for
+          # example a release finishing between the fetch and the push).
+          for attempt in 1 2 3; do
+            if git push origin gh-pages; then
+              echo "Pushed the landing page to gh-pages."
+              exit 0
+            fi
+            echo "Push rejected (attempt ${attempt}), rebasing onto origin/gh-pages."
+            git fetch --depth=1 origin gh-pages
+            if ! git rebase FETCH_HEAD; then
+              git rebase --abort || true
+              echo "::error::Conflict while rebasing on gh-pages, re-run the workflow."
+              exit 1
+            fi
+          done
+
+          echo "::error::Could not push the landing page to gh-pages."
+          exit 1
+
+      - name: Write the page URL to the job summary
+        if: always()
+        run: |
+          {
+            echo "### Landing page"
+            echo
+            echo "https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/"
+          } >> "$GITHUB_STEP_SUMMARY"
