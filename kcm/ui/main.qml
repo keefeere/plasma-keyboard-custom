@@ -130,6 +130,28 @@ KCM.AbstractKCM {
                 }
             }
 
+            QQC2.SpinBox {
+                id: floatingKeyboardWidthSpinBox
+                Kirigami.FormData.label: i18n("Floating keyboard width:")
+                from: 20
+                to: 100
+                stepSize: 5
+                value: kcm.floatingKeyboardWidthPercent
+
+                textFromValue: function (value) {
+                    return i18nc("keyboard width in percent", "%1%", value);
+                }
+                valueFromText: function (text) {
+                    const number = parseInt(text);
+                    return isNaN(number) ? kcm.floatingKeyboardWidthPercent : number;
+                }
+
+                onValueChanged: {
+                    kcm.floatingKeyboardWidthPercent = value;
+                    value = Qt.binding(() => kcm.floatingKeyboardWidthPercent);
+                }
+            }
+
             QQC2.ComboBox {
                 id: keyboardFontComboBox
                 Kirigami.FormData.label: i18n("Keyboard font:")

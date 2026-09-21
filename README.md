@@ -256,10 +256,17 @@ The settings page in System Settings:
   prediction are inserted as a whole, and a space is **added** after it, so that the next word can be typed right away. It
   works with touch, mouse and gamepad (D-pad along the row, **A** to take), and is configured on the *Typing* tab.
 - **Single instance**: a second process exits right away, so a stale instance can never keep an old panel around.
+- **Floating keyboard**: a key with arrows in the layout (next to the language key) switches the keyboard between the
+  panel docked to the bottom and a floating one. The floating panel can be dragged by its free background (the margins
+  around the keys) anywhere on the screen, its width is a percentage of the screen width (20–100%, 80% by default) on the
+  *Appearance* tab, and its position is remembered and restored after a restart. The floating keyboard is drawn above
+  other windows, does not move the window below it and does not hide the Plasma panel (it does not take the bottom of
+  the screen).
 - **Settings page** (`plasma-keyboard-custom` in System Settings), organised in tabs — *Layouts* (languages),
   *Opening* (long press, mouse focus, hiding the Plasma panel),   *Appearance* (height, font, F1–F12 row, clipboard row) and
   *Typing* (auto-capitalization, word suggestions, alternate characters, sound, vibration, navigation, a test field):
   - keyboard height as a percentage of the screen (20–80%),
+  - floating keyboard width as a percentage of the screen width (20–100%),
   - whether the keyboard opens when a text field is focused with a mouse (otherwise it only opens on touch or via the shortcut),
   - open on long press with its threshold, the F1–F12 row, the keyboard font, hiding the Plasma panel while the
     keyboard is visible,

@@ -278,6 +278,35 @@ KeyboardStyle {
         ]
     }
 
+    floatingKeyPanel: PlasmaKeyboard.BreezeKeyPanel {
+        id: floatingKeyPanel
+
+        Item {
+            Kirigami.Icon {
+                id: floatingKeyIcon
+                color: theme.keyTextColorFor(floatingKeyPanel.category)
+                anchors.centerIn: parent
+                implicitHeight: 96 * theme.keyIconScale
+                source: PlasmaKeyboard.BreezeConstants.icon("object-move-symbolic")
+            }
+        }
+
+        states: [
+            State {
+                name: "disabled"
+                when: !control.enabled
+                PropertyChanges {
+                    target: floatingKeyPanel.background
+                    opacity: 0.8
+                }
+                PropertyChanges {
+                    target: floatingKeyIcon
+                    opacity: 0.2
+                }
+            }
+        ]
+    }
+
     enterKeyPanel: PlasmaKeyboard.BreezeKeyPanel {
         id: enterKeyPanel
 

@@ -23,6 +23,7 @@
 #include <KGlobalAccel>
 #include <KLocalizedQmlContext>
 #include <KLocalizedString>
+#include <LayerShellQt/Window>
 
 #include <QAction>
 #include <QCommandLineParser>
@@ -35,9 +36,12 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLockFile>
+#include <QPointer>
 #include <QProcess>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include <QRegion>
+#include <QScreen>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QVariantMap>
@@ -127,7 +131,186 @@ QHash<int, QString> configuredPanelHidingModes()
     }
     return modes;
 }
+
+/**
+ * Qt Virtual Keyboard shows the panel (and therefore enables the keys) only when
+ * the window that holds the input item is the active window:
+ * PlatformInputContext::evaluateInputPanelVisible() requires m_focusObject, and
+ * the focus object is the active focus item of QGuiApplication::focusWindow().
+ * The input-panel shell integration activates its window on its own (see
+ * qwaylandinputpanelsurface.cpp); a layer-shell window is never activated by the
+ * compositor on its own, so the activation is announced to Qt here. The
+ * compositor keeps its own focus untouched, so the field being typed into does
+ * not lose it.
+ */
+void activateKeyboardWindow(QWindow *window)
+{
+    if (!window) {
+        return;
+    }
+    QWindowSystemInterface::handleFocusWindowChanged(window, Qt::ActiveWindowFocusReason);
+}
 } // namespace
+
+/**
+ * Joins the two windows the keyboard consists of: the visible layer-shell window
+ * that draws the keys and the invisible input-panel window that KWin keeps
+ * managing (when to show the keyboard, the input mode, telling the panel state
+ * over D-Bus and moving the focused window out of the way).
+ *
+ * KWin uses the input region of the panel window as its geometry, so the region
+ * has to follow the visible panel while the keyboard is docked. The visible
+ * keyboard itself is shown and hidden together with what KWin reports.
+ */
+class KeyboardWindowBridge : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(bool kwinVisible READ kwinVisible NOTIFY kwinVisibleChanged)
+
+public:
+    explicit KeyboardWindowBridge(QObject *parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+    void setStubWindow(QQuickWindow *stub)
+    {
+        m_stub = stub;
+        applyStubMask();
+    }
+
+    //! The layer-shell window of the keyboard, which carries the space the
+    //! compositor reserves for the docked panel (see applyPanelLayout()).
+    void setLayerShellWindow(LayerShellQt::Window *layerShell)
+    {
+        m_layerShell = layerShell;
+        applyPanelLayout();
+    }
+
+    void setKeyboardWindow(QWindow *window)
+    {
+        m_keyboard = window;
+        // KWin drives the keyboard through the panel stub and reports it as
+        // visible only while that stub is mapped, so the stub follows the real
+        // keyboard window (which Qt Virtual Keyboard shows and hides itself):
+        // without this the compositor keeps the panel shown after the keyboard is
+        // hidden, the gamepad mapping is not restored and the focused window keeps
+        // the space reserved for the keyboard.
+        connect(window, &QWindow::visibleChanged, this, &KeyboardWindowBridge::syncStubVisibility);
+        window->setVisible(true);
+        // Qt Virtual Keyboard needs the window with the input item to be active,
+        // otherwise it keeps the panel (and its keys) disabled.
+        activateKeyboardWindow(window);
+        syncStubVisibility();
+        qCDebug(PlasmaKeyboard) << "keyboard window registered, kwin visible" << m_kwinVisible << "active" << window->isActive() << "focus window"
+                                << QGuiApplication::focusWindow() << "focus object" << QGuiApplication::focusObject();
+    }
+
+    //! The rectangle of the visible panel, in the coordinates of the screen.
+    Q_INVOKABLE void setPanelRect(const QRect &rect)
+    {
+        if (rect == m_panelRect) {
+            return;
+        }
+        m_panelRect = rect;
+        applyStubMask();
+        applyPanelLayout();
+    }
+
+    //! Re-applies the panel geometry to the layer-shell window: the keyboard mode
+    //! changes the anchors and the space the compositor reserves for the panel.
+    Q_INVOKABLE void updatePanelLayout()
+    {
+        applyStubMask();
+        applyPanelLayout();
+    }
+
+    //! Whether KWin considers the virtual keyboard to be on screen.
+    void setKwinVisible(bool visible)
+    {
+        if (visible == m_kwinVisible) {
+            return;
+        }
+        m_kwinVisible = visible;
+        qCDebug(PlasmaKeyboard) << "KWin reports the keyboard visible:" << visible;
+        if (visible) {
+            // Qt Virtual Keyboard only enables the keys while the window holding
+            // the input item is active, and a layer-shell window is not activated
+            // by the compositor: announce the activation to Qt as soon as the
+            // keyboard is on screen.
+            activateKeyboardWindow(m_keyboard);
+        }
+        Q_EMIT kwinVisibleChanged();
+    }
+
+    bool kwinVisible() const
+    {
+        return m_kwinVisible;
+    }
+
+    //! The compositor re-reserves the space for the panel on its own: the docked
+    //! keyboard asks for it with the layer-shell exclusive zone of its window, so
+    //! switching modes only has to re-apply that zone (see applyPanelLayout()).
+Q_SIGNALS:
+    void kwinVisibleChanged();
+
+private:
+    //! The panel stub never takes part in the layout: the space for the docked
+    //! keyboard is reserved by the compositor through the layer-shell exclusive
+    //! zone of the keyboard window, so the stub keeps a one pixel input region and
+    //! cannot swallow the touches meant for the keys.
+    void applyStubMask()
+    {
+        if (!m_stub) {
+            return;
+        }
+        m_stub->setMask(QRegion(0, 0, 1, 1));
+        // Qt Wayland attaches the input region to the next surface commit.
+        m_stub->requestUpdate();
+    }
+
+    //! Tells the compositor how much space the keyboard needs. The docked panel is
+    //! anchored to the bottom and reserves its height there, so the compositor
+    //! moves the focused window out of the way by itself; the floating panel
+    //! reserves nothing.
+    void applyPanelLayout()
+    {
+        if (!m_layerShell) {
+            return;
+        }
+        const QSize screen = m_keyboard && m_keyboard->screen() ? m_keyboard->screen()->geometry().size() : QSize(1280, 800);
+        LayerShellQt::Window::Anchors anchors = LayerShellQt::Window::AnchorLeft;
+        if (PlasmaKeyboardSettings::self()->floatingKeyboard()) {
+            anchors |= LayerShellQt::Window::AnchorTop;
+            m_layerShell->setDesiredSize(screen);
+            m_layerShell->setExclusiveZone(0);
+        } else {
+            anchors |= LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorBottom | LayerShellQt::Window::AnchorRight);
+            m_layerShell->setDesiredSize(QSize(0, screen.height()));
+            m_layerShell->setExclusiveZone(m_panelRect.isValid() ? m_panelRect.height() : 0);
+        }
+        m_layerShell->setAnchors(anchors);
+    }
+
+    //! Keeps the panel stub mapped exactly while the keyboard window is mapped.
+    void syncStubVisibility()
+    {
+        if (!m_stub) {
+            return;
+        }
+        const bool visible = m_keyboard && m_keyboard->isVisible();
+        if (m_stub->isVisible() != visible) {
+            qCDebug(PlasmaKeyboard) << "panel stub mapped:" << visible;
+            m_stub->setVisible(visible);
+        }
+    }
+
+    QPointer<QQuickWindow> m_stub;
+    QPointer<QWindow> m_keyboard;
+    QPointer<LayerShellQt::Window> m_layerShell;
+    QRect m_panelRect;
+    bool m_kwinVisible = false;
+};
 
 /**
  * Shows the keyboard when the global shortcut is pressed. KWin only shows the
@@ -138,8 +321,9 @@ class KeyboardHotkeyController : public QObject
 {
     Q_OBJECT
 public:
-    explicit KeyboardHotkeyController(QObject *parent = nullptr)
+    explicit KeyboardHotkeyController(KeyboardWindowBridge *bridge, QObject *parent = nullptr)
         : QObject(parent)
+        , m_bridge(bridge)
     {
         m_panelHidingModes = configuredPanelHidingModes();
 
@@ -214,6 +398,14 @@ public Q_SLOTS:
     {
         const bool keyboardVisible = kwinVisible();
 
+        // The visible keyboard window follows what the compositor reports: KWin
+        // still decides when the keyboard is on screen (input mode and focus),
+        // it just does it through the invisible panel window.
+        if (m_bridge) {
+            m_bridge->setKwinVisible(keyboardVisible);
+        }
+        qCDebug(PlasmaKeyboard) << "keyboard visible" << keyboardVisible << "input method visible" << QGuiApplication::inputMethod()->isVisible();
+
         // Keep the input method in step with the compositor, but only when the
         // compositor actually changed the panel state. Calling show() on every
         // poll while the panel is visible would undo a hide: right after the
@@ -224,7 +416,10 @@ public Q_SLOTS:
             QGuiApplication::inputMethod()->setVisible(keyboardVisible);
         }
 
-        if (PlasmaKeyboardSettings::self()->hidePanelWhenKeyboardVisible() && keyboardVisible) {
+        // The floating keyboard does not reach the bottom of the screen, so the
+        // Plasma panel is left alone while it is on.
+        const bool floating = PlasmaKeyboardSettings::self()->floatingKeyboard();
+        if (!floating && PlasmaKeyboardSettings::self()->hidePanelWhenKeyboardVisible() && keyboardVisible) {
             hidePanels();
         } else {
             restorePanels();
@@ -286,6 +481,7 @@ private:
     }
 
     KConfigWatcher::Ptr m_settingsWatcher;
+    QPointer<KeyboardWindowBridge> m_bridge;
     QHash<int, QString> m_panelHidingModes;
     bool m_panelsHidden = false;
     bool m_lastKeyboardVisible = false;
@@ -359,7 +555,8 @@ int main(int argc, char **argv)
     const QList<QKeySequence> defaultShortcut{QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_K)};
     KGlobalAccel::self()->setDefaultShortcut(showAction, defaultShortcut, KGlobalAccel::NoAutoloading);
     KGlobalAccel::self()->setShortcut(showAction, defaultShortcut, KGlobalAccel::NoAutoloading);
-    auto *hotkeyController = new KeyboardHotkeyController(&application);
+    auto *keyboardWindowBridge = new KeyboardWindowBridge(&application);
+    auto *hotkeyController = new KeyboardHotkeyController(keyboardWindowBridge, &application);
     QObject::connect(showAction, &QAction::triggered, hotkeyController, &KeyboardHotkeyController::showKeyboard);
 
     KCrash::initialize();
@@ -397,24 +594,72 @@ int main(int argc, char **argv)
     // User themes (import/export/remove and the list of built-in themes).
     qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "ThemeManager", ThemeManager::instance());
 
+    // The visible keyboard window (layer-shell) and the panel window KWin keeps
+    // managing.
+    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "KeyboardWindow", keyboardWindowBridge);
+
+    // KWin still drives the virtual keyboard through the input-panel window: it
+    // decides when the keyboard belongs on screen (input mode, focus), reports
+    // its state over D-Bus and moves the focused window out of its way. The
+    // visible keyboard now lives in a layer-shell window, so this panel window
+    // stays invisible and only carries the geometry of the panel: KWin uses its
+    // input region as the keyboard rectangle.
+    QQuickWindow panelStub;
+    panelStub.setFlags(Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus);
+    panelStub.setColor(Qt::transparent);
+    if (auto *screen = application.primaryScreen()) {
+        panelStub.resize(screen->geometry().size());
+    }
+    panelStub.setMask(QRegion(0, 0, 1, 1));
+    if (!initInputPanelIntegration(&panelStub, InputPanelRole::Keyboard)) {
+        qCCritical(PlasmaKeyboard)
+            << "Cannot run plasma-keyboard-custom standalone. You can enable it in Plasma's System Settings app, on the “Virtual Keyboard” page.";
+        return 1;
+    }
+    panelStub.setVisible(true);
+    keyboardWindowBridge->setStubWindow(&panelStub);
+
     QQmlApplicationEngine view;
     // Let the manager read the effective palette from the QML theme layer
     // (used by exportTheme).
     ThemeManager::instance()->setQmlEngine(&view);
     KLocalization::setupLocalizedContext(&view);
 
-    QObject::connect(&view, &QQmlApplicationEngine::objectCreated, &application, [](QObject *object) {
+    QObject::connect(&view, &QQmlApplicationEngine::objectCreated, &application, [keyboardWindowBridge](QObject *object) {
         auto window = qobject_cast<QWindow *>(object);
-        const bool initSuccessful = initInputPanelIntegration(window, InputPanelRole::Keyboard);
-
-        if (!initSuccessful) {
-            qCCritical(PlasmaKeyboard)
-                << "Cannot run plasma-keyboard-custom standalone. You can enable it in Plasma's System Settings app, on the “Virtual Keyboard” page.";
-            exit(1);
+        if (!window) {
+            return;
         }
 
-        window->requestActivate();
-        window->setVisible(true);
+        // The keyboard itself is a layer-shell surface in the overlay layer, so
+        // the compositor keeps it above other windows, and its position is up to
+        // the keyboard (KWin does not reposition layer surfaces).
+        auto *layerShell = LayerShellQt::Window::get(window);
+        layerShell->setLayer(LayerShellQt::Window::LayerOverlay);
+        // The window keeps a fixed size (the screen) and is anchored to its top
+        // left corner: stretching it to the whole screen makes the compositor
+        // send a new size whenever the available area changes (for example while
+        // the Plasma panel hides), and the panel would move with it.
+        // The anchors, the size and the reserved space follow the keyboard mode
+        // (see KeyboardWindowBridge::applyPanelLayout()).
+        LayerShellQt::Window::Anchors anchors = LayerShellQt::Window::AnchorTop;
+        anchors |= LayerShellQt::Window::AnchorLeft;
+        layerShell->setAnchors(anchors);
+        layerShell->setDesiredSize(window->screen() ? window->screen()->geometry().size() : QSize(1280, 800));
+        // The keyboard must not take the focus away from the field it types
+        // into, so the compositor is not asked to activate the window; Qt is told
+        // about the activation instead (see activateKeyboardWindow()).
+        layerShell->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);
+        layerShell->setExclusiveZone(0);
+        layerShell->setScope(QStringLiteral("plasma-keyboard"));
+        // The keyboard must not take the focus away from the field it types into.
+        layerShell->setActivateOnShow(false);
+        layerShell->setWantsToBeOnActiveScreen(true);
+
+        qCDebug(PlasmaKeyboard) << "keyboard window configured as a layer-shell overlay";
+        keyboardWindowBridge->setLayerShellWindow(layerShell);
+        // Visibility follows what KWin reports for the panel window.
+        keyboardWindowBridge->setKeyboardWindow(window);
     });
     view.load(QUrl(QStringLiteral("qrc:/qt/qml/org/kde/plasma/keyboard/custom/main.qml")));
 

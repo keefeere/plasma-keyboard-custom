@@ -28,6 +28,7 @@ depends=(
   'kirigami'
   'kirigami-addons'
   'kitemmodels'
+  'layer-shell-qt'
   'libplasma'
   'libstdc++'
   'libxkbcommon'

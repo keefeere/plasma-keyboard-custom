@@ -219,9 +219,21 @@ msgstr "Шрифт клавиатуры:"
 msgid "Keyboard height (%)"
 msgstr "Высота клавиатуры (%)"
 
+#: main_handset.qml:135
+msgid "Floating keyboard width (%)"
+msgstr "Ширина плавающей клавиатуры (%)"
+
+#: main_handset.qml:136
+msgid "Percentage of the screen width"
+msgstr "Процент от ширины экрана"
+
 #: main.qml:110
 msgid "Keyboard height:"
 msgstr "Высота клавиатуры:"
+
+#: main.qml:145
+msgid "Floating keyboard width:"
+msgstr "Ширина плавающей клавиатуры:"
 
 #: main.qml:22
 msgid "Layouts"

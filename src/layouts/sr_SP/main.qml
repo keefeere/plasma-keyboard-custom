@@ -299,6 +299,10 @@ KeyboardLayoutLoader {
                     weight: normalKeyWidth
                     Layout.fillWidth: false
                 }
+                PlasmaKeyboard.FloatingKey {
+                    weight: normalKeyWidth
+                    Layout.fillWidth: false
+                }
                 SpaceKey {
                 }
                 PlasmaKeyboard.ModifierKey {

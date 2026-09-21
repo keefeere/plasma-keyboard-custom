@@ -35,6 +35,8 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
     Q_PROPERTY(QVariantList availableThemes READ availableThemes NOTIFY availableThemesChanged)
     Q_PROPERTY(int keyboardHeightPercent READ keyboardHeightPercent WRITE setKeyboardHeightPercent NOTIFY keyboardHeightPercentChanged)
+    Q_PROPERTY(
+        int floatingKeyboardWidthPercent READ floatingKeyboardWidthPercent WRITE setFloatingKeyboardWidthPercent NOTIFY floatingKeyboardWidthPercentChanged)
     Q_PROPERTY(bool diacriticsPopupEnabled READ diacriticsPopupEnabled WRITE setDiacriticsPopupEnabled NOTIFY diacriticsPopupEnabledChanged)
     Q_PROPERTY(int diacriticsHoldThresholdMs READ diacriticsHoldThresholdMs WRITE setDiacriticsHoldThresholdMs NOTIFY diacriticsHoldThresholdMsChanged)
     Q_PROPERTY(bool gamepadAlternatesEnabled READ gamepadAlternatesEnabled WRITE setGamepadAlternatesEnabled NOTIFY gamepadAlternatesEnabledChanged)
@@ -113,6 +115,9 @@ public:
     int keyboardHeightPercent() const;
     void setKeyboardHeightPercent(int percent);
 
+    int floatingKeyboardWidthPercent() const;
+    void setFloatingKeyboardWidthPercent(int percent);
+
     bool diacriticsPopupEnabled() const;
     void setDiacriticsPopupEnabled(bool enabled);
 
@@ -164,6 +169,7 @@ Q_SIGNALS:
     void themeChanged();
     void availableThemesChanged();
     void keyboardHeightPercentChanged();
+    void floatingKeyboardWidthPercentChanged();
     void diacriticsPopupEnabledChanged();
     void diacriticsHoldThresholdMsChanged();
     void gamepadAlternatesEnabledChanged();
@@ -189,6 +195,7 @@ private:
     QString m_keyboardFontFamily;
     QString m_theme = QStringLiteral("system");
     int m_keyboardHeightPercent = 42;
+    int m_floatingKeyboardWidthPercent = 80;
     bool m_diacriticsPopupEnabled = true;
     int m_diacriticsHoldThresholdMs = 600;
     bool m_gamepadAlternatesEnabled = true;

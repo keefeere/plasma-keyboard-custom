@@ -43,6 +43,24 @@
             <label>Whether the keyboard panel fills the screen width.</label>
             <default>true</default>
         </entry>
+        <entry key="floatingKeyboard" type="Bool">
+            <label>Whether the keyboard is a floating panel that can be moved around the screen.</label>
+            <default>false</default>
+        </entry>
+        <entry key="floatingKeyboardX" type="Double">
+            <label>Horizontal position of the floating keyboard as a fraction of the screen width. A negative value puts it in the middle.</label>
+            <default>-1</default>
+        </entry>
+        <entry key="floatingKeyboardY" type="Double">
+            <label>Vertical position of the floating keyboard as a fraction of the screen height. A negative value puts it at the bottom.</label>
+            <default>-1</default>
+        </entry>
+        <entry key="floatingKeyboardWidthPercent" type="Int">
+            <label>Width of the floating keyboard as a percentage of the screen width.</label>
+            <min>20</min>
+            <max>100</max>
+            <default>80</default>
+        </entry>
         <entry key="keyboardHeightPercent" type="Int">
             <label>Keyboard height as a percentage of the screen height.</label>
             <min>20</min>

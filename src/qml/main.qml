@@ -48,6 +48,20 @@ InputPanelWindow {
         }
     }
 
+    // Qt Virtual Keyboard keeps the panel (and the keys) disabled unless the
+    // window that holds the input item is the active window: the keyboard window
+    // is activated when it is shown, and the input item has to be focused again
+    // at that point, otherwise the active focus stays on the window root.
+    onActiveChanged: {
+        if (active) {
+            thing.forceActiveFocus();
+            // Qt Virtual Keyboard decides whether the panel is visible when the
+            // input panel is asked for: the window only became active now, so ask
+            // again with the input item focused.
+            Qt.inputMethod.show();
+        }
+    }
+
     // Gamepad: which of the rows above the keyboard has the focus
     // (0 = the keyboard itself, 1 = the clipboard row, 2 = the F1-F12 row) and
     // which item of it is selected. Those rows are plain items, so the
@@ -552,6 +566,12 @@ InputPanelWindow {
         VirtualKeyboardSettings.keySoundVolume = 100;
         root.updatePredictions();
 
+        // The window can already be active by the time the QML is loaded, in
+        // which case onActiveChanged will not fire for it.
+        if (active) {
+            thing.forceActiveFocus();
+        }
+
         // The navigation highlight of Qt Virtual Keyboard is animated, so while
         // the focus is moved into place it appears to travel through the keys it
         // passes. Without the animation it always shows the key that really has
@@ -594,6 +614,9 @@ InputPanelWindow {
         onCandidateSelected: (index) => thing.overlayController.commitCandidate(index)
     }
 
+    // Only the panel is interactive while the keyboard is on screen; while it is
+    // hidden the window keeps a one pixel region so that clicks reach the windows
+    // below it.
     interactiveRegion: Qt.rect(panelWrapper.x, panelWrapper.y, panelWrapper.width, panelWrapper.height)
 
     Kirigami.ShadowedRectangle {
@@ -607,8 +630,95 @@ InputPanelWindow {
             onShowSettings: root.showSettings()
         }
 
-        // Whether the panel takes the full width of the screen
-        readonly property bool isFullScreenWidth: PlasmaKeyboardSettings.panelFillScreenWidth
+        // Whether the panel takes the full width of the screen. The floating
+        // panel is always detached from the edges, so it never fills the width.
+        readonly property bool floating: PlasmaKeyboardSettings.floatingKeyboard
+        readonly property bool isFullScreenWidth: PlasmaKeyboardSettings.panelFillScreenWidth && !floating
+
+        //! Position of the floating panel, in window coordinates. A negative
+        //! value means it was never moved: the panel then starts at the bottom
+        //! centre, lifted off the edge by the panel padding.
+        //!
+        //! The vertical position is kept as the bottom edge of the panel: when a
+        //! row of suggestions appears and the panel becomes taller, it grows
+        //! upwards and the bottom edge stays where the user put it.
+        property real floatingX: -1
+        property real floatingBottom: -1
+
+        //! Set once the panel has its final size: a later size change (a row of
+        //! suggestions appearing, the panel switching between the docked and the
+        //! floating width) must not move a panel the user has placed.
+        property bool floatingPlaced: false
+
+        readonly property real minX: padding
+        readonly property real maxX: Math.max(minX, root.width - width - padding)
+
+        //! Keeps the floating panel inside the screen.
+        function clampFloatingX(value) {
+            return Math.max(minX, Math.min(maxX, value));
+        }
+        function clampFloatingBottom(value) {
+            return Math.max(padding + height, Math.min(root.height - padding, value));
+        }
+
+        //! Puts the floating panel where it belongs: at the position remembered
+        //! from a previous run, or at the bottom centre. Only done once the panel
+        //! really has its size: before that the panel keeps the placeholder size
+        //! (100) it is given so that the input region is never empty, and a
+        //! position computed from it would be wrong.
+        function placeFloatingPanel() {
+            if (floatingPlaced || inputPanel.width <= 0 || width <= inputPanel.width || height <= 0) {
+                return;
+            }
+            floatingPlaced = true;
+            if (PlasmaKeyboardSettings.floatingKeyboardX >= 0 && PlasmaKeyboardSettings.floatingKeyboardY >= 0) {
+                floatingX = PlasmaKeyboardSettings.floatingKeyboardX * root.width;
+                floatingBottom = PlasmaKeyboardSettings.floatingKeyboardY * root.height;
+            } else {
+                floatingX = (root.width - width) / 2;
+                floatingBottom = root.height - padding;
+            }
+            floatingX = clampFloatingX(floatingX);
+            floatingBottom = clampFloatingBottom(floatingBottom);
+        }
+
+        //! Remembers where the panel was left, as a fraction of the screen, so
+        //! that it comes back to the same place after a restart and a different
+        //! resolution does not move it off the screen.
+        function saveFloatingPosition() {
+            if (!floating || root.width <= 0 || root.height <= 0) {
+                return;
+            }
+            PlasmaKeyboardSettings.floatingKeyboardX = floatingX / root.width;
+            PlasmaKeyboardSettings.floatingKeyboardY = floatingBottom / root.height;
+            PlasmaKeyboardSettings.save();
+        }
+
+        // KWin keeps driving the keyboard through the invisible input-panel
+        // window and uses its input region as the keyboard rectangle (that is
+        // what it reserves on screen and moves the focused window away from),
+        // so the region has to follow the visible panel.
+        function updatePanelStub() {
+            PlasmaKeyboard.KeyboardWindow.setPanelRect(Qt.rect(x, y, width, height));
+        }
+        onXChanged: updatePanelStub()
+        onYChanged: updatePanelStub()
+        onWidthChanged: {
+            placeFloatingPanel();
+            updatePanelStub();
+        }
+        onHeightChanged: {
+            placeFloatingPanel();
+            updatePanelStub();
+        }
+        // The space reserved for the panel and the window anchors depend on the
+        // mode: the compositor reserves it through the layer-shell exclusive zone.
+        onFloatingChanged: {
+            updatePanelStub();
+            PlasmaKeyboard.KeyboardWindow.updatePanelLayout();
+        }
+
+        Component.onCompleted: updatePanelStub()
 
         color: PlasmaKeyboard.Theme.current.backgroundType === "gradient" ? "transparent" : PlasmaKeyboard.BreezeConstants.keyboardBackgroundColor
 
@@ -630,7 +740,7 @@ InputPanelWindow {
 
         // Provide shadow and radius when the keyboard is detached from edges
         corners {
-            // The window isn't floating, so only curve the top
+            // Only the floating panel is detached from every edge.
             bottomLeftRadius: Kirigami.Units.cornerRadius
             bottomRightRadius: Kirigami.Units.cornerRadius
             topLeftRadius: isFullScreenWidth ? 0 : Kirigami.Units.cornerRadius
@@ -641,9 +751,67 @@ InputPanelWindow {
             color: Qt.rgba(0, 0, 0, 0.3)
         }
 
-        // Starting x and y centers the panel on the bottom
-        x: (root.width / 2) - (width / 2)
-        y: root.height - height
+        // The docked panel is centred at the bottom; the floating one keeps the
+        // position it was placed or dragged to. The horizontal position is kept
+        // as it is and the vertical one is anchored to the bottom edge, so a
+        // size change (a row of suggestions appearing, Shift changing the layout)
+        // makes the panel grow upwards instead of moving it under the finger.
+        x: floating ? (floatingX < 0 ? (root.width - width) / 2 : floatingX) : (root.width / 2) - (width / 2)
+        y: floating ? (floatingBottom < 0 ? root.height - height - padding : floatingBottom - height) : root.height - height
+
+        // A resolution change can leave the panel outside the screen.
+        Connections {
+            target: root
+            function onWidthChanged() {
+                if (panelWrapper.floating && panelWrapper.floatingX >= 0) {
+                    panelWrapper.floatingX = panelWrapper.clampFloatingX(panelWrapper.floatingX);
+                }
+            }
+            function onHeightChanged() {
+                if (panelWrapper.floating && panelWrapper.floatingBottom >= 0) {
+                    panelWrapper.floatingBottom = panelWrapper.clampFloatingBottom(panelWrapper.floatingBottom);
+                }
+            }
+        }
+
+        // Dragging the free background of the panel moves it. The keys are
+        // handled by Qt Virtual Keyboard itself, so the handler only sees the
+        // parts of the panel that are not a key.
+        DragHandler {
+            id: panelDrag
+
+            target: null
+            enabled: panelWrapper.floating
+
+            //! How far the pointer has to move before the panel follows: a plain
+            //! tap must not move (or remember) anything.
+            readonly property real moveThreshold: 12
+
+            property real startX: 0
+            property real startBottom: 0
+            property bool moved: false
+
+            onActiveChanged: {
+                if (active) {
+                    startX = panelWrapper.x;
+                    startBottom = panelWrapper.y + panelWrapper.height;
+                    moved = false;
+                } else if (moved) {
+                    panelWrapper.saveFloatingPosition();
+                }
+            }
+            onTranslationChanged: {
+                if (!active) {
+                    return;
+                }
+                if (!moved && Math.hypot(translation.x, translation.y) < moveThreshold) {
+                    return;
+                }
+                moved = true;
+                panelWrapper.floatingX = panelWrapper.clampFloatingX(startX + translation.x);
+                panelWrapper.floatingBottom = panelWrapper.clampFloatingBottom(startBottom + translation.y);
+            }
+        }
 
         // Padding for background corners and panel drag area
         readonly property real padding: isFullScreenWidth ? 0 : Kirigami.Units.largeSpacing
@@ -1130,7 +1298,21 @@ InputPanelWindow {
             }
 
             // height is calculated by InputPanel
-            width: inputPanel.keyboard.style ? inputPanel.keyboard.style.aspectRatio * inputPanel.keyboard.style.targetKeyboardHeight : 0
+            // The floating keyboard is a compact panel whose width is a share of
+            // the screen width (configurable). The limit lives here rather than in
+            // the style so that it also holds for a style that does not know
+            // about the floating mode.
+            width: {
+                if (!inputPanel.keyboard.style) {
+                    return 0;
+                }
+                const full = inputPanel.keyboard.style.aspectRatio * inputPanel.keyboard.style.targetKeyboardHeight;
+                if (!PlasmaKeyboardSettings.floatingKeyboard) {
+                    return full;
+                }
+                const share = root.width * PlasmaKeyboardSettings.floatingKeyboardWidthPercent / 100;
+                return Math.min(full, share - panelWrapper.padding * 2);
+            }
 
             focusPolicy: Qt.NoFocus
             externalLanguageSwitchEnabled: true

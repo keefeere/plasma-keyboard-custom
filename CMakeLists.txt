@@ -76,6 +76,12 @@ find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
 
 find_package(PlasmaQuick ${PROJECT_DEP_VERSION} REQUIRED)
 
+# The visible keyboard window is a wlr-layer-shell surface (so that it stays above
+# other windows and can be moved freely); LayerShellQt assigns that shell
+# integration to the window, so the project does not carry its own copy of the
+# protocol.
+find_package(LayerShellQt ${PROJECT_DEP_VERSION} REQUIRED)
+
 ecm_set_disabled_deprecation_versions(QT 6.9.0
     KF 6.16.0
 )

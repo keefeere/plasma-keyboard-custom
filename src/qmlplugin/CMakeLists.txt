@@ -14,6 +14,7 @@ ecm_target_qml_sources(keyboardlib SOURCES
     BreezeKeyPanel.qml
     BreezeConstants.qml
     BreezePopup.qml
+    FloatingKey.qml
     HideKey.qml
     LanguageKey.qml
     ModifierKey.qml

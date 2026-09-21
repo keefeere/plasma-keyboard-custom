@@ -132,6 +132,18 @@ KCM.SimpleKCM {
 
             FormCard.FormDelegateSeparator {}
 
+            FormCard.FormSpinBoxDelegate {
+                label: i18n("Floating keyboard width (%)")
+                description: i18n("Percentage of the screen width")
+                from: 20
+                to: 100
+                stepSize: 5
+                value: kcm.floatingKeyboardWidthPercent
+                onValueChanged: kcm.floatingKeyboardWidthPercent = value
+            }
+
+            FormCard.FormDelegateSeparator {}
+
             FormCard.FormComboBoxDelegate {
                 id: keyboardFontComboBox
                 text: i18n("Keyboard font")

@@ -136,6 +136,7 @@ target_link_libraries(plasma-keyboard-custom
     KF6::Crash
     KF6::GlobalAccel
     PkgConfig::XKBCommon
+    LayerShellQt::Interface
     Plasma::PlasmaQuick
     Qt::DBus
     Qt::Gui
