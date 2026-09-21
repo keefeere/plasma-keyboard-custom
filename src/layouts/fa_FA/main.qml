@@ -303,8 +303,9 @@ KeyboardLayout {
             weight: normalKeyWidth
             Layout.fillWidth: false
         }
-        SymbolModeKey {
-            displayText: "\u0661\u0662\u0663\u061F"
+        PlasmaKeyboard.ModifierKey {
+            modifier: "meta"
+            displayText: "Win"
             weight: normalKeyWidth
             Layout.fillWidth: false
         }

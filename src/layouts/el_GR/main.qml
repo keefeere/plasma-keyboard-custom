@@ -287,7 +287,9 @@ KeyboardLayoutLoader {
                     weight: normalKeyWidth
                     Layout.fillWidth: false
                 }
-                SymbolModeKey {
+                PlasmaKeyboard.ModifierKey {
+                    modifier: "meta"
+                    displayText: "Win"
                     weight: normalKeyWidth
                     Layout.fillWidth: false
                 }
@@ -657,7 +659,9 @@ KeyboardLayoutLoader {
                     weight: normalKeyWidth
                     Layout.fillWidth: false
                 }
-                SymbolModeKey {
+                PlasmaKeyboard.ModifierKey {
+                    modifier: "meta"
+                    displayText: "Win"
                     weight: normalKeyWidth
                     Layout.fillWidth: false
                 }

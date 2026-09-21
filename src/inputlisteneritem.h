@@ -22,7 +22,7 @@ class ClipboardHistory;
 class OverlayController;
 
 /**
- * Global state for the on-screen Ctrl/Alt keys.
+ * Global state for the on-screen Ctrl/Alt/Meta keys.
  *
  * The keys in the layouts toggle these values. InputListenerItem consults
  * them when forwarding key events to the compositor, so that a latched
@@ -33,6 +33,7 @@ class KeyboardModifiers : public QObject
     Q_OBJECT
     Q_PROPERTY(bool ctrl READ ctrl WRITE setCtrl NOTIFY ctrlChanged)
     Q_PROPERTY(bool alt READ alt WRITE setAlt NOTIFY altChanged)
+    Q_PROPERTY(bool meta READ meta WRITE setMeta NOTIFY metaChanged)
     //! True while a gamepad is available, so key panels can show button hints.
     Q_PROPERTY(bool gamepadAvailable READ gamepadAvailable WRITE setGamepadAvailable NOTIFY gamepadAvailableChanged)
 
@@ -49,6 +50,9 @@ public:
     bool alt() const;
     void setAlt(bool alt);
 
+    bool meta() const;
+    void setMeta(bool meta);
+
     bool gamepadAvailable() const;
     void setGamepadAvailable(bool available);
 
@@ -60,6 +64,7 @@ public:
 Q_SIGNALS:
     void ctrlChanged();
     void altChanged();
+    void metaChanged();
     void gamepadAvailableChanged();
     void extraRowsFocusedChanged();
 
@@ -68,6 +73,7 @@ private:
 
     bool m_ctrl = false;
     bool m_alt = false;
+    bool m_meta = false;
     bool m_gamepadAvailable = false;
     bool m_extraRowsFocused = false;
 };
@@ -187,7 +193,7 @@ Q_SIGNALS:
 private:
     /**
      * Sends the key described by @p event as a real key event with the
-     * currently latched Ctrl/Alt modifiers applied.
+     * currently latched Ctrl/Alt/Meta modifiers applied.
      *
      * Returns true if the event was handled, in which case the caller must
      * not process it any further.

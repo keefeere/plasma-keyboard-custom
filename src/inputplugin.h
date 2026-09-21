@@ -92,10 +92,12 @@ public:
     uint32_t keycodeForKeysym(uint32_t keysym) const;
 
     /**
-     * Modifier masks for Control and Alt as defined by the compositor's keymap.
+     * Modifier masks for Control, Alt, Meta (the Super/Windows key, "Logo" in
+     * xkbcommon) and Shift as defined by the compositor's keymap.
      */
     uint32_t controlMask() const;
     uint32_t altMask() const;
+    uint32_t metaMask() const;
     uint32_t shiftMask() const;
 
     ContentHint contentHint() const;

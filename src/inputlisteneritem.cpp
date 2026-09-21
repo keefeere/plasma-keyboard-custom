@@ -110,6 +110,20 @@ void KeyboardModifiers::setAlt(bool alt)
     Q_EMIT altChanged();
 }
 
+bool KeyboardModifiers::meta() const
+{
+    return m_meta;
+}
+
+void KeyboardModifiers::setMeta(bool meta)
+{
+    if (m_meta == meta) {
+        return;
+    }
+    m_meta = meta;
+    Q_EMIT metaChanged();
+}
+
 bool KeyboardModifiers::gamepadAvailable() const
 {
     return m_gamepadAvailable;
@@ -144,6 +158,7 @@ void KeyboardModifiers::reset()
 {
     setCtrl(false);
     setAlt(false);
+    setMeta(false);
 }
 
 Q_GLOBAL_STATIC_WITH_ARGS(const std::set<int>,
@@ -588,7 +603,7 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
 bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
 {
     auto *modifiers = KeyboardModifiers::instance();
-    if (!modifiers->ctrl() && !modifiers->alt()) {
+    if (!modifiers->ctrl() && !modifiers->alt() && !modifiers->meta()) {
         return false;
     }
 
@@ -604,7 +619,7 @@ bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
 
     // Shift can take part in the combination (e.g. Ctrl+Shift+key).
     const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0)
-        | ((event->modifiers() & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
+        | (modifiers->meta() ? m_input.metaMask() : 0) | ((event->modifiers() & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
 
     if (press) {
         // Set the modifier state before pressing the key so the compositor
@@ -653,8 +668,8 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
         return;
     }
 
-    // The on-screen Ctrl/Alt keys emit a plain Control/Alt event; use it to
-    // toggle the latch (works the same for touch and gamepad activation).
+    // The on-screen Ctrl/Alt/Meta keys emit a plain Control/Alt/Meta event; use
+    // it to toggle the latch (works the same for touch and gamepad activation).
     auto *modifiers = KeyboardModifiers::instance();
     if (event->key() == Qt::Key_Control) {
         modifiers->setCtrl(!modifiers->ctrl());
@@ -663,6 +678,11 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
     }
     if (event->key() == Qt::Key_Alt) {
         modifiers->setAlt(!modifiers->alt());
+        event->accept();
+        return;
+    }
+    if (event->key() == Qt::Key_Meta) {
+        modifiers->setMeta(!modifiers->meta());
         event->accept();
         return;
     }
@@ -687,14 +707,14 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
         return;
     }
 
-    if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt) {
+    if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
         // The toggle happened on press; ignore the release.
         event->accept();
         return;
     }
 
     auto *modifiers = KeyboardModifiers::instance();
-    const bool wasLatched = modifiers->ctrl() || modifiers->alt();
+    const bool wasLatched = modifiers->ctrl() || modifiers->alt() || modifiers->meta();
 
     if (handleModifiedKey(event, false)) {
         event->accept();
