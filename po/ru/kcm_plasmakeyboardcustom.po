@@ -415,6 +415,22 @@ msgstr "Цветовая схема клавиатуры"
 msgid "Import, export or remove a theme file"
 msgstr "Импорт, экспорт и удаление файла темы"
 
+#: main.qml
+msgid "Choose keyboard font"
+msgstr "Выбор шрифта клавиатуры"
+
+#: main.qml
+msgid "Reset to default"
+msgstr "Сбросить к значению по умолчанию"
+
+#: ui/FontChooserDialog.qml
+msgid "Filter fonts…"
+msgstr "Фильтр шрифтов…"
+
+#: ui/FontChooserDialog.qml
+msgid "Filter fonts"
+msgstr "Фильтр шрифтов"
+
 #: ui/LocaleSelectorListView.qml
 msgid "Start typing to check the settings"
 msgstr "Начните печатать для проверки настроек"

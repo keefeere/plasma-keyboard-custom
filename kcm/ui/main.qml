@@ -213,16 +213,26 @@ KCM.AbstractKCM {
                 description: i18n("Font used for the key labels")
                 controlFillWidth: true
 
-                QQC2.ComboBox {
-                    id: keyboardFontComboBox
+                QQC2.Button {
+                    id: keyboardFontButton
                     Layout.fillWidth: true
 
-                    model: [i18n("Default")].concat(Qt.fontFamilies())
-                    currentIndex: Math.max(0, model.indexOf(kcm.keyboardFontFamily))
+                    text: kcm.keyboardFontFamily.length > 0 ? kcm.keyboardFontFamily : i18n("Default")
+                    font.family: kcm.keyboardFontFamily.length > 0 ? kcm.keyboardFontFamily : Kirigami.Theme.defaultFont.family
 
-                    onActivated: (index) => {
-                        kcm.keyboardFontFamily = index === 0 ? "" : model[index];
+                    onClicked: {
+                        fontChooserDialog.selectedFamily = kcm.keyboardFontFamily;
+                        fontChooserDialog.open();
                     }
+                }
+
+                QQC2.Button {
+                    icon.name: "edit-undo"
+                    onClicked: kcm.keyboardFontFamily = ""
+                    Accessible.name: i18n("Reset to default")
+                    QQC2.ToolTip.text: i18n("Reset to default")
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                 }
             }
 
@@ -585,6 +595,12 @@ KCM.AbstractKCM {
                 }
             }
         }
+    }
+
+    FontChooserDialog {
+        id: fontChooserDialog
+
+        onAccepted: kcm.keyboardFontFamily = selectedFamily
     }
 
     FileDialog {
