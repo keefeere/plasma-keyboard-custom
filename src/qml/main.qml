@@ -76,6 +76,23 @@ InputPanelWindow {
     //! follow the previous one) and how much of it would be added to the text.
     property var predictions: []
 
+    //! Whether the voice input mode is on: the keys are covered by one big
+    //! microphone button. Only reachable while the voice input is enabled.
+    property bool voiceMode: false
+
+    //! Opens the voice input mode from the microphone key of a layout.
+    function openVoiceMode() {
+        if (PlasmaKeyboardSettings.sttEnabled) {
+            root.voiceMode = true;
+        }
+    }
+
+    //! Leaves the voice input mode and drops a recording in progress.
+    function closeVoiceMode() {
+        PlasmaKeyboard.Stt.cancel();
+        root.voiceMode = false;
+    }
+
     //! The word lists the completions and the corrections are looked up in.
     PredictiveDictionary {
         id: predictor
@@ -160,6 +177,28 @@ InputPanelWindow {
         }
         function onPredictiveTypoCorrectionEnabledChanged() {
             root.updatePredictions();
+        }
+    }
+
+    Connections {
+        target: PlasmaKeyboardSettings
+        function onSttEnabledChanged() {
+            // Turning the voice input off must not leave the mode on screen.
+            if (!PlasmaKeyboardSettings.sttEnabled) {
+                root.closeVoiceMode();
+            }
+        }
+    }
+
+    //! The recognised phrase is inserted into the field the keyboard types into.
+    //! The voice mode stays open: leaving it is up to the user, who does it with
+    //! the arrow in the corner.
+    Connections {
+        target: PlasmaKeyboard.Stt
+        function onTextRecognized(text) {
+            if (text.length > 0) {
+                thing.commitText(text);
+            }
         }
     }
 
@@ -721,7 +760,9 @@ InputPanelWindow {
         Component.onCompleted: updatePanelStub()
 
         // The floating panel can be made translucent in the settings; the docked
-        // panel always stays opaque.
+        // panel always stays opaque. The voice mode keeps that translucency and
+        // hides the keys instead, so the panel does not turn opaque when the
+        // voice mode is entered.
         readonly property real floatingOpacity: floating ? PlasmaKeyboardSettings.floatingKeyboardOpacity / 100 : 1
         opacity: floatingOpacity
 
@@ -1307,6 +1348,11 @@ InputPanelWindow {
             // the screen width (configurable). The limit lives here rather than in
             // the style so that it also holds for a style that does not know
             // about the floating mode.
+            // The voice mode hides the keys this way rather than with visible:
+            // the panel keeps its size, and a translucent floating panel keeps
+            // its translucency.
+            opacity: root.voiceMode ? 0 : 1
+            enabled: !root.voiceMode
             width: {
                 if (!inputPanel.keyboard.style) {
                     return 0;
@@ -1375,6 +1421,45 @@ InputPanelWindow {
                 VirtualKeyboardSettings.arrowKeyNavigationEnabled = true;
                 inputPanel.updateLocales();
             }
+        }
+
+        // Voice input mode: covers the keys with one big microphone button. It
+        // keeps the size of the keyboard, so the panel does not move when the
+        // mode is entered or left.
+        VoicePanel {
+            id: voicePanel
+            anchors.fill: inputPanel
+            z: 100
+            visible: root.voiceMode
+            recording: PlasmaKeyboard.Stt.recording
+            busy: PlasmaKeyboard.Stt.busy
+            level: PlasmaKeyboard.Stt.level
+            message: PlasmaKeyboard.Stt.lastError
+            highlighted: gamepad.available && inputPanel.keyboard.navigationModeActive
+            // The space bar of the voice mode shows the active layout, the same
+            // way the space bar of the ordinary keyboard does.
+            languageName: {
+                const name = Qt.locale(inputPanel.InputContext.locale).nativeLanguageName;
+                return name.length > 0 ? name.charAt(0).toUpperCase() + name.slice(1) : name;
+            }
+
+            onToggleRequested: {
+                if (PlasmaKeyboard.Stt.recording) {
+                    PlasmaKeyboard.Stt.stopRecording();
+                } else {
+                    PlasmaKeyboard.Stt.startRecording(inputPanel.InputContext.locale);
+                }
+            }
+
+            onCloseRequested: root.closeVoiceMode()
+            onHideRequested: Qt.inputMethod.hide()
+
+            // The keys kept under the microphone while dictating: the layout
+            // switch, the space bar, enter and backspace.
+            onLanguageRequested: inputPanel.keyboard.changeInputLanguage(false)
+            onSpaceRequested: thing.commitText(" ")
+            onEnterRequested: thing.sendKeyEvent(Qt.Key_Return, "\n")
+            onBackspaceRequested: thing.sendKeyEvent(Qt.Key_Backspace, "")
         }
 
         // The alternate characters the gamepad offers are drawn here, inside

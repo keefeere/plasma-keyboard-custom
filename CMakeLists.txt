@@ -54,6 +54,8 @@ option(PLASMA_KEYBOARD_VIBRATION_ENABLED "Whether to enable haptic feedback via 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
     Core
     Gui
+    Multimedia
+    Network
     Qml
     VirtualKeyboard
     WaylandClient
@@ -63,6 +65,7 @@ find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
 # older defined the Qt6::*Private targets from the base module packages). The
 # declared floor is Qt 6.9, so these are always present and can be required.
 find_package(Qt6GuiPrivate ${QT_MIN_VERSION} REQUIRED NO_MODULE)
+find_package(Qt6CorePrivate ${QT_MIN_VERSION} REQUIRED NO_MODULE)
 find_package(Qt6WaylandClientPrivate ${QT_MIN_VERSION} REQUIRED NO_MODULE)
 
 find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
@@ -105,29 +108,36 @@ endif()
 # the official package, so ki18n_install(po) (which compiles and installs every
 # po file) cannot be used: the upstream "plasma-keyboard" and
 # "kcm_plasmakeyboard" .mo files would conflict with the official package.
-# Instead only our own KCM domain ("kcm_plasmakeyboardcustom", the plugin id of
-# the renamed KCM) is installed. The application itself keeps using the
-# "plasma-keyboard" domain shipped by the official package.
+# Only our own domains are installed: "kcm_plasmakeyboardcustom" (the plugin id
+# of the renamed KCM) and "plasma-keyboard-custom" (the strings this fork adds
+# to the application itself, asked for with i18nd()). The rest of the
+# application keeps using the "plasma-keyboard" domain shipped by the official
+# package.
 find_package(Gettext REQUIRED)
-set(_kcm_translation_domain kcm_plasmakeyboardcustom)
-file(GLOB _kcm_po_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/po" "po/*/${_kcm_translation_domain}.po")
-set(_kcm_mo_files)
-foreach (_po_file IN LISTS _kcm_po_files)
-    get_filename_component(_lang "${_po_file}" DIRECTORY)
-    set(_mo_file "${CMAKE_CURRENT_BINARY_DIR}/${_lang}/LC_MESSAGES/${_kcm_translation_domain}.mo")
-    add_custom_command(
-        OUTPUT "${_mo_file}"
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${_lang}/LC_MESSAGES"
-        COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} -o "${_mo_file}" "${CMAKE_CURRENT_SOURCE_DIR}/po/${_po_file}"
-        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/po/${_po_file}"
-        COMMENT "Generating ${_kcm_translation_domain} translation for ${_lang}"
-        VERBATIM
-    )
-    install(FILES "${_mo_file}" DESTINATION "${KDE_INSTALL_LOCALEDIR}/${_lang}/LC_MESSAGES")
-    list(APPEND _kcm_mo_files "${_mo_file}")
+set(_custom_translation_domains
+    kcm_plasmakeyboardcustom
+    plasma-keyboard-custom
+)
+set(_custom_mo_files)
+foreach (_domain IN LISTS _custom_translation_domains)
+    file(GLOB _po_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/po" "po/*/${_domain}.po")
+    foreach (_po_file IN LISTS _po_files)
+        get_filename_component(_lang "${_po_file}" DIRECTORY)
+        set(_mo_file "${CMAKE_CURRENT_BINARY_DIR}/${_lang}/LC_MESSAGES/${_domain}.mo")
+        add_custom_command(
+            OUTPUT "${_mo_file}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${_lang}/LC_MESSAGES"
+            COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} -o "${_mo_file}" "${CMAKE_CURRENT_SOURCE_DIR}/po/${_po_file}"
+            DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/po/${_po_file}"
+            COMMENT "Generating ${_domain} translation for ${_lang}"
+            VERBATIM
+        )
+        install(FILES "${_mo_file}" DESTINATION "${KDE_INSTALL_LOCALEDIR}/${_lang}/LC_MESSAGES")
+        list(APPEND _custom_mo_files "${_mo_file}")
+    endforeach ()
 endforeach ()
-if (_kcm_mo_files)
-    add_custom_target(plasmakeyboard-custom-translations ALL DEPENDS ${_kcm_mo_files})
+if (_custom_mo_files)
+    add_custom_target(plasmakeyboard-custom-translations ALL DEPENDS ${_custom_mo_files})
 endif ()
 
 file(GLOB_RECURSE ALL_CLANG_FORMAT_SOURCE_FILES *.cpp *.h *.c)

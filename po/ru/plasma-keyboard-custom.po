@@ -1,0 +1,113 @@
+# SPDX-FileCopyrightText: 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard-custom\n"
+"Report-Msgid-Bugs-To: https://github.com/mops1k/plasma-keyboard-custom\n"
+"PO-Revision-Date: 2026-09-22 17:30+0300\n"
+"Last-Translator: Aleksandr Kvintilyanov <bednyj.mops@gmail.com>\n"
+"Language-Team: Russian <kde-russian@lists.kde.ru>\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: stt/parakeetengine.cpp
+msgid "The Parakeet model file does not exist: %1"
+msgstr "Файл модели Parakeet не найден: %1"
+
+#: stt/parakeetengine.cpp
+msgid "Cannot load the Parakeet model: %1"
+msgstr "Не удалось загрузить модель Parakeet: %1"
+
+#: stt/parakeetengine.cpp
+msgid "The Parakeet model is not loaded."
+msgstr "Модель Parakeet не загружена."
+
+#: stt/parakeetengine.cpp
+msgid "The Parakeet recognition failed (error %1)."
+msgstr "Распознавание Parakeet завершилось ошибкой (код %1)."
+
+#: stt/whisperengine.cpp
+msgid "The Whisper model file does not exist: %1"
+msgstr "Файл модели Whisper не найден: %1"
+
+#: stt/whisperengine.cpp
+msgid "Cannot load the Whisper model: %1"
+msgstr "Не удалось загрузить модель Whisper: %1"
+
+#: stt/whisperengine.cpp
+msgid "The Whisper model is not loaded."
+msgstr "Модель Whisper не загружена."
+
+#: stt/whisperengine.cpp
+msgid "The Whisper recognition failed (error %1)."
+msgstr "Распознавание Whisper завершилось ошибкой (код %1)."
+
+#: stt/voskengine.cpp
+msgid "The Vosk library (vosk-api) is not installed."
+msgstr "Библиотека Vosk (vosk-api) не установлена."
+
+#: stt/voskengine.cpp
+msgid "The Vosk model directory does not exist: %1"
+msgstr "Каталог модели Vosk не найден: %1"
+
+#: stt/voskengine.cpp
+msgid "Cannot load the Vosk model: %1"
+msgstr "Не удалось загрузить модель Vosk: %1"
+
+#: stt/voskengine.cpp
+msgid "Cannot create the Vosk recognizer for “%1”."
+msgstr "Не удалось создать распознаватель Vosk для «%1»."
+
+#: stt/voskengine.cpp
+msgid "The Vosk model is not loaded."
+msgstr "Модель Vosk не загружена."
+
+#: stt/sttaudiorecorder.cpp
+msgid "There is no microphone available for the speech recognition."
+msgstr "Нет доступного микрофона для распознавания речи."
+
+#: stt/sttaudiorecorder.cpp
+msgid "Cannot start recording from “%1”."
+msgstr "Не удалось начать запись с «%1»."
+
+#: stt/sttaudiorecorder.cpp
+msgid "The recording was stopped: it is limited to %1 seconds."
+msgstr "Запись остановлена: ограничение %1 секунд."
+
+#: stt/sttmanager.cpp
+msgid "The voice input is disabled in the keyboard settings."
+msgstr "Голосовой ввод отключён в настройках клавиатуры."
+
+#: stt/sttmanager.cpp
+msgid "No speech recognition model is installed. Download one in the keyboard settings."
+msgstr "Модель распознавания речи не установлена. Скачайте её в настройках клавиатуры."
+
+#: stt/sttmanager.cpp
+msgid "Nothing was recorded."
+msgstr "Ничего не записано."
+
+#: stt/sttmodelcatalog.cpp
+msgid "Refusing to remove “%1”: it is outside the model directory."
+msgstr "Отказ от удаления «%1»: путь вне каталога моделей."
+
+#: stt/sttmodelcatalog.cpp
+msgid "Cannot remove “%1”."
+msgstr "Не удалось удалить «%1»."
+
+#: qml/VoicePanel.qml
+msgid "Recognising…"
+msgstr "Распознавание…"
+
+#: qml/VoicePanel.qml
+msgid "Listening… tap to stop"
+msgstr "Слушаю… нажмите, чтобы остановить"
+
+#: qml/VoicePanel.qml
+msgid "Tap to speak"
+msgstr "Нажмите, чтобы говорить"
+

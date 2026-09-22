@@ -17,6 +17,7 @@ ecm_target_qml_sources(keyboardlib SOURCES
     FloatingKey.qml
     HideKey.qml
     LanguageKey.qml
+    MicrophoneKey.qml
     ModifierKey.qml
     Theme.qml
     ThemePalette.qml

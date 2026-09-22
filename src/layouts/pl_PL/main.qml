@@ -340,6 +340,10 @@ KeyboardLayout {
         }
         SpaceKey {
         }
+        PlasmaKeyboard.MicrophoneKey {
+            weight: normalKeyWidth
+            Layout.fillWidth: false
+        }
         PlasmaKeyboard.ModifierKey {
             modifier: "alt"
             displayText: "Alt"

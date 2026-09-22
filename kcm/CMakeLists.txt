@@ -10,17 +10,26 @@ kconfig_add_kcfg_files(kcm_plasmakeyboardcustom GENERATE_MOC ../src/plasmakeyboa
 target_sources(kcm_plasmakeyboardcustom PRIVATE
     plasmakeyboardkcm.cpp
     plasmakeyboardkcm.h
+    sttmodeldownloader.cpp
+    sttmodeldownloader.h
+    ../src/stt/sttmodelcatalog.cpp
+    ../src/stt/sttmodelcatalog.h
+    ../src/stt/stt.qrc
     ../src/theme/thememanager.cpp
     ../src/theme/thememanager.h
 )
 
 target_include_directories(kcm_plasmakeyboardcustom PRIVATE
+    ../src/stt
     ../src/theme
 )
 
 target_link_libraries(kcm_plasmakeyboardcustom PRIVATE
     Qt::Core
+    Qt::CorePrivate
     Qt::Gui
+    Qt::Multimedia
+    Qt::Network
     Qt::Qml
     KF6::CoreAddons
     KF6::I18n

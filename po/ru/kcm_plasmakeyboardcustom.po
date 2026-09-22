@@ -648,3 +648,179 @@ msgstr[0] "%1 буква"
 msgstr[1] "%1 буквы"
 msgstr[2] "%1 букв"
 msgstr[3] "%1 буква"
+
+#: ui/main.qml
+msgid "Voice input"
+msgstr "Голосовой ввод"
+
+#: ui/SttSettingsPage.qml
+msgid "Parakeet v3 (default)"
+msgstr "Parakeet v3 (по умолчанию)"
+
+#: ui/SttSettingsPage.qml
+msgid "Whisper"
+msgstr "Whisper"
+
+#: ui/SttSettingsPage.qml
+msgid "Vosk"
+msgstr "Vosk"
+
+#: ui/SttSettingsPage.qml
+msgid "Automatic"
+msgstr "Автоматически"
+
+#: ui/SttSettingsPage.qml
+msgid "Russian"
+msgstr "Русский"
+
+#: ui/SttSettingsPage.qml
+msgid "English"
+msgstr "Английский"
+
+#: ui/SttSettingsPage.qml
+msgid "German"
+msgstr "Немецкий"
+
+#: ui/SttSettingsPage.qml
+msgid "French"
+msgstr "Французский"
+
+#: ui/SttSettingsPage.qml
+msgid "Spanish"
+msgstr "Испанский"
+
+#: ui/SttSettingsPage.qml
+msgid "Italian"
+msgstr "Итальянский"
+
+#: ui/SttSettingsPage.qml
+msgid "Ukrainian"
+msgstr "Украинский"
+
+#: ui/SttSettingsPage.qml
+msgid "Portuguese"
+msgstr "Португальский"
+
+#: ui/SttSettingsPage.qml
+msgid "Voice input:"
+msgstr "Голосовой ввод:"
+
+#: ui/SttSettingsPage.qml
+msgid "Recognise speech locally, without sending it anywhere. A microphone key appears next to the space bar while this is on."
+msgstr "Распознавание речи локально, без отправки куда-либо. Пока включено, рядом с пробелом появляется кнопка микрофона."
+
+#: ui/SttSettingsPage.qml
+msgid "Engine:"
+msgstr "Движок:"
+
+#: ui/SttSettingsPage.qml
+msgid "Parakeet v3 recognises the most languages and is the fastest; Whisper is the classic model; Vosk has the smallest models."
+msgstr "Parakeet v3 распознаёт больше всего языков и работает быстрее всех; Whisper — классическая модель; у Vosk самые маленькие модели."
+
+#: ui/SttSettingsPage.qml
+msgid "Models"
+msgstr "Модели"
+
+#: ui/SttSettingsPage.qml
+msgid "installed"
+msgstr "установлена"
+
+#: ui/SttSettingsPage.qml
+msgid "Cancel"
+msgstr "Отмена"
+
+#: ui/SttSettingsPage.qml
+msgid "Reinstall"
+msgstr "Переустановить"
+
+#: ui/SttSettingsPage.qml
+msgid "Download"
+msgstr "Скачать"
+
+#: ui/SttSettingsPage.qml
+msgid "There are no models for this engine."
+msgstr "Для этого движка нет моделей."
+
+#: ui/SttSettingsPage.qml
+msgid "Microphone:"
+msgstr "Микрофон:"
+
+#: ui/SttSettingsPage.qml
+msgid "Which microphone the voice input records from."
+msgstr "С какого микрофона записывается голосовой ввод."
+
+#: ui/SttSettingsPage.qml
+msgid "System default"
+msgstr "Системный по умолчанию"
+
+#: ui/SttSettingsPage.qml
+msgid "Language:"
+msgstr "Язык:"
+
+#: ui/SttSettingsPage.qml
+msgid "Parakeet v3 recognises the language on its own; the other engines use this setting."
+msgstr "Parakeet v3 определяет язык сама; остальные движки используют эту настройку."
+
+#: ui/SttSettingsPage.qml
+msgid "Follow the keyboard layout"
+msgstr "Как в раскладке клавиатуры"
+
+#: ui/SttSettingsPage.qml
+msgid "Always use one language"
+msgstr "Всегда один язык"
+
+#: ui/SttSettingsPage.qml
+msgid "Recognition language:"
+msgstr "Язык распознавания:"
+
+#: ui/SttSettingsPage.qml
+msgid "Remove the model"
+msgstr "Удаление модели"
+
+#: ui/SttSettingsPage.qml
+msgid "Remove “%1” from the disk? The voice input cannot use it until it is downloaded again."
+msgstr "Удалить «%1» с диска? Голосовой ввод не сможет её использовать, пока она не будет скачана снова."
+
+#: plasmakeyboardkcm.cpp
+msgid "Unknown model."
+msgstr "Неизвестная модель."
+
+#: sttmodeldownloader.cpp
+msgid "Cannot create “%1”."
+msgstr "Не удалось создать «%1»."
+
+#: sttmodeldownloader.cpp
+msgid "Cannot write to “%1”."
+msgstr "Не удалось записать в «%1»."
+
+#: sttmodeldownloader.cpp
+msgid "The download was cancelled."
+msgstr "Скачивание отменено."
+
+#: sttmodeldownloader.cpp
+msgid "The download of “%1” is empty."
+msgstr "Скачанный файл «%1» пуст."
+
+#: sttmodeldownloader.cpp
+msgid "The download of “%1” has the wrong size (%2 instead of %3 bytes)."
+msgstr "У «%1» неверный размер (получено %2 вместо %3 байт)."
+
+#: sttmodeldownloader.cpp
+msgid "Cannot read the downloaded model “%1”."
+msgstr "Не удалось прочитать скачанную модель «%1»."
+
+#: sttmodeldownloader.cpp
+msgid "The download of “%1” is damaged (checksum mismatch)."
+msgstr "Скачанная модель «%1» повреждена (не совпала контрольная сумма)."
+
+#: sttmodeldownloader.cpp
+msgid "The downloaded archive “%1” cannot be read."
+msgstr "Не удалось прочитать скачанный архив «%1»."
+
+#: sttmodeldownloader.cpp
+msgid "Cannot unpack “%1” into “%2”."
+msgstr "Не удалось распаковать «%1» в «%2»."
+
+#: sttmodeldownloader.cpp
+msgid "Cannot move the downloaded model to “%1”."
+msgstr "Не удалось переместить скачанную модель в «%1»."

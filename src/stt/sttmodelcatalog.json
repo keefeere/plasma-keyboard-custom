@@ -1,0 +1,173 @@
+{
+    "comment": "Models the keyboard can download. The speech models come from Hugging Face; the Vosk models are the official archives mirrored there, because the vendor host is not reachable from every network. sha256 is the object hash the host publishes.",
+    "models": [
+        {
+            "id": "parakeet-v3-q8_0",
+            "engine": "parakeet",
+            "name": "Parakeet v3 (q8_0)",
+            "language": "",
+            "size": 668757119,
+            "sha256": "4d64e9e96c2792186d072fde0034df0ad670cf680a2f53069052ead827fd600e",
+            "url": "https://huggingface.co/ggml-org/parakeet-GGUF/resolve/main/ggml-parakeet-tdt-0.6b-v3-q8_0.bin",
+            "file": "ggml-parakeet-tdt-0.6b-v3-q8_0.bin",
+            "archive": false,
+            "default": true
+        },
+        {
+            "id": "parakeet-v3-q4_k",
+            "engine": "parakeet",
+            "name": "Parakeet v3 (q4_k, compact)",
+            "language": "",
+            "size": 415611879,
+            "sha256": "8b205b8b39c6535e153de6fb11c51db46125d45c4f16ba496fe41a0fe71b885e",
+            "url": "https://huggingface.co/ggml-org/parakeet-GGUF/resolve/main/ggml-parakeet-tdt-0.6b-v3-q4_k.bin",
+            "file": "ggml-parakeet-tdt-0.6b-v3-q4_k.bin",
+            "archive": false,
+            "default": false
+        },
+        {
+            "id": "whisper-small",
+            "engine": "whisper",
+            "name": "Whisper small",
+            "language": "",
+            "size": 487601967,
+            "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+            "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
+            "file": "ggml-small.bin",
+            "archive": false,
+            "default": false
+        },
+        {
+            "id": "whisper-medium",
+            "engine": "whisper",
+            "name": "Whisper medium",
+            "language": "",
+            "size": 1533763059,
+            "sha256": "6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208",
+            "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin",
+            "file": "ggml-medium.bin",
+            "archive": false,
+            "default": false
+        },
+        {
+            "id": "vosk-small-ru-0.22",
+            "engine": "vosk",
+            "name": "Vosk small ru 0.22",
+            "language": "ru",
+            "size": 46236750,
+            "sha256": "961d5ff98a17f4aa6de69864d0aa71fa5bac682301d2b5d17a3f24c5c99a46d4",
+            "url": "https://huggingface.co/super-boy/vosk-models/resolve/main/vosk-model-small-ru-0.22.zip",
+            "file": "vosk-model-small-ru-0.22.zip",
+            "archive": true,
+            "default": false
+        },
+        {
+            "id": "vosk-ru-0.42",
+            "engine": "vosk",
+            "name": "Vosk ru 0.42",
+            "language": "ru",
+            "size": 1937602113,
+            "sha256": "00eb9e5ed8230492da1acf702cd3548e1282256a5fdde8f188253e77217e9429",
+            "url": "https://huggingface.co/super-boy/vosk-models/resolve/main/vosk-model-ru-0.42.zip",
+            "file": "vosk-model-ru-0.42.zip",
+            "archive": true,
+            "default": false
+        },
+        {
+            "id": "vosk-small-en-us-0.15",
+            "engine": "vosk",
+            "name": "Vosk small en-us 0.15",
+            "language": "en",
+            "size": 41205931,
+            "sha256": "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498",
+            "url": "https://huggingface.co/localstack/vosk-models/resolve/main/vosk-model-small-en-us-0.15.zip",
+            "file": "vosk-model-small-en-us-0.15.zip",
+            "archive": true,
+            "default": false
+        },
+        {
+            "id": "vosk-en-us-0.22",
+            "engine": "vosk",
+            "name": "Vosk en-us 0.22",
+            "language": "en",
+            "size": 1913365522,
+            "sha256": "47f9a81ebb039dbb0bd319175c36ac393c0893b796c2b6303e64cf58c27b69f6",
+            "url": "https://huggingface.co/grimso/vosk-models/resolve/main/vosk-model-en-us-0.22.zip",
+            "file": "vosk-model-en-us-0.22.zip",
+            "archive": true,
+            "default": false
+        },
+        {
+            "id": "vosk-small-de-0.15",
+            "engine": "vosk",
+            "name": "Vosk small de 0.15",
+            "language": "de",
+            "size": 46499967,
+            "sha256": "b7e53c90b1f0a38456f4cd62b366ecd58803cd97cd42b06438e2c131713d5e43",
+            "url": "https://huggingface.co/localstack/vosk-models/resolve/main/vosk-model-small-de-0.15.zip",
+            "file": "vosk-model-small-de-0.15.zip",
+            "archive": true,
+            "default": false
+        },
+        {
+            "id": "vosk-small-fr-0.22",
+            "engine": "vosk",
+            "name": "Vosk small fr 0.22",
+            "language": "fr",
+            "size": 42233323,
+            "sha256": "cabf6180e177eb9b3a9a9d43a437bd5e549f3a7d09525e5d69a3fed787be12ad",
+            "url": "https://huggingface.co/localstack/vosk-models/resolve/main/vosk-model-small-fr-0.22.zip",
+            "file": "vosk-model-small-fr-0.22.zip",
+            "archive": true,
+            "default": false
+        },
+        {
+            "id": "vosk-small-es-0.42",
+            "engine": "vosk",
+            "name": "Vosk small es 0.42",
+            "language": "es",
+            "size": 39817833,
+            "sha256": "09b239888f633ef2f0b4e09736e3d9936acfd810bc65d53fad45261762c6511f",
+            "url": "https://huggingface.co/localstack/vosk-models/resolve/main/vosk-model-small-es-0.42.zip",
+            "file": "vosk-model-small-es-0.42.zip",
+            "archive": true,
+            "default": false
+        },
+        {
+            "id": "vosk-small-it-0.22",
+            "engine": "vosk",
+            "name": "Vosk small it 0.22",
+            "language": "it",
+            "size": 49665141,
+            "sha256": "9ec65e75861d1c6c2e457cccd932705340dcdf233f5b239f00733b4de0bf3267",
+            "url": "https://huggingface.co/super-boy/vosk-models/resolve/main/vosk-model-small-it-0.22.zip",
+            "file": "vosk-model-small-it-0.22.zip",
+            "archive": true,
+            "default": false
+        },
+        {
+            "id": "vosk-small-uk-v3-nano",
+            "engine": "vosk",
+            "name": "Vosk small uk v3 nano",
+            "language": "uk",
+            "size": 77622640,
+            "sha256": "d6b50be0a2d20f891720f3a83c98290bb2d396fd666142dbf716e8ad302f8233",
+            "url": "https://huggingface.co/super-boy/vosk-models/resolve/main/vosk-model-small-uk-v3-nano.zip",
+            "file": "vosk-model-small-uk-v3-nano.zip",
+            "archive": true,
+            "default": false
+        },
+        {
+            "id": "vosk-small-pt-0.3",
+            "engine": "vosk",
+            "name": "Vosk small pt 0.3",
+            "language": "pt",
+            "size": 32453112,
+            "sha256": "6e1ce909032e1afa7a88e68a3d628ecafff302bdf195befab308826c395e93b7",
+            "url": "https://huggingface.co/super-boy/vosk-models/resolve/main/vosk-model-small-pt-0.3.zip",
+            "file": "vosk-model-small-pt-0.3.zip",
+            "archive": true,
+            "default": false
+        }
+    ]
+}

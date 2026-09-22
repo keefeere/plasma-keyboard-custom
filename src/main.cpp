@@ -13,6 +13,7 @@
 #include "plasmakeyboardsettings.h"
 #include "restartwatcher.h"
 #include "settingsreloader.h"
+#include "sttmanager.h"
 #include "thememanager.h"
 #include <plasma_keyboard_version.h>
 
@@ -588,6 +589,11 @@ int main(int argc, char **argv)
     // The visible keyboard window (layer-shell) and the panel window KWin keeps
     // managing.
     qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "KeyboardWindow", keyboardWindowBridge);
+
+    // Local speech recognition (voice input). It stays inert until it is enabled
+    // in the settings; the keyboard only shows its microphone key when it is.
+    auto *sttManager = new SttManager(&application);
+    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "Stt", sttManager);
 
     // KWin still drives the virtual keyboard through the input-panel window: it
     // decides when the keyboard belongs on screen (input mode, focus), reports

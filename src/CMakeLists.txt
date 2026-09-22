@@ -6,6 +6,39 @@
 
 configure_file(config-plasma-keyboard.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-plasma-keyboard.h)
 
+# The speech recognition engines come from whisper.cpp: it provides libwhisper
+# and libparakeet (the Parakeet engine lives in the same repository) under the
+# MIT license. It is built together with the keyboard, so the package does not
+# depend on the whisper-cpp package, which does not exist on every target
+# system (the Arch snapshot the release is built against does not ship it).
+# WHISPER_CPP_SOURCE_DIR lets the package build use a source archive instead of
+# a git checkout, which keeps the release build offline.
+include(FetchContent)
+set(WHISPER_CPP_SOURCE_DIR "" CACHE PATH "Local whisper.cpp source tree used instead of downloading one")
+if(WHISPER_CPP_SOURCE_DIR)
+    set(FETCHCONTENT_SOURCE_DIR_WHISPER "${WHISPER_CPP_SOURCE_DIR}" CACHE PATH "" FORCE)
+endif()
+set(WHISPER_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(WHISPER_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(WHISPER_BUILD_SERVER OFF CACHE BOOL "" FORCE)
+set(WHISPER_BUILD_IS_DEV OFF CACHE BOOL "" FORCE)
+set(WHISPER_ALL_WARNINGS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(whisper
+    GIT_REPOSITORY https://github.com/ggml-org/whisper.cpp.git
+    GIT_TAG v1.9.3
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(whisper)
+
+# KDECompilerSettings builds the project without C++ exceptions, but the GGUF
+# reader inside whisper.cpp uses try/catch blocks, so the libraries that come
+# from there need the exceptions back.
+foreach(whisper_target ggml ggml-base ggml-cpu ggml-blas ggml-openmp whisper parakeet)
+    if(TARGET ${whisper_target})
+        target_compile_options(${whisper_target} PRIVATE -fexceptions)
+    endif()
+endforeach()
+
 add_executable(plasma-keyboard-custom)
 
 ecm_add_qtwayland_client_protocol(plasma-keyboard-custom PROTOCOL ${WaylandProtocols_DATADIR}/unstable/input-method/input-method-unstable-v1.xml BASENAME input-method-unstable-v1)
@@ -67,6 +100,21 @@ target_sources(plasma-keyboard-custom PRIVATE
     prediction/wordlookup.h
     prediction/wordpredictor.cpp
     prediction/wordpredictor.h
+    stt/sttaudiorecorder.cpp
+    stt/sttaudiorecorder.h
+    stt/sttengine.cpp
+    stt/sttengine.h
+    stt/sttmodelcatalog.cpp
+    stt/sttmodelcatalog.h
+    stt/stt.qrc
+    stt/parakeetengine.cpp
+    stt/parakeetengine.h
+    stt/whisperengine.cpp
+    stt/whisperengine.h
+    stt/voskengine.cpp
+    stt/voskengine.h
+    stt/sttmanager.cpp
+    stt/sttmanager.h
 )
 
 if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
@@ -113,6 +161,7 @@ ecm_target_qml_sources(plasma-keyboard-custom SOURCES
     qml/DiacriticsOverlay.qml
     qml/AlternatesList.qml
     qml/OverlayWindow.qml
+    qml/VoicePanel.qml
 )
 ecm_finalize_qml_module(plasma-keyboard-custom)
 
@@ -125,6 +174,7 @@ target_include_directories(plasma-keyboard-custom PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/clipboard
     ${CMAKE_CURRENT_SOURCE_DIR}/overlay
     ${CMAKE_CURRENT_SOURCE_DIR}/prediction
+    ${CMAKE_CURRENT_SOURCE_DIR}/stt
     ${CMAKE_CURRENT_SOURCE_DIR}/theme
 )
 
@@ -143,7 +193,10 @@ target_link_libraries(plasma-keyboard-custom
     Qt::DBus
     Qt::Gui
     Qt::GuiPrivate
+    Qt::Multimedia
     Qt::VirtualKeyboard
+    parakeet
+    whisper
     Qt::WaylandClient
     Qt::WaylandClientPrivate
     Wayland::Client

@@ -202,6 +202,10 @@ KeyboardLayoutLoader {
                 }
                 SpaceKey {
                 }
+                PlasmaKeyboard.MicrophoneKey {
+                    weight: normalKeyWidth
+                    Layout.fillWidth: false
+                }
                 Key {
                     key: Qt.Key_Period
                     weight: normalKeyWidth

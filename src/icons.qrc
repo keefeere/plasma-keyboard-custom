@@ -12,6 +12,7 @@
         <file>icons/papirus/edit-clear-symbolic.svg</file>
         <file>icons/papirus/edit-paste-symbolic.svg</file>
         <file>icons/papirus/globe-symbolic.svg</file>
+        <file>icons/papirus/go-previous-symbolic.svg</file>
         <file>icons/papirus/keyboard-enter-symbolic.svg</file>
         <file>icons/papirus/object-select-symbolic.svg</file>
         <file>icons/papirus/object-move-symbolic.svg</file>
@@ -20,6 +21,7 @@
         <file>icons/papirus/selection-end-symbolic.svg</file>
         <file>icons/papirus/tools-check-spelling-symbolic.svg</file>
         <!-- Icons of the Breeze icon theme (LGPL-3.0-or-later) -->
+        <file>icons/breeze/audio-input-microphone-symbolic.svg</file>
         <file>icons/breeze/edit-select-text-symbolic.svg</file>
         <file>icons/breeze/input-keyboard-virtual-hide-symbolic.svg</file>
         <file>icons/breeze/keyboard-caps-disabled-symbolic.svg</file>

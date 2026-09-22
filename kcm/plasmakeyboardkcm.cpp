@@ -7,13 +7,18 @@
 
 #include "plasmakeyboardkcm.h"
 #include "../src/layoutpathhelper.h"
+#include "../src/stt/sttmodelcatalog.h"
 #include "../src/theme/thememanager.h"
+#include "sttmodeldownloader.h"
 
 #include <KGlobalAccel>
 #include <KLocalizedString>
 
 #include <QAction>
+#include <QAudioDevice>
 #include <QKeySequence>
+#include <QLocale>
+#include <QMediaDevices>
 #include <QVariantMap>
 #include <qqml.h>
 
@@ -46,6 +51,26 @@ PlasmaKeyboardKcm::PlasmaKeyboardKcm(QObject *parent, const KPluginMetaData &met
     m_showKeyboardAction->setText(i18n("Show Virtual Keyboard"));
     m_showKeyboardAction->setProperty("componentName", QStringLiteral("org.kde.plasma.keyboard.custom"));
     m_showKeyboardAction->setProperty("componentDisplayName", i18n("Plasma Keyboard (custom)"));
+
+    // The speech recognition models are downloaded from the settings module.
+    m_sttDownloader = new PlasmaKeyboardStt::SttModelDownloader(this);
+    connect(m_sttDownloader, &PlasmaKeyboardStt::SttModelDownloader::stateChanged, this, [this]() {
+        Q_EMIT sttDownloadChanged();
+        Q_EMIT sttModelsChanged();
+    });
+    connect(m_sttDownloader, &PlasmaKeyboardStt::SttModelDownloader::progressChanged, this, [this]() {
+        Q_EMIT sttDownloadProgressChanged();
+        Q_EMIT sttModelsChanged();
+    });
+    connect(m_sttDownloader, &PlasmaKeyboardStt::SttModelDownloader::errorChanged, this, &PlasmaKeyboardKcm::sttDownloadErrorChanged);
+    connect(m_sttDownloader, &PlasmaKeyboardStt::SttModelDownloader::finished, this, [this](const QString &, bool ok, const QString &) {
+        Q_EMIT sttModelsChanged();
+        if (ok) {
+            // A model that just arrived may be the one the keyboard will use.
+            Q_EMIT sttModelPathChanged();
+        }
+    });
+    connect(PlasmaKeyboardStt::SttModelCatalog::instance(), &PlasmaKeyboardStt::SttModelCatalog::changed, this, &PlasmaKeyboardKcm::sttModelsChanged);
 
     load();
 }
@@ -653,6 +678,14 @@ void PlasmaKeyboardKcm::load()
     setPredictiveNextWordEnabled(PlasmaKeyboardSettings::self()->predictiveNextWordEnabled());
     setPredictiveTypoCorrectionEnabled(PlasmaKeyboardSettings::self()->predictiveTypoCorrectionEnabled());
 
+    setSttEnabled(PlasmaKeyboardSettings::self()->sttEnabled());
+    setSttEngine(PlasmaKeyboardSettings::self()->sttEngine());
+    setSttModelPath(PlasmaKeyboardSettings::self()->sttModelPath());
+    setSttLanguageMode(PlasmaKeyboardSettings::self()->sttLanguageMode());
+    setSttLanguage(PlasmaKeyboardSettings::self()->sttLanguage());
+    setSttInputDevice(PlasmaKeyboardSettings::self()->sttInputDevice());
+    Q_EMIT sttInputDevicesChanged();
+
     setNeedsSave(false);
 }
 
@@ -685,9 +718,199 @@ void PlasmaKeyboardKcm::save()
     PlasmaKeyboardSettings::self()->setPredictiveMinPrefixLength(m_predictiveMinPrefixLength);
     PlasmaKeyboardSettings::self()->setPredictiveNextWordEnabled(m_predictiveNextWordEnabled);
     PlasmaKeyboardSettings::self()->setPredictiveTypoCorrectionEnabled(m_predictiveTypoCorrectionEnabled);
+    PlasmaKeyboardSettings::self()->setSttEnabled(m_sttEnabled);
+    PlasmaKeyboardSettings::self()->setSttEngine(m_sttEngine);
+    PlasmaKeyboardSettings::self()->setSttModelPath(m_sttModelPath);
+    PlasmaKeyboardSettings::self()->setSttLanguageMode(m_sttLanguageMode);
+    PlasmaKeyboardSettings::self()->setSttLanguage(m_sttLanguage);
+    PlasmaKeyboardSettings::self()->setSttInputDevice(m_sttInputDevice);
     PlasmaKeyboardSettings::self()->save();
 
     setNeedsSave(false);
+}
+
+bool PlasmaKeyboardKcm::sttEnabled() const
+{
+    return m_sttEnabled;
+}
+
+void PlasmaKeyboardKcm::setSttEnabled(bool enabled)
+{
+    if (enabled == m_sttEnabled) {
+        return;
+    }
+    m_sttEnabled = enabled;
+    setNeedsSave(true);
+    Q_EMIT sttEnabledChanged();
+}
+
+QString PlasmaKeyboardKcm::sttEngine() const
+{
+    return m_sttEngine;
+}
+
+void PlasmaKeyboardKcm::setSttEngine(const QString &engine)
+{
+    if (engine == m_sttEngine) {
+        return;
+    }
+    m_sttEngine = engine;
+    setNeedsSave(true);
+    Q_EMIT sttEngineChanged();
+    Q_EMIT sttModelsChanged();
+}
+
+QString PlasmaKeyboardKcm::sttModelPath() const
+{
+    return m_sttModelPath;
+}
+
+void PlasmaKeyboardKcm::setSttModelPath(const QString &path)
+{
+    if (path == m_sttModelPath) {
+        return;
+    }
+    m_sttModelPath = path;
+    setNeedsSave(true);
+    Q_EMIT sttModelPathChanged();
+}
+
+QString PlasmaKeyboardKcm::sttLanguageMode() const
+{
+    return m_sttLanguageMode;
+}
+
+void PlasmaKeyboardKcm::setSttLanguageMode(const QString &mode)
+{
+    if (mode == m_sttLanguageMode) {
+        return;
+    }
+    m_sttLanguageMode = mode;
+    setNeedsSave(true);
+    Q_EMIT sttLanguageModeChanged();
+}
+
+QString PlasmaKeyboardKcm::sttLanguage() const
+{
+    return m_sttLanguage;
+}
+
+void PlasmaKeyboardKcm::setSttLanguage(const QString &language)
+{
+    if (language == m_sttLanguage) {
+        return;
+    }
+    m_sttLanguage = language;
+    setNeedsSave(true);
+    Q_EMIT sttLanguageChanged();
+}
+
+QString PlasmaKeyboardKcm::sttInputDevice() const
+{
+    return m_sttInputDevice;
+}
+
+void PlasmaKeyboardKcm::setSttInputDevice(const QString &device)
+{
+    if (device == m_sttInputDevice) {
+        return;
+    }
+    m_sttInputDevice = device;
+    setNeedsSave(true);
+    Q_EMIT sttInputDeviceChanged();
+}
+
+QVariantList PlasmaKeyboardKcm::sttModels() const
+{
+    QVariantList result;
+    const QList<PlasmaKeyboardStt::SttModelEntry> entries = PlasmaKeyboardStt::SttModelCatalog::instance()->models();
+    for (const PlasmaKeyboardStt::SttModelEntry &entry : entries) {
+        const QString path = PlasmaKeyboardStt::SttModelCatalog::installedPath(entry);
+        const bool busy = m_sttDownloader->isBusy() && m_sttDownloader->modelId() == entry.id;
+
+        QVariantMap model;
+        model.insert(QStringLiteral("id"), entry.id);
+        model.insert(QStringLiteral("name"), entry.name);
+        model.insert(QStringLiteral("engine"), entry.engine);
+        model.insert(QStringLiteral("language"), entry.language);
+        model.insert(QStringLiteral("size"), entry.size);
+        model.insert(QStringLiteral("sizeText"), QLocale().formattedDataSize(entry.size));
+        model.insert(QStringLiteral("installed"), !path.isEmpty());
+        model.insert(QStringLiteral("path"), path);
+        model.insert(QStringLiteral("busy"), busy);
+        model.insert(QStringLiteral("progress"), busy ? m_sttDownloader->progress() : 0.0);
+        result.append(model);
+    }
+    return result;
+}
+
+QVariantList PlasmaKeyboardKcm::sttInputDevices() const
+{
+    QVariantList result;
+    const QList<QAudioDevice> devices = QMediaDevices::audioInputs();
+    for (const QAudioDevice &device : devices) {
+        QVariantMap entry;
+        entry.insert(QStringLiteral("id"), QString::fromUtf8(device.id()));
+        entry.insert(QStringLiteral("name"), device.description());
+        entry.insert(QStringLiteral("isDefault"), device.isDefault());
+        result.append(entry);
+    }
+    return result;
+}
+
+bool PlasmaKeyboardKcm::sttDownloadBusy() const
+{
+    return m_sttDownloader->isBusy();
+}
+
+QString PlasmaKeyboardKcm::sttDownloadModelId() const
+{
+    return m_sttDownloader->modelId();
+}
+
+qreal PlasmaKeyboardKcm::sttDownloadProgress() const
+{
+    return m_sttDownloader->progress();
+}
+
+QString PlasmaKeyboardKcm::sttDownloadError() const
+{
+    return m_sttDownloader->error();
+}
+
+void PlasmaKeyboardKcm::downloadSttModel(const QString &id)
+{
+    const PlasmaKeyboardStt::SttModelEntry entry = PlasmaKeyboardStt::SttModelCatalog::instance()->entry(id);
+    if (entry.id.isEmpty()) {
+        return;
+    }
+    m_sttDownloader->start(entry);
+}
+
+void PlasmaKeyboardKcm::cancelSttDownload()
+{
+    m_sttDownloader->cancel();
+}
+
+QString PlasmaKeyboardKcm::removeSttModel(const QString &id)
+{
+    const PlasmaKeyboardStt::SttModelEntry entry = PlasmaKeyboardStt::SttModelCatalog::instance()->entry(id);
+    if (entry.id.isEmpty()) {
+        return i18n("Unknown model.");
+    }
+    QString error;
+    if (!PlasmaKeyboardStt::SttModelCatalog::instance()->remove(entry, &error)) {
+        return error;
+    }
+    Q_EMIT sttModelsChanged();
+    Q_EMIT sttModelPathChanged();
+    return QString();
+}
+
+void PlasmaKeyboardKcm::refreshSttModels()
+{
+    PlasmaKeyboardStt::SttModelCatalog::instance()->refresh();
+    Q_EMIT sttModelsChanged();
 }
 
 #include "plasmakeyboardkcm.moc"

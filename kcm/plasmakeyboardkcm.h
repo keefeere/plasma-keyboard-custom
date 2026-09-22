@@ -17,6 +17,11 @@
 
 class QAction;
 
+namespace PlasmaKeyboardStt
+{
+class SttModelDownloader;
+}
+
 class PlasmaKeyboardKcm : public KQuickManagedConfigModule
 {
     Q_OBJECT
@@ -53,6 +58,18 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(bool predictiveNextWordEnabled READ predictiveNextWordEnabled WRITE setPredictiveNextWordEnabled NOTIFY predictiveNextWordEnabledChanged)
     Q_PROPERTY(bool predictiveTypoCorrectionEnabled READ predictiveTypoCorrectionEnabled WRITE setPredictiveTypoCorrectionEnabled NOTIFY
                    predictiveTypoCorrectionEnabledChanged)
+    Q_PROPERTY(bool sttEnabled READ sttEnabled WRITE setSttEnabled NOTIFY sttEnabledChanged)
+    Q_PROPERTY(QString sttEngine READ sttEngine WRITE setSttEngine NOTIFY sttEngineChanged)
+    Q_PROPERTY(QString sttModelPath READ sttModelPath WRITE setSttModelPath NOTIFY sttModelPathChanged)
+    Q_PROPERTY(QString sttLanguageMode READ sttLanguageMode WRITE setSttLanguageMode NOTIFY sttLanguageModeChanged)
+    Q_PROPERTY(QString sttLanguage READ sttLanguage WRITE setSttLanguage NOTIFY sttLanguageChanged)
+    Q_PROPERTY(QString sttInputDevice READ sttInputDevice WRITE setSttInputDevice NOTIFY sttInputDeviceChanged)
+    Q_PROPERTY(QVariantList sttModels READ sttModels NOTIFY sttModelsChanged)
+    Q_PROPERTY(QVariantList sttInputDevices READ sttInputDevices NOTIFY sttInputDevicesChanged)
+    Q_PROPERTY(bool sttDownloadBusy READ sttDownloadBusy NOTIFY sttDownloadChanged)
+    Q_PROPERTY(QString sttDownloadModelId READ sttDownloadModelId NOTIFY sttDownloadChanged)
+    Q_PROPERTY(qreal sttDownloadProgress READ sttDownloadProgress NOTIFY sttDownloadProgressChanged)
+    Q_PROPERTY(QString sttDownloadError READ sttDownloadError NOTIFY sttDownloadErrorChanged)
 
 public:
     PlasmaKeyboardKcm(QObject *parent, const KPluginMetaData &metaData);
@@ -161,6 +178,48 @@ public:
     bool predictiveTypoCorrectionEnabled() const;
     void setPredictiveTypoCorrectionEnabled(bool enabled);
 
+    // Voice input (local speech recognition).
+    bool sttEnabled() const;
+    void setSttEnabled(bool enabled);
+
+    QString sttEngine() const;
+    void setSttEngine(const QString &engine);
+
+    QString sttModelPath() const;
+    void setSttModelPath(const QString &path);
+
+    QString sttLanguageMode() const;
+    void setSttLanguageMode(const QString &mode);
+
+    QString sttLanguage() const;
+    void setSttLanguage(const QString &language);
+
+    QString sttInputDevice() const;
+    void setSttInputDevice(const QString &device);
+
+    //! The models of the catalog with their installation state, for the list in the settings.
+    QVariantList sttModels() const;
+
+    //! The microphones the voice input can record from.
+    QVariantList sttInputDevices() const;
+
+    bool sttDownloadBusy() const;
+    QString sttDownloadModelId() const;
+    qreal sttDownloadProgress() const;
+    QString sttDownloadError() const;
+
+    //! Downloads a model from the catalog; the list follows the progress.
+    Q_INVOKABLE void downloadSttModel(const QString &id);
+
+    //! Stops the download that is running.
+    Q_INVOKABLE void cancelSttDownload();
+
+    //! Removes an installed model; an empty return means success.
+    Q_INVOKABLE QString removeSttModel(const QString &id);
+
+    //! Re-reads the installation state of the models.
+    Q_INVOKABLE void refreshSttModels();
+
     bool isSaveNeeded() const override;
 
 public Q_SLOTS:
@@ -202,6 +261,17 @@ Q_SIGNALS:
     void predictiveMinPrefixLengthChanged();
     void predictiveNextWordEnabledChanged();
     void predictiveTypoCorrectionEnabledChanged();
+    void sttEnabledChanged();
+    void sttEngineChanged();
+    void sttModelPathChanged();
+    void sttLanguageModeChanged();
+    void sttLanguageChanged();
+    void sttInputDeviceChanged();
+    void sttModelsChanged();
+    void sttInputDevicesChanged();
+    void sttDownloadChanged();
+    void sttDownloadProgressChanged();
+    void sttDownloadErrorChanged();
 
 private:
     bool m_soundEnabled = false;
@@ -230,6 +300,13 @@ private:
     bool m_predictiveNextWordEnabled = true;
     bool m_predictiveTypoCorrectionEnabled = true;
 
+    bool m_sttEnabled = false;
+    QString m_sttEngine = QStringLiteral("parakeet");
+    QString m_sttModelPath;
+    QString m_sttLanguageMode = QStringLiteral("keyboard");
+    QString m_sttLanguage;
+    QString m_sttInputDevice;
+
     bool m_saveNeeded = false;
 
     QStringList m_enabledLocales;
@@ -240,4 +317,6 @@ private:
     QKeySequence m_shortcut;
 
     PlasmaKeyboardSettings *m_settings = nullptr;
+
+    PlasmaKeyboardStt::SttModelDownloader *m_sttDownloader = nullptr;
 };

@@ -36,6 +36,10 @@ KCM.AbstractKCM {
         QQC2.TabButton {
             text: i18n("Typing")
         }
+
+        QQC2.TabButton {
+            text: i18n("Voice input")
+        }
     }
 
     StackLayout {
@@ -594,6 +598,10 @@ KCM.AbstractKCM {
                     }
                 }
             }
+        }
+
+        SttSettingsPage {
+            id: sttPage
         }
     }
 
