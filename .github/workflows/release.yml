@@ -125,11 +125,11 @@ jobs:
             qt6-wayland wayland-protocols pkgconf \
             kcmutils kconfig kcoreaddons kcrash kglobalaccel ki18n \
             kirigami kirigami-addons kitemmodels layer-shell-qt libplasma \
-            qt6-base qt6-declarative qt6-virtualkeyboard
+            qt6-base qt6-declarative qt6-multimedia qt6-virtualkeyboard
           # Report what actually landed: if the snapshot pinning ever stops
           # working, the Qt stamp guard below fails the run, and this is the
           # line that says why.
-          pacman -Q qt6-base qt6-declarative qt6-wayland qt6-virtualkeyboard
+          pacman -Q qt6-base qt6-declarative qt6-multimedia qt6-wayland qt6-virtualkeyboard
 
       - name: Build package
         run: |

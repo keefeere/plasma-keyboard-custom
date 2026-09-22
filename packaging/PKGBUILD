@@ -34,6 +34,7 @@ depends=(
   'libxkbcommon'
   'qt6-base>=6.9.1'
   'qt6-declarative>=6.9.1'
+  'qt6-multimedia>=6.9.1'
   'qt6-virtualkeyboard>=6.9.1'
   'qt6-wayland>=6.9.1'
   'wayland'
@@ -52,12 +53,24 @@ makedepends=(
 # it (and a dictionary) the spell checking and the corrections use the
 # dictionaries of the system, without it everything works on the word lists
 # compiled into the package.
-optdepends=('hunspell: use the dictionaries of the system for the spelling and the corrections')
+# The voice input loads libvosk while the application runs, so vosk-api stays
+# optional: with it the Vosk engine works, without it the other engines keep
+# working. The models themselves are downloaded from the settings module.
+optdepends=('hunspell: use the dictionaries of the system for the spelling and the corrections'
+            'vosk-api: use the Vosk speech recognition engine')
 # Deliberately no conflicts/replaces/provides: this package installs only
 # custom-named files so it can be installed next to the official
 # plasma-keyboard package. Choose it in System Settings -> Virtual Keyboard.
-source=("$pkgname-$pkgver.tar.gz")
-sha256sums=('SKIP')
+#
+# The speech recognition engines come from whisper.cpp (MIT), which provides
+# both Whisper and Parakeet. It is not a package dependency: the sources are
+# built together with the keyboard, because the release is built against an
+# Arch snapshot that does not ship whisper-cpp.
+_whisper_version=1.9.3
+source=("$pkgname-$pkgver.tar.gz"
+        "whisper.cpp-$_whisper_version.tar.gz::https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v$_whisper_version.tar.gz")
+sha256sums=('SKIP'
+            '1650f884effba487025143bd8facd2f9fb40a83b3737a732803c67a8d659d9c0')
 
 build() {
   cmake -B build -S "$pkgname-$pkgver" -G Ninja \
@@ -65,6 +78,7 @@ build() {
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DKDE_INSTALL_USE_QT_SYS_PATHS=ON \
     -DKDE_INSTALL_LIBDIR=lib \
+    -DWHISPER_CPP_SOURCE_DIR="$srcdir/whisper.cpp-$_whisper_version" \
     -DBUILD_TESTING=OFF
   cmake --build build
 }

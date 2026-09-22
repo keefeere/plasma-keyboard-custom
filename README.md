@@ -508,6 +508,28 @@ The *Theme files* row in the same **Appearance** tab manages user themes; errors
 
 A user theme can also be deleted by hand from `~/.local/share/plasma-keyboard/themes/`; a theme that disappears while it is selected also falls back to `system`.
 
+## Voice input (local speech recognition)
+
+The keyboard can recognise speech **locally**: the audio never leaves the machine and no internet connection is needed. The feature is off by default; it is turned on and set up on the **Voice input** page of the virtual keyboard settings, where the models are downloaded as well.
+
+Engines (chosen in the settings):
+
+| Engine | What it is | Language |
+|---|---|---|
+| **Parakeet v3** (default) | NVIDIA Parakeet TDT 0.6B v3 through `libparakeet` from whisper.cpp; fast, with the quality of a large model | 25 languages, Russian and English included; the language is detected |
+| **Whisper** | whisper.cpp (`libwhisper`), the classic model | taken from the keyboard layout, or fixed in the settings |
+| **Vosk** | `libvosk` from the `vosk-api` package; the smallest models | decided by the model |
+
+Models are downloaded with the **Download** button on the same page (and removed with **Remove**) into `~/.local/share/plasma-keyboard/stt/<engine>/<model>/`. Available: Parakeet v3 q8_0/q4_k, Whisper small/medium, and Vosk models for Russian, English, German, French, Spanish, Italian, Ukrainian and Portuguese.
+
+To dictate: a **microphone key** appears next to the space bar. It opens the voice mode — one big microphone button in the middle; the first tap starts recording, the second stops it and inserts the recognised text into the focused field. The mode stays open until you leave it yourself with the arrow in the top right corner (next to it is the key that hides the keyboard). The keys that are still needed while dictating are kept under the microphone: the layout switch, the space bar (showing the language), Enter and Backspace.
+
+Notes:
+
+- Whisper and Parakeet are built together with the keyboard (whisper.cpp sources, MIT license) — no separate packages are needed.
+- Vosk only works when `vosk-api` (`libvosk`) is installed; without it the engine is simply unavailable and the others keep working.
+- Model licenses: Parakeet v3 — CC-BY-4.0, Whisper — MIT, Vosk — Apache-2.0.
+
 ## Troubleshooting
 
 KWin by default only shows the keyboard when a text field is interacted with by touch. Set `KWIN_IM_SHOW_ALWAYS=1` when starting KWin (or the login session) in order to force the keyboard to always pop up.
