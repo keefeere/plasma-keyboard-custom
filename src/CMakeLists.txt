@@ -18,7 +18,13 @@ configure_file(config-plasma-keyboard.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config
 # carries install() rules of its own for the headers, the CMake package files
 # and the libraries, and none of them belong to this package. Its libraries are
 # still built, because the keyboard links against them.
+#
+# They are linked in statically, which is why BUILD_SHARED_LIBS is turned off
+# before the subproject is added: KDECMakeSettings turns shared libraries on
+# globally, and a shared build would leave the keyboard looking for
+# libwhisper.so and libggml*.so at run time, where the package has none.
 include(FetchContent)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(WHISPER_CPP_SOURCE_DIR "" CACHE PATH "Local whisper.cpp source tree used instead of downloading one")
 if(WHISPER_CPP_SOURCE_DIR)
     set(FETCHCONTENT_SOURCE_DIR_WHISPER "${WHISPER_CPP_SOURCE_DIR}" CACHE PATH "" FORCE)
