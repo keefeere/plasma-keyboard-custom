@@ -131,6 +131,13 @@ EOF
 
 %install
 %cmake_install
+# CMake installs the udev rule into ${KDE_INSTALL_LIBDIR}/udev/rules.d, which on
+# Fedora is /usr/lib64/udev/rules.d — a directory udev never reads. Move it to
+# the system rules directory so the touchscreen rule actually applies.
+install -d %{buildroot}%{_prefix}/lib/udev/rules.d
+mv %{buildroot}%{_libdir}/udev/rules.d/70-plasma-keyboard-touchscreen.rules \
+    %{buildroot}%{_prefix}/lib/udev/rules.d/
+rmdir -p %{buildroot}%{_libdir}/udev/rules.d 2>/dev/null || true
 
 %check
 desktop-file-validate %{buildroot}%{_datadir}/applications/org.kde.plasma.keyboard.custom.desktop
@@ -145,7 +152,7 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.kde.plasma.keyboa
 %{_datadir}/plasma/keyboard-custom/
 %{_libdir}/qt6/qml/QtQuick/VirtualKeyboard/Styles/PlasmaBreezeCustom/
 %{_libdir}/qt6/qml/org/kde/plasma/keyboard/custom/
-%{_udevrulesdir}/70-plasma-keyboard-touchscreen.rules
+%{_prefix}/lib/udev/rules.d/70-plasma-keyboard-touchscreen.rules
 %{_datadir}/locale/*/LC_MESSAGES/kcm_plasmakeyboardcustom.mo
 
 %files kcm
