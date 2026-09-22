@@ -157,6 +157,45 @@ sudo pacman -U https://mops1k.github.io/plasma-keyboard-custom/repo/x86_64/plasm
 перепубликует этот релиз, без него — переиндексирует все опубликованные релизы (полезно после неудачного
 запуска или если ветка была потеряна).
 
+### Fedora, Bazzite и другие дистрибутивы
+
+Каждый релиз также содержит RPM-пакет для систем на базе Fedora (Fedora KDE, Bazzite, Nobara) и
+Flatpak-бандл, который несёт собственный стек Qt и KDE и потому не зависит от библиотек системы.
+
+RPM собирается под каждую ветку Qt: клавиатура использует приватные API Qt, ABI которых верен
+только для той минорной версии, против которой шла сборка. `fc43` — для Fedora 43 (Qt 6.10),
+`fc44` — для Fedora 44/45 (Qt 6.11). Bazzite следует за Fedora, поэтому берите файл под её базовую
+версию.
+
+```sh
+# Fedora KDE, Nobara и другие классические системы
+sudo dnf install ./plasma-keyboard-custom-<version>-1.fc43.x86_64.rpm
+
+# Bazzite и другие atomic-системы (rpm-ostree) — после установки нужна перезагрузка
+sudo rpm-ostree install ./plasma-keyboard-custom-<version>-1.fc43.x86_64.rpm
+```
+
+Страница настроек (KCM) — отдельный пакет
+`kcm-plasma-keyboard-custom-<version>-1.fc43.x86_64.rpm`; поставьте и его, чтобы получить
+**Параметры системы → Plasma Keyboard (custom)**. Пакеты `fc44` ставятся на Fedora 44/45 и на
+Bazzite на их основе.
+
+Flatpak — для любого дистрибутива:
+
+```sh
+flatpak install --user ./plasma-keyboard-custom-<version>.flatpak
+```
+
+Flatpak ставится в собственную песочницу пользователя, поэтому его KCM не может появиться в
+системных настройках, а KWin нужно указать на desktop-файл Flatpak (настройки самой клавиатуры
+при этом остаются доступны из клавиатуры). После первой установки выйдите и войдите снова либо
+выполните:
+
+```sh
+kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod \
+  "$HOME/.local/share/flatpak/exports/share/applications/org.kde.plasma.keyboard.custom.desktop"
+```
+
 ### О проекте
 
 Это **форк [KDE plasma-keyboard](https://invent.kde.org/plasma/plasma-keyboard)** (на основе исходников 6.7.90) с

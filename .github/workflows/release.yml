@@ -41,6 +41,7 @@ jobs:
     # inside this job's steps, so it has to be republished as a job output.
     outputs:
       tag: ${{ steps.ver.outputs.tag }}
+      version: ${{ steps.ver.outputs.version }}
     env:
       # Arch Linux Archive snapshot matching SteamOS 3.8 (Qt 6.9.1-5, KF6
       # 6.16.0, libplasma/Plasma 6.4.3). The build is pinned to Qt 6.9 because
@@ -574,3 +575,147 @@ jobs:
     uses: ./.github/workflows/deploy-repo.yml
     with:
       tag: ${{ needs.build.outputs.tag }}
+
+  # Fedora and Bazzite packages. The app uses Qt's private Gui/WaylandClient
+  # APIs, whose ABI is only valid for the Qt minor it was built against, so the
+  # package is built separately per Qt branch: Fedora 43 ships Qt 6.10, Fedora
+  # 44/45 ship Qt 6.11. Bazzite follows Fedora, so these two packages cover it
+  # too. A failure here fails the run but leaves the Arch package and the pacman
+  # repository untouched (they are built by the jobs above).
+  rpm:
+    name: Build rpm (Fedora ${{ matrix.fedora }})
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        fedora: ['43', '44']
+    container:
+      image: fedora:${{ matrix.fedora }}
+    steps:
+      - name: Install rpm-build
+        run: dnf install -y --setopt=install_weak_deps=False rpm-build dnf5-plugins git tar
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          # The BuildRequires of the spec are the single source of truth: the
+          # list is not duplicated here, so adding a dependency there is enough.
+          dnf builddep -y packaging/rpm/plasma-keyboard-custom.spec
+
+      - name: Build the package
+        run: |
+          # rpmbuild runs as an unprivileged user, the same way the Arch build
+          # above does: the workspace has to change hands for that, hence the
+          # safe.directory entry (git refuses a repository owned by someone
+          # else).
+          git config --system --add safe.directory "$GITHUB_WORKSPACE"
+          useradd -m builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          su builder -c "bash $GITHUB_WORKSPACE/packaging/rpm/build.sh"
+
+      - name: Verify the package
+        run: |
+          set -euo pipefail
+          main="$(ls -1 packaging/plasma-keyboard-custom-[0-9]*.rpm | head -n1)"
+          kcm="$(ls -1 packaging/kcm-plasma-keyboard-custom-*.rpm | head -n1)"
+          rpm -qp --qf 'built %{NAME} %{VERSION}-%{RELEASE} (%{ARCH})\n' "$main"
+          rpm -qpl "$main" | grep -qx '/usr/bin/plasma-keyboard-custom'
+          rpm -qpl "$main" | grep -q 'VirtualKeyboard/Styles/PlasmaBreezeCustom/style.qml'
+          rpm -qpl "$kcm" | grep -q 'kcm_plasmakeyboardcustom.so'
+
+      - name: Upload the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-fc${{ matrix.fedora }}
+          path: packaging/*.rpm
+
+  # Flatpak bundle for every distribution: it carries its own Qt and KDE stack,
+  # so it does not depend on the versions of the host. Built for
+  # org.kde.Platform//6.10, the newest runtime with a ready flathub builder image
+  # (ghcr.io/flathub-infra/flatpak-github-actions has no kde-6.11 tag yet); the
+  # KCM does not reach the system settings of the host, so the settings of the
+  # flatpak are the ones built into the keyboard itself.
+  flatpak:
+    name: Build flatpak
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build the bundle
+        run: |
+          set -euo pipefail
+          flatpak-builder --repo=repo --force-clean --disable-rofiles-fuse \
+            build-dir .flatpak/org.kde.plasma.keyboard.custom.json
+          flatpak build-bundle repo \
+            "plasma-keyboard-custom-${{ needs.build.outputs.version }}.flatpak" \
+            org.kde.plasma.keyboard.custom stable
+          ls -l plasma-keyboard-custom-*.flatpak
+
+      - name: Upload the bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak
+          path: plasma-keyboard-custom-*.flatpak
+
+  # The extra assets are attached to the release the "build" job created. The
+  # job still runs when one of the extra packages failed, so a broken flatpak
+  # does not keep a good rpm (and vice versa) out of the release; a failure of
+  # "build" itself skips it, because then there is no release to attach to.
+  publish-extra:
+    name: Publish rpm and flatpak
+    needs: [build, rpm, flatpak]
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download the rpm packages
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: 'rpm-*'
+          merge-multiple: true
+          path: dist
+
+      - name: Download the flatpak bundle
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: flatpak
+          path: dist
+
+      - name: Create checksums
+        run: |
+          set -euo pipefail
+          cd dist 2>/dev/null || { echo "no extra packages were built"; exit 0; }
+          ls -l
+          # Separate files: install.sh parses the plain SHA256SUMS of the Arch
+          # package, so it is left exactly as the build job wrote it.
+          if ls -1 ./*.rpm >/dev/null 2>&1; then
+            sha256sum ./*.rpm > SHA256SUMS.rpm
+            cat SHA256SUMS.rpm
+          fi
+          if ls -1 ./*.flatpak >/dev/null 2>&1; then
+            sha256sum ./*.flatpak > SHA256SUMS.flatpak
+            cat SHA256SUMS.flatpak
+          fi
+
+      - name: Publish the assets
+        if: ${{ hashFiles('dist/*.rpm', 'dist/*.flatpak') != '' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build.outputs.tag }}
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          files: |
+            dist/*.rpm
+            dist/*.flatpak
+            dist/SHA256SUMS.rpm
+            dist/SHA256SUMS.flatpak

@@ -158,6 +158,43 @@ release. The workflow can also be re-run by hand from the Actions tab: with a re
 republishes that release, without one it re-indexes every published release (useful after a failed
 run, or if the branch was lost).
 
+### Fedora, Bazzite and other distributions
+
+Every release also carries an RPM package for Fedora-based systems (Fedora KDE, Bazzite, Nobara)
+and a Flatpak bundle, which brings its own Qt and KDE stack and therefore does not depend on the
+host libraries.
+
+The RPM exists per Qt branch, because the keyboard uses Qt's private APIs, whose ABI is only valid
+for the Qt minor it was built against: `fc43` is for Fedora 43 (Qt 6.10), `fc44` for Fedora 44/45
+(Qt 6.11). Bazzite follows Fedora, so pick the file matching its base version.
+
+```sh
+# Fedora KDE, Nobara and other classic systems
+sudo dnf install ./plasma-keyboard-custom-<version>-1.fc43.x86_64.rpm
+
+# Bazzite and other atomic (rpm-ostree) systems — reboot afterwards
+sudo rpm-ostree install ./plasma-keyboard-custom-<version>-1.fc43.x86_64.rpm
+```
+
+The settings page (KCM) is a separate package, `kcm-plasma-keyboard-custom-<version>-1.fc43.x86_64.rpm`;
+install it as well to get **System Settings → Plasma Keyboard (custom)**. The `fc44` packages install
+on Fedora 44/45 and on a Bazzite based on them.
+
+Flatpak, for any distribution:
+
+```sh
+flatpak install --user ./plasma-keyboard-custom-<version>.flatpak
+```
+
+A Flatpak installs into the user's own sandbox, so its KCM cannot appear in the system settings and
+KWin has to be pointed at the desktop file of the Flatpak (the settings of the keyboard itself stay
+available from the keyboard). After the first install, log out and back in or run:
+
+```sh
+kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod \
+  "$HOME/.local/share/flatpak/exports/share/applications/org.kde.plasma.keyboard.custom.desktop"
+```
+
 ### About
 
 This is a **fork of [KDE plasma-keyboard](https://invent.kde.org/plasma/plasma-keyboard)** (based on the 6.7.90 sources) with
