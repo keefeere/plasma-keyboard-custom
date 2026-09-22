@@ -700,6 +700,9 @@ bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
 bool InputListenerItem::handleModifiedCommit(const QString &commit)
 {
     auto *modifiers = KeyboardModifiers::instance();
+    // TEMPORARY diagnostic logging, see the "Win key" investigation, round 2.
+    qCDebug(PlasmaKeyboard) << "handleModifiedCommit: commit=" << commit << "ctrl=" << modifiers->ctrl() << "alt=" << modifiers->alt()
+                            << "meta=" << modifiers->meta();
     if (!modifiers->ctrl() && !modifiers->alt() && !modifiers->meta()) {
         return false;
     }
@@ -709,21 +712,25 @@ bool InputListenerItem::handleModifiedCommit(const QString &commit)
     // always text, whatever is latched.
     const QList<uint> codepoints = commit.toUcs4();
     if (codepoints.size() != 1) {
+        qCDebug(PlasmaKeyboard) << "handleModifiedCommit: not a single codepoint, size=" << codepoints.size();
         return false;
     }
 
     const xkb_keysym_t keysym = xkb_utf32_to_keysym(codepoints.first());
     if (keysym == XKB_KEY_NoSymbol) {
+        qCDebug(PlasmaKeyboard) << "handleModifiedCommit: no keysym for codepoint" << codepoints.first();
         return false;
     }
 
     const uint32_t keycode = m_input.keycodeForKeysym(keysym);
     if (keycode == 0) {
+        qCDebug(PlasmaKeyboard) << "handleModifiedCommit: no keycode for keysym" << Qt::hex << keysym;
         return false;
     }
 
     const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0)
         | (modifiers->meta() ? m_input.metaMask() : 0);
+    qCDebug(PlasmaKeyboard) << "handleModifiedCommit: sending keycode=" << keycode << "depressed=" << Qt::hex << depressed << Qt::dec;
 
     // A commit has no separate press/release phase to preserve; send both
     // right away, exactly like handleModifiedKey() does for its own release.
@@ -766,6 +773,10 @@ QStringList InputListenerItem::alternatesFor(const QVariantList &alternatives, b
 
 void InputListenerItem::keyPressEvent(QKeyEvent *event)
 {
+    // TEMPORARY unconditional diagnostic logging, see the "Win key" investigation, round 2.
+    qCDebug(PlasmaKeyboard) << "keyPressEvent: key=" << event->key() << "text=" << event->text() << "ctrl=" << KeyboardModifiers::instance()->ctrl()
+                            << "alt=" << KeyboardModifiers::instance()->alt() << "meta=" << KeyboardModifiers::instance()->meta();
+
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
         return;
     }
@@ -824,6 +835,10 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
 
 void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
 {
+    // TEMPORARY unconditional diagnostic logging, see the "Win key" investigation, round 2.
+    qCDebug(PlasmaKeyboard) << "keyReleaseEvent: key=" << event->key() << "text=" << event->text() << "ctrl=" << KeyboardModifiers::instance()->ctrl()
+                            << "alt=" << KeyboardModifiers::instance()->alt() << "meta=" << KeyboardModifiers::instance()->meta();
+
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
         return;
     }
@@ -877,6 +892,10 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
 
 void InputListenerItem::inputMethodEvent(QInputMethodEvent *event)
 {
+    // TEMPORARY diagnostic logging, see the "Win key" investigation, round 2.
+    qCDebug(PlasmaKeyboard) << "inputMethodEvent: commitString=" << event->commitString() << "preeditString=" << event->preeditString()
+                            << "isExposed=" << window()->isExposed();
+
     // Don't forward events from Qt VKBD to KWin if the keyboard window isn't open
     // This avoids the possibility of Qt VKBD causing text changes from receiving
     // events (ex. cursor movement) done by its input engine (for features like text prediction).
