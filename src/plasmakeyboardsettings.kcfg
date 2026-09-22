@@ -127,6 +127,12 @@
             <max>1500</max>
             <default>400</default>
         </entry>
+        <entry key="modifierHoldThresholdMs" type="Int">
+            <label>How long Ctrl/Alt/Meta must be held for it to act like a real held key (down while held, up on release) instead of latching for the next key.</label>
+            <min>100</min>
+            <max>1500</max>
+            <default>400</default>
+        </entry>
         <entry key="predictiveTextEnabled" type="Bool">
             <label>Whether the words that continue what is being typed are offered above the keyboard.</label>
             <default>true</default>

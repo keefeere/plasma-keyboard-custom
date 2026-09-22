@@ -21,6 +21,7 @@
 
 #include <QLoggingCategory>
 #include <QTextFormat>
+#include <QTimer>
 
 #include <atomic>
 #include <set>
@@ -193,6 +194,35 @@ InputListenerItem::InputListenerItem()
     m_overlayController->registerTrigger(new LongPressTrigger(m_overlayController));
     m_overlayController->registerTrigger(new PrefixQueryTrigger(m_overlayController));
     m_overlayController->registerTrigger(new TextExpansionTrigger(m_overlayController));
+
+    m_modifierHoldTimer = new QTimer(this);
+    m_modifierHoldTimer->setSingleShot(true);
+    connect(m_modifierHoldTimer, &QTimer::timeout, this, [this] {
+        // Still held past the threshold: this is a hold, not a tap. Undo the
+        // latch the tap set on press and send a real key-down instead, so the
+        // modifier behaves like a physical key for as long as it stays down.
+        auto *modifiers = KeyboardModifiers::instance();
+        switch (m_pendingModifierKey) {
+        case Qt::Key_Control:
+            modifiers->setCtrl(!modifiers->ctrl());
+            break;
+        case Qt::Key_Alt:
+            modifiers->setAlt(!modifiers->alt());
+            break;
+        case Qt::Key_Meta:
+            modifiers->setMeta(!modifiers->meta());
+            break;
+        default:
+            return;
+        }
+
+        const uint32_t keysym = modifierKeysym(m_pendingModifierKey);
+        const uint32_t keycode = keysym ? m_input.keycodeForKeysym(keysym) : 0;
+        if (keycode != 0) {
+            m_input.key(InputPlugin::Pressed, keycode);
+            m_modifierHeldForReal = true;
+        }
+    });
 
     connect(&m_input, &InputPlugin::contextChanged, this, [this] {
         const bool hasContext = m_input.hasContext();
@@ -600,6 +630,34 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
     return {};
 }
 
+uint32_t InputListenerItem::modifierKeysym(Qt::Key key)
+{
+    switch (key) {
+    case Qt::Key_Control:
+        return XKB_KEY_Control_L;
+    case Qt::Key_Alt:
+        return XKB_KEY_Alt_L;
+    case Qt::Key_Meta:
+        return XKB_KEY_Super_L;
+    default:
+        return 0;
+    }
+}
+
+void InputListenerItem::armModifierHoldTimer(Qt::Key key)
+{
+    m_pendingModifierKey = key;
+    m_modifierHeldForReal = false;
+    m_modifierHoldTimer->start(PlasmaKeyboardSettings::self()->modifierHoldThresholdMs());
+}
+
+void InputListenerItem::cancelModifierHoldTimer()
+{
+    m_modifierHoldTimer->stop();
+    m_pendingModifierKey = Qt::Key(0);
+    m_modifierHeldForReal = false;
+}
+
 bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
 {
     auto *modifiers = KeyboardModifiers::instance();
@@ -636,6 +694,9 @@ bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
         m_input.sendModifiers(0, 0, 0, 0);
         // The modifiers only apply to a single key press.
         modifiers->reset();
+        // A hold timer may still be running for this modifier (it was pressed
+        // just before this combination completed); it must not fire later.
+        cancelModifierHoldTimer();
     }
     return true;
 }
@@ -673,21 +734,28 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
         return;
     }
 
-    // The on-screen Ctrl/Alt/Meta keys emit a plain Control/Alt/Meta event; use
-    // it to toggle the latch (works the same for touch and gamepad activation).
+    // The on-screen Ctrl/Alt/Meta keys emit a plain Control/Alt/Meta event; a
+    // tap toggles the latch (works the same for touch and gamepad activation),
+    // applying to the next key. If the key is still held past
+    // modifierHoldThresholdMs, armModifierHoldTimer()'s timeout undoes that
+    // latch and sends the modifier as a real held key instead, for games and
+    // applications that read the raw key state rather than a shortcut.
     auto *modifiers = KeyboardModifiers::instance();
-    if (event->key() == Qt::Key_Control) {
-        modifiers->setCtrl(!modifiers->ctrl());
-        event->accept();
-        return;
-    }
-    if (event->key() == Qt::Key_Alt) {
-        modifiers->setAlt(!modifiers->alt());
-        event->accept();
-        return;
-    }
-    if (event->key() == Qt::Key_Meta) {
-        modifiers->setMeta(!modifiers->meta());
+    if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
+        switch (event->key()) {
+        case Qt::Key_Control:
+            modifiers->setCtrl(!modifiers->ctrl());
+            break;
+        case Qt::Key_Alt:
+            modifiers->setAlt(!modifiers->alt());
+            break;
+        case Qt::Key_Meta:
+            modifiers->setMeta(!modifiers->meta());
+            break;
+        default:
+            break;
+        }
+        armModifierHoldTimer(static_cast<Qt::Key>(event->key()));
         event->accept();
         return;
     }
@@ -713,7 +781,21 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
     }
 
     if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
-        // The toggle happened on press; ignore the release.
+        if (m_modifierHeldForReal && event->key() == m_pendingModifierKey) {
+            // Held past the threshold: the timer already sent a real key-down
+            // for it, so release completes it as a real key-up.
+            const uint32_t keysym = modifierKeysym(static_cast<Qt::Key>(event->key()));
+            const uint32_t keycode = keysym ? m_input.keycodeForKeysym(keysym) : 0;
+            if (keycode != 0) {
+                m_input.key(InputPlugin::Released, keycode);
+            }
+        } else {
+            // A quick tap: the toggle already happened on press, and the hold
+            // timer never fired. Nothing else to do but stop it.
+            m_modifierHoldTimer->stop();
+        }
+        m_pendingModifierKey = Qt::Key(0);
+        m_modifierHeldForReal = false;
         event->accept();
         return;
     }
@@ -730,6 +812,7 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
         // The combination completes on release; clear the latch even if the key
         // could not be mapped, so the modifier never gets stuck.
         modifiers->reset();
+        cancelModifierHoldTimer();
     }
 
     const QList<xkb_keysym_t> keys = QXkbCommon::toKeysym(event);

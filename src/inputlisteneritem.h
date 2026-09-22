@@ -20,6 +20,7 @@
 
 class ClipboardHistory;
 class OverlayController;
+class QTimer;
 
 /**
  * Global state for the on-screen Ctrl/Alt/Meta keys.
@@ -200,6 +201,23 @@ private:
      */
     bool handleModifiedKey(QKeyEvent *event, bool press);
 
+    //! Starts the hold-threshold timer for a just-pressed Ctrl/Alt/Meta key.
+    //! The tap already latched the modifier for the usual "applies to the next
+    //! key" behavior; if the key is still held when the timer fires, that latch
+    //! is undone and the modifier is sent as a real held key instead (down now,
+    //! up on release), so it works the same as a physical modifier for games
+    //! and applications that read the raw key state rather than a shortcut.
+    void armModifierHoldTimer(Qt::Key key);
+
+    //! The XKB keysym a modifier key event sends when held for real: Control_L,
+    //! Alt_L or Super_L. Returns 0 for anything else.
+    static uint32_t modifierKeysym(Qt::Key key);
+
+    //! Stops the hold timer and clears the state armModifierHoldTimer() set,
+    //! so it cannot fire later for a modifier that a combination (or a reset
+    //! elsewhere) already consumed.
+    void cancelModifierHoldTimer();
+
     //! Re-reads the word being typed and the word before it, and tells QML
     //! when either of them changed.
     void updatePredictionWords();
@@ -223,4 +241,14 @@ private:
     //! until the next input activation. A focused text field keeps sending
     //! updates, and those must not bring the panel back on their own.
     bool m_hiddenByUser = false;
+
+    //! Fires modifierHoldThresholdMs after a Ctrl/Alt/Meta key is pressed; see
+    //! armModifierHoldTimer().
+    QTimer *m_modifierHoldTimer = nullptr;
+    //! Which modifier key the hold timer above is currently running for, or 0.
+    Qt::Key m_pendingModifierKey = Qt::Key(0);
+    //! True once the hold timer has fired and a real key-down was sent for
+    //! m_pendingModifierKey; its release must then send a real key-up instead
+    //! of being treated as the tap that toggles the latch.
+    bool m_modifierHeldForReal = false;
 };
