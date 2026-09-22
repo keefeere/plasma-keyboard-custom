@@ -8,6 +8,7 @@
 #include "inputpanelrole.h"
 #include "qwaylandinputpanelsurface_p.h"
 
+#include <QScreen>
 #include <QtWaylandClient/private/qwaylandscreen_p.h>
 #include <QtWaylandClient/private/qwaylandwindow_p.h>
 
@@ -44,6 +45,10 @@ void QWaylandInputPanelSurface::applyConfigure()
         if (!screen) {
             qCWarning(qLcQpaShellIntegration) << "No Wayland screen available, cannot configure input panel surface";
             return;
+        }
+
+        if (QScreen *qScreen = screen->screen()) {
+            window()->window()->setScreen(qScreen);
         }
 
         set_toplevel(screen->output(), position_center_bottom);
