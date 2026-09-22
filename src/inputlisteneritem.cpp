@@ -734,6 +734,18 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
         return;
     }
 
+    // Any other key being pressed while a modifier's hold timer is still
+    // pending settles what the tap was for: a combination, not a hold. Stop
+    // the timer so it cannot fire later and undo the latch out from under a
+    // combination that just has not completed yet -- sliding a finger from
+    // the modifier straight onto the next key without lifting it in between
+    // (a normal, fast typing gesture) never reaches this item's own
+    // keyReleaseEvent for the modifier, so that is not a reliable place to
+    // rely on alone. The latch itself is left untouched.
+    if (event->key() != Qt::Key_Control && event->key() != Qt::Key_Alt && event->key() != Qt::Key_Meta && m_modifierHoldTimer->isActive()) {
+        m_modifierHoldTimer->stop();
+    }
+
     // The on-screen Ctrl/Alt/Meta keys emit a plain Control/Alt/Meta event; a
     // tap toggles the latch (works the same for touch and gamepad activation),
     // applying to the next key. If the key is still held past
