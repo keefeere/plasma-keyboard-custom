@@ -725,8 +725,14 @@ jobs:
         with:
           tag_name: ${{ needs.build.outputs.tag }}
           prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          # The patterns must not overlap: "dist/*.rpm" also matches
+          # SHA256SUMS.rpm (and "dist/*.flatpak" matches SHA256SUMS.flatpak),
+          # and softprops/action-gh-release then uploads the same asset twice in
+          # parallel, loses the race and fails the step with "Not Found" while
+          # updating the asset.
           files: |
-            dist/*.rpm
-            dist/*.flatpak
+            dist/plasma-keyboard-custom-*.rpm
+            dist/kcm-plasma-keyboard-custom-*.rpm
+            dist/plasma-keyboard-custom-*.flatpak
             dist/SHA256SUMS.rpm
             dist/SHA256SUMS.flatpak
