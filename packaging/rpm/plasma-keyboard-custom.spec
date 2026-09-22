@@ -6,8 +6,8 @@
 # always matches a committed tree.
 #
 # The version is written by packaging/rpm/build.sh from PROJECT_VERSION in the
-# top-level CMakeLists.txt; the release is 1%{?dist} (the container defines
-# %dist as .fc43/.fc44), so one spec serves every Fedora branch.
+# top-level CMakeLists.txt; the release is 1%{?dist} (the container's dist tag is
+# .fc43/.fc44), so one spec serves every Fedora branch.
 #
 # Unlike Arch, Fedora does not package the CMake package Qt6WaylandClientPrivate
 # (the private headers themselves are in qt6-qtbase-private-devel, but no
@@ -90,11 +90,11 @@ A fork of the KDE Plasma virtual keyboard with gamepad support, a floating
 keyboard mode and extra themes. It is based on Qt Virtual Keyboard and talks to
 the compositor over the input-method-v1 Wayland protocol.
 
-%package kcm
+%package -n kcm-%{name}
 Summary:        %{summary}
 Requires:       %{name} = %{version}-%{release}
 
-%description kcm
+%description -n kcm-%{name}
 Configuration module for %{name}, shown in the system settings of Plasma.
 
 %prep
@@ -155,8 +155,10 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.kde.plasma.keyboa
 %{_prefix}/lib/udev/rules.d/70-plasma-keyboard-touchscreen.rules
 %{_datadir}/locale/*/LC_MESSAGES/kcm_plasmakeyboardcustom.mo
 
-%files kcm
+%files -n kcm-%{name}
 %{_libdir}/qt6/plugins/plasma/kcms/systemsettings/kcm_plasmakeyboardcustom.so
 %{_datadir}/applications/kcm_plasmakeyboardcustom.desktop
 
 %changelog
+* Tue Sep 22 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com> - 6.7.90-1
+- Initial Fedora package of the custom fork

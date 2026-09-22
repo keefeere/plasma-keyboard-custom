@@ -37,6 +37,8 @@ rpmbuild -bb plasma-keyboard-custom.spec \
     --define "_sourcedir $here" \
     --define "debug_package %{nil}"
 
-rm -f "$here"/*.rpm
-find "$topdir/RPMS" -name '*.rpm' -exec cp -v {} "$here/" \;
-ls -l "$here"/*.rpm
+# The packages land next to the Arch one (packaging/), so the release workflow
+# picks both up with the same glob it uses for the other artefacts.
+rm -f "$here/.."/*.rpm
+find "$topdir/RPMS" -name '*.rpm' -exec cp -v {} "$here/.." \;
+ls -l "$here/.."/*.rpm
