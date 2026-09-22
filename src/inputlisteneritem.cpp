@@ -679,10 +679,6 @@ bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
     const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0)
         | (modifiers->meta() ? m_input.metaMask() : 0) | ((event->modifiers() & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
 
-    // TEMPORARY diagnostic logging, see the "Win key" investigation.
-    qCDebug(PlasmaKeyboard) << "handleModifiedKey: press=" << press << "ctrl=" << modifiers->ctrl() << "alt=" << modifiers->alt()
-                            << "meta=" << modifiers->meta() << "controlMask=" << Qt::hex << m_input.controlMask() << "altMask=" << m_input.altMask()
-                            << "metaMask=" << m_input.metaMask() << "depressed=" << depressed << Qt::dec << "keycode=" << keycode;
 
     if (press) {
         // Set the modifier state before pressing the key so the compositor
@@ -698,6 +694,46 @@ bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
         // just before this combination completed); it must not fire later.
         cancelModifierHoldTimer();
     }
+    return true;
+}
+
+bool InputListenerItem::handleModifiedCommit(const QString &commit)
+{
+    auto *modifiers = KeyboardModifiers::instance();
+    if (!modifiers->ctrl() && !modifiers->alt() && !modifiers->meta()) {
+        return false;
+    }
+
+    // Only a plain single character is a shortcut candidate; multi-character
+    // commits (autocorrect, a chosen prediction, an IME composition) are
+    // always text, whatever is latched.
+    const QList<uint> codepoints = commit.toUcs4();
+    if (codepoints.size() != 1) {
+        return false;
+    }
+
+    const xkb_keysym_t keysym = xkb_utf32_to_keysym(codepoints.first());
+    if (keysym == XKB_KEY_NoSymbol) {
+        return false;
+    }
+
+    const uint32_t keycode = m_input.keycodeForKeysym(keysym);
+    if (keycode == 0) {
+        return false;
+    }
+
+    const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0)
+        | (modifiers->meta() ? m_input.metaMask() : 0);
+
+    // A commit has no separate press/release phase to preserve; send both
+    // right away, exactly like handleModifiedKey() does for its own release.
+    m_input.sendModifiers(depressed, 0, 0, 0);
+    m_input.key(InputPlugin::Pressed, keycode);
+    m_input.key(InputPlugin::Released, keycode);
+    m_input.sendModifiers(0, 0, 0, 0);
+
+    modifiers->reset();
+    cancelModifierHoldTimer();
     return true;
 }
 
@@ -730,10 +766,6 @@ QStringList InputListenerItem::alternatesFor(const QVariantList &alternatives, b
 
 void InputListenerItem::keyPressEvent(QKeyEvent *event)
 {
-    // TEMPORARY unconditional diagnostic logging, see the "Win key" investigation.
-    qCDebug(PlasmaKeyboard) << "keyPressEvent: key=" << event->key() << "text=" << event->text() << "ctrl=" << KeyboardModifiers::instance()->ctrl()
-                            << "alt=" << KeyboardModifiers::instance()->alt() << "meta=" << KeyboardModifiers::instance()->meta();
-
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
         return;
     }
@@ -792,10 +824,6 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
 
 void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
 {
-    // TEMPORARY unconditional diagnostic logging, see the "Win key" investigation.
-    qCDebug(PlasmaKeyboard) << "keyReleaseEvent: key=" << event->key() << "text=" << event->text() << "ctrl=" << KeyboardModifiers::instance()->ctrl()
-                            << "alt=" << KeyboardModifiers::instance()->alt() << "meta=" << KeyboardModifiers::instance()->meta();
-
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
         return;
     }
@@ -859,6 +887,12 @@ void InputListenerItem::inputMethodEvent(QInputMethodEvent *event)
     QString commit = event->commitString();
     QString preedit = event->preeditString();
     bool needsReplacement = event->replacementStart() != 0 || event->replacementLength() != 0;
+
+    // A plain single character committed while Ctrl/Alt/Meta is latched is a
+    // shortcut (e.g. Meta+L), not text to type; see handleModifiedCommit().
+    if (!needsReplacement && preedit.isEmpty() && handleModifiedCommit(commit)) {
+        return;
+    }
 
     // Delete characters that are supposed to be replaced
     if (needsReplacement) {
