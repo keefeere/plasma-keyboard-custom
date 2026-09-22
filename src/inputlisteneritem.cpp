@@ -730,6 +730,10 @@ QStringList InputListenerItem::alternatesFor(const QVariantList &alternatives, b
 
 void InputListenerItem::keyPressEvent(QKeyEvent *event)
 {
+    // TEMPORARY unconditional diagnostic logging, see the "Win key" investigation.
+    qCDebug(PlasmaKeyboard) << "keyPressEvent: key=" << event->key() << "text=" << event->text() << "ctrl=" << KeyboardModifiers::instance()->ctrl()
+                            << "alt=" << KeyboardModifiers::instance()->alt() << "meta=" << KeyboardModifiers::instance()->meta();
+
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
         return;
     }
@@ -788,6 +792,10 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
 
 void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
 {
+    // TEMPORARY unconditional diagnostic logging, see the "Win key" investigation.
+    qCDebug(PlasmaKeyboard) << "keyReleaseEvent: key=" << event->key() << "text=" << event->text() << "ctrl=" << KeyboardModifiers::instance()->ctrl()
+                            << "alt=" << KeyboardModifiers::instance()->alt() << "meta=" << KeyboardModifiers::instance()->meta();
+
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
         return;
     }
