@@ -618,13 +618,21 @@ jobs:
 
       - name: Verify the package
         run: |
+          # No pipes into grep -q: with pipefail the SIGPIPE that grep causes by
+          # exiting early fails the whole step (exit 141), which is not a problem
+          # with the package. The file lists go through temporary files instead.
           set -euo pipefail
-          main="$(ls -1 packaging/plasma-keyboard-custom-[0-9]*.rpm | head -n1)"
-          kcm="$(ls -1 packaging/kcm-plasma-keyboard-custom-*.rpm | head -n1)"
+          set -- packaging/plasma-keyboard-custom-[0-9]*.rpm
+          main="$1"
+          set -- packaging/kcm-plasma-keyboard-custom-*.rpm
+          kcm="$1"
           rpm -qp --qf 'built %{NAME} %{VERSION}-%{RELEASE} (%{ARCH})\n' "$main"
-          rpm -qpl "$main" | grep -qx '/usr/bin/plasma-keyboard-custom'
-          rpm -qpl "$main" | grep -q 'VirtualKeyboard/Styles/PlasmaBreezeCustom/style.qml'
-          rpm -qpl "$kcm" | grep -q 'kcm_plasmakeyboardcustom.so'
+          rpm -qpl "$main" > main-files.txt
+          rpm -qpl "$kcm" > kcm-files.txt
+          grep -qx '/usr/bin/plasma-keyboard-custom' main-files.txt
+          grep -q 'VirtualKeyboard/Styles/PlasmaBreezeCustom/style.qml' main-files.txt
+          grep -q '/usr/lib/udev/rules.d/70-plasma-keyboard-touchscreen.rules' main-files.txt
+          grep -q 'kcm_plasmakeyboardcustom.so' kcm-files.txt
 
       - name: Upload the package
         uses: actions/upload-artifact@v4
