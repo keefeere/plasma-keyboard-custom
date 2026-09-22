@@ -621,6 +621,11 @@ bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
     const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0)
         | (modifiers->meta() ? m_input.metaMask() : 0) | ((event->modifiers() & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
 
+    // TEMPORARY diagnostic logging, see the "Win key" investigation.
+    qCDebug(PlasmaKeyboard) << "handleModifiedKey: press=" << press << "ctrl=" << modifiers->ctrl() << "alt=" << modifiers->alt()
+                            << "meta=" << modifiers->meta() << "controlMask=" << Qt::hex << m_input.controlMask() << "altMask=" << m_input.altMask()
+                            << "metaMask=" << m_input.metaMask() << "depressed=" << depressed << Qt::dec << "keycode=" << keycode;
+
     if (press) {
         // Set the modifier state before pressing the key so the compositor
         // delivers the shortcut (e.g. Ctrl+C) to the client.
