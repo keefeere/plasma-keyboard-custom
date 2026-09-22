@@ -23,8 +23,11 @@ configure_file(config-plasma-keyboard.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config
 # before the subproject is added: KDECMakeSettings turns shared libraries on
 # globally, and a shared build would leave the keyboard looking for
 # libwhisper.so and libggml*.so at run time, where the package has none.
+# The variable is set for the subproject only and unset again right after it:
+# a cache-wide "FORCE" would also turn this project's own libraries
+# (libkeyboardlib, libbreezestyle) into static archives.
 include(FetchContent)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF)
 set(WHISPER_CPP_SOURCE_DIR "" CACHE PATH "Local whisper.cpp source tree used instead of downloading one")
 if(WHISPER_CPP_SOURCE_DIR)
     set(FETCHCONTENT_SOURCE_DIR_WHISPER "${WHISPER_CPP_SOURCE_DIR}" CACHE PATH "" FORCE)
@@ -45,6 +48,7 @@ FetchContent_Declare(whisper
     ${_whisper_exclude_from_all}
 )
 FetchContent_MakeAvailable(whisper)
+unset(BUILD_SHARED_LIBS)
 
 # KDECompilerSettings builds the project without C++ exceptions, but the GGUF
 # reader inside whisper.cpp uses try/catch blocks, so the libraries that come

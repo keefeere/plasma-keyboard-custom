@@ -161,6 +161,7 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.kde.plasma.keyboa
 %{_libdir}/qt6/qml/org/kde/plasma/keyboard/custom/
 %{_prefix}/lib/udev/rules.d/70-plasma-keyboard-touchscreen.rules
 %{_datadir}/locale/*/LC_MESSAGES/kcm_plasmakeyboardcustom.mo
+%{_datadir}/locale/*/LC_MESSAGES/plasma-keyboard-custom.mo
 
 %files -n kcm-%{name}
 %{_libdir}/qt6/plugins/plasma/kcms/systemsettings/kcm_plasmakeyboardcustom.so

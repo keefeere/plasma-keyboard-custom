@@ -98,6 +98,7 @@
                     "type": "archive",
                     "url": "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.9.3.tar.gz",
                     "sha256": "1650f884effba487025143bd8facd2f9fb40a83b3737a732803c67a8d659d9c0",
+                    "strip-components": 0,
                     "dest": "whisper-cpp"
                 }
             ]
