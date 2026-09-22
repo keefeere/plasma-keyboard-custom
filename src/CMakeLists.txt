@@ -13,6 +13,11 @@ configure_file(config-plasma-keyboard.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config
 # system (the Arch snapshot the release is built against does not ship it).
 # WHISPER_CPP_SOURCE_DIR lets the package build use a source archive instead of
 # a git checkout, which keeps the release build offline.
+#
+# The subproject is excluded from the install rules (CMake 3.28 and newer): it
+# carries install() rules of its own for the headers, the CMake package files
+# and the libraries, and none of them belong to this package. Its libraries are
+# still built, because the keyboard links against them.
 include(FetchContent)
 set(WHISPER_CPP_SOURCE_DIR "" CACHE PATH "Local whisper.cpp source tree used instead of downloading one")
 if(WHISPER_CPP_SOURCE_DIR)
@@ -23,10 +28,15 @@ set(WHISPER_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(WHISPER_BUILD_SERVER OFF CACHE BOOL "" FORCE)
 set(WHISPER_BUILD_IS_DEV OFF CACHE BOOL "" FORCE)
 set(WHISPER_ALL_WARNINGS OFF CACHE BOOL "" FORCE)
+set(_whisper_exclude_from_all)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.28)
+    set(_whisper_exclude_from_all EXCLUDE_FROM_ALL)
+endif()
 FetchContent_Declare(whisper
     GIT_REPOSITORY https://github.com/ggml-org/whisper.cpp.git
     GIT_TAG v1.9.3
     GIT_SHALLOW TRUE
+    ${_whisper_exclude_from_all}
 )
 FetchContent_MakeAvailable(whisper)
 

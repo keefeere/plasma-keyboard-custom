@@ -79,7 +79,8 @@
             "buildsystem": "cmake-ninja",
             "config-opts": [
                 "-DCMAKE_BUILD_TYPE=Release",
-                "-DBUILD_TESTING=OFF"
+                "-DBUILD_TESTING=OFF",
+                "-DWHISPER_CPP_SOURCE_DIR=whisper-cpp/whisper.cpp-1.9.3"
             ],
             "sources": [
                 {
@@ -92,6 +93,12 @@
                         "build-*",
                         "packaging/*.tar.gz"
                     ]
+                },
+                {
+                    "type": "archive",
+                    "url": "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.9.3.tar.gz",
+                    "sha256": "1650f884effba487025143bd8facd2f9fb40a83b3737a732803c67a8d659d9c0",
+                    "dest": "whisper-cpp"
                 }
             ]
         }

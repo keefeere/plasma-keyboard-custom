@@ -23,6 +23,11 @@ Summary:        Virtual keyboard for Qt based desktops (custom fork with gamepad
 License:        GPL-2.0-only OR GPL-3.0-only
 URL:            https://github.com/mops1k/plasma-keyboard-custom
 Source0:        %{name}-%{version}.tar.gz
+# The speech recognition engines (Whisper and Parakeet) are built from
+# whisper.cpp. Its sources come in as a second source instead of being fetched
+# during the build, so the build does not need the network.
+%global whisper_version 1.9.3
+Source1:        whisper.cpp-%{whisper_version}.tar.gz
 
 BuildArch:      x86_64
 
@@ -99,6 +104,7 @@ Configuration module for %{name}, shown in the system settings of Plasma.
 
 %prep
 %setup -q
+tar -xzf %{SOURCE1} -C %{_builddir}
 
 %build
 # Fedora ships the QtWaylandClient private headers in qt6-qtbase-private-devel
@@ -126,6 +132,7 @@ EOF
 %cmake_kf6 \
   -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_TESTING=OFF \
+  -DWHISPER_CPP_SOURCE_DIR=%{_builddir}/whisper.cpp-%{whisper_version} \
   -DQt6WaylandClientPrivate_DIR=%{_builddir}/qtwaylandclientprivate
 %cmake_build
 
