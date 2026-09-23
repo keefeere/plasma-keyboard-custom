@@ -328,16 +328,9 @@ private:
     //! started calling setScreen() itself.
     void syncKeyboardScreen()
     {
-        // TEMPORARY: qCWarning so it shows up regardless of the
-        // *.debug=false suppression in /usr/share/qt6/qtlogging.ini, to
-        // check which screen each window is actually on. Remove once the
-        // width-overflow investigation concludes.
-        qCWarning(PlasmaKeyboard) << "syncKeyboardScreen: stub=" << (m_stub ? m_stub->screen() : nullptr)
-                                  << "keyboard=" << (m_keyboard ? m_keyboard->screen() : nullptr);
         if (!m_stub || !m_keyboard || !m_stub->screen() || m_keyboard->screen() == m_stub->screen()) {
             return;
         }
-        qCWarning(PlasmaKeyboard) << "syncKeyboardScreen: moving keyboard window from" << m_keyboard->screen() << "to" << m_stub->screen();
         m_keyboard->setScreen(m_stub->screen());
         applyPanelLayout();
     }

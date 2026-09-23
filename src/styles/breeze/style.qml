@@ -165,6 +165,17 @@ KeyboardStyle {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: control.displayText.length > 1 ? Text.AlignVCenter : Text.AlignBottom
                 anchors.centerIn: parent
+                // A multi-character label (Esc, Del, Ctrl, Win, Alt...) at the
+                // same pixelSize as a single letter is wider than a normal
+                // key: without a width to shrink into, it overflows the key
+                // and overlaps its neighbour instead of being clipped or
+                // wrapped. fontSizeMode only ever shrinks toward
+                // minimumPixelSize, so a short label that already fits (a
+                // single letter, a symbol) renders at the full pixelSize,
+                // same as before.
+                width: Math.max(0, parent.width - theme.keyContentMargin)
+                fontSizeMode: Text.HorizontalFit
+                minimumPixelSize: 10
                 font {
                     family: control.key === Qt.Key_Tab ? "DejaVu Sans" : theme.fontFamily
                     // Modifier and function keys (Ctrl, Alt, Tab, Del, arrows, ...) are bold
