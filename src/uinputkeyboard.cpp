@@ -7,9 +7,11 @@
 #include "uinputkeyboard.h"
 #include "logging.h"
 
+#include <chrono>
 #include <cstring>
 #include <fcntl.h>
 #include <linux/uinput.h>
+#include <thread>
 #include <unistd.h>
 
 UinputKeyboard::UinputKeyboard()
@@ -79,6 +81,19 @@ void UinputKeyboard::emit(int keyCode, int value)
     if (write(m_fd, &sync, sizeof(sync)) != sizeof(sync)) {
         qCWarning(PlasmaKeyboard) << "Failed to write a uinput sync event:" << strerror(errno);
     }
+
+    // Without a pause here, a combination's events (e.g. Meta down, then L
+    // down a function call later but still the same millisecond) can reach
+    // libinput/KWin close enough together that the compositor's global
+    // shortcut matcher evaluates the second key before it has finished
+    // registering the first one as held -- a real race, not a hypothetical
+    // one: it showed up as "Meta+L locks the session, then the lock
+    // immediately flies back open" (actually the launcher opening from a
+    // Meta seen as a bare tap, then losing focus again right away). A human
+    // pressing a physical combo always leaves tens of milliseconds of overlap
+    // between the keys for the same reason. 10ms per event is well under
+    // that and not perceptible when typing.
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 void UinputKeyboard::pressKey(int keyCode)

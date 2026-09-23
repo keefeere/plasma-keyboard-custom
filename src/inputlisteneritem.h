@@ -204,22 +204,17 @@ private:
      */
     bool handleModifiedKey(QKeyEvent *event, bool press);
 
-    //! Starts the hold-threshold timer for a just-pressed Ctrl/Alt/Meta key.
-    //! The tap already latched the modifier for the usual "applies to the next
-    //! key" behavior. For Ctrl/Alt, if the key is still held when the timer
-    //! fires, that latch is undone and the modifier is sent as a real held
-    //! key instead (down now, up on release), so it works the same as a
-    //! physical modifier for games and applications that read the raw key
-    //! state rather than a shortcut. For Meta, which is pressed for real
-    //! through uinput as soon as it is tapped (see handleModifiedKey()), the
-    //! same timer instead doubles as the grace period for a possible
-    //! combination: the timeout releases that press again if nothing
-    //! followed, i.e. a bare tap.
+    //! Starts the grace-period timer for a just-latched Ctrl/Alt/Meta key.
+    //! The tap already latched the modifier (for the usual "applies to the
+    //! next key" behavior) and pressed it for real through uinput (see
+    //! keyPressEvent()), so it already behaves like a physical modifier held
+    //! down for games and applications that read the raw key state. The
+    //! timer instead decides how the *uinput* press ends: if it fires before
+    //! another key completes a combination, nothing was typed -- a bare tap --
+    //! so its timeout releases that press again (e.g. what makes a bare Meta
+    //! tap reach KWin's "show the application launcher" shortcut instead of
+    //! leaving Meta stuck down).
     void armModifierHoldTimer(Qt::Key key);
-
-    //! The XKB keysym a modifier key event sends when held for real: Control_L,
-    //! Alt_L or Super_L. Returns 0 for anything else.
-    static uint32_t modifierKeysym(Qt::Key key);
 
     //! Stops the hold timer and clears the state armModifierHoldTimer() set,
     //! so it cannot fire later for a modifier that a combination (or a reset
@@ -250,25 +245,34 @@ private:
     //! updates, and those must not bring the panel back on their own.
     bool m_hiddenByUser = false;
 
-    //! Fires modifierHoldThresholdMs after a Ctrl/Alt/Meta key is pressed; see
+    //! Fires modifierHoldThresholdMs after a Ctrl/Alt/Meta key is latched; see
     //! armModifierHoldTimer().
     QTimer *m_modifierHoldTimer = nullptr;
-    //! Which modifier key the hold timer above is currently running for, or 0.
+    //! Which modifier key the grace-period timer above is currently running
+    //! for, or 0.
     Qt::Key m_pendingModifierKey = Qt::Key(0);
-    //! True once the hold timer has fired and a real key-down was sent for
-    //! m_pendingModifierKey; its release must then send a real key-up instead
-    //! of being treated as the tap that toggles the latch.
-    bool m_modifierHeldForReal = false;
 
-    //! Virtual keyboard used only for Meta-involving combinations; see
+    //! Virtual keyboard used for Ctrl/Alt/Meta combinations; see
     //! UinputKeyboard's own documentation for why. Null (and every call
-    //! guarded) is a supported state: it just means those combinations are
-    //! unavailable, same as before this existed.
+    //! guarded) is a supported state: it just falls back to the older
+    //! input-method-v1 path in handleModifiedKey(), same as before this
+    //! existed.
     std::unique_ptr<UinputKeyboard> m_uinput;
-    //! True while the Meta key held by m_uinput is currently pressed down.
+    //! Whether each modifier's uinput key is currently pressed down.
+    bool m_uinputCtrlHeld = false;
+    bool m_uinputAltHeld = false;
     bool m_uinputMetaHeld = false;
 
-    //! Releases the uinput Meta key if armMetaViaUinput() left it held, and
-    //! clears m_uinputMetaHeld. Safe to call unconditionally.
-    void releaseUinputMetaIfHeld();
+    //! Presses @p key's uinput key (Control_L/Alt_L/Super_L) if it is not
+    //! already held. Safe to call unconditionally; a no-op for any other key
+    //! or without a usable m_uinput.
+    void pressUinputModifier(Qt::Key key);
+
+    //! Releases @p key's uinput key if pressUinputModifier() left it held.
+    //! Safe to call unconditionally.
+    void releaseUinputModifierIfHeld(Qt::Key key);
+
+    //! releaseUinputModifierIfHeld() for Control, Alt and Meta together, so a
+    //! completed (or abandoned) combination can never leave one stuck down.
+    void releaseAllHeldUinputModifiers();
 };

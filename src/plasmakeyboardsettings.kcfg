@@ -128,7 +128,7 @@
             <default>400</default>
         </entry>
         <entry key="modifierHoldThresholdMs" type="Int">
-            <label>How long Ctrl/Alt/Meta must be held for it to act like a real held key (down while held, up on release) instead of latching for the next key.</label>
+            <label>How long to wait after tapping Ctrl/Alt/Meta for a combination to be completed with another key, before treating it as a bare tap of the modifier on its own.</label>
             <min>100</min>
             <max>1500</max>
             <default>400</default>

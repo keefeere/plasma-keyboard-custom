@@ -13,15 +13,19 @@
  * the compositor over only delivers keys to whichever client currently holds
  * a text input focus -- it was never meant to reach the compositor's own
  * global shortcuts (Meta+L to lock the session, Meta+D to show the desktop,
- * the bare Meta tap that opens the application launcher; see
- * ~/.config/kglobalshortcutsrc). Those are matched against real input, which
- * a uinput device provides: the kernel (and therefore libinput and KWin)
- * sees it exactly like a hardware keyboard, so a key sent through it can
- * reach global shortcuts that input-method-v1 cannot.
+ * the bare Meta tap that opens the application launcher, Alt+Tab to switch
+ * windows; see ~/.config/kglobalshortcutsrc). Those are matched against real
+ * input, which a uinput device provides: the kernel (and therefore libinput
+ * and KWin) sees it exactly like a hardware keyboard, so a key sent through
+ * it can reach global shortcuts that input-method-v1 cannot.
  *
- * Used only for the Meta-involving combinations; Ctrl/Alt-only ones keep
- * going through the input-method-v1 path, which already reaches the
- * focused application correctly (e.g. Ctrl+C/Ctrl+A).
+ * Used for every Ctrl/Alt/Meta combination (see InputListenerItem), so it
+ * also covers plain application-level shortcuts like Ctrl+C -- that keeps
+ * working the same, since the compositor forwards a real key press to
+ * whichever client has keyboard focus, same as input-method-v1 did for that
+ * case. It is only a fallback to the input-method-v1 path (kept for when
+ * /dev/uinput cannot be opened) that is now the exception rather than the
+ * rule.
  */
 class UinputKeyboard
 {

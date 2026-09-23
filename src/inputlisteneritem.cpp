@@ -201,41 +201,28 @@ InputListenerItem::InputListenerItem()
     m_modifierHoldTimer = new QTimer(this);
     m_modifierHoldTimer->setSingleShot(true);
     connect(m_modifierHoldTimer, &QTimer::timeout, this, [this] {
+        // The grace period for a possible combination ran out with nothing
+        // typed: a bare tap. The uinput press already happened on tap (see
+        // keyPressEvent()); release it now so the compositor sees a clean,
+        // real tap of the modifier alone -- exactly like a hardware key,
+        // which is what e.g. triggers KWin's "show the application launcher"
+        // shortcut for a bare Meta tap.
         auto *modifiers = KeyboardModifiers::instance();
-
-        if (m_pendingModifierKey == Qt::Key_Meta) {
-            // The grace period for a possible Meta+key combination ran out
-            // with nothing typed: a bare tap. The uinput press already
-            // happened on tap (see keyPressEvent()); release it now so the
-            // compositor sees a clean, real Meta tap -- exactly like a
-            // hardware Windows key, which is what triggers KWin's own
-            // "show the application launcher" global shortcut.
-            modifiers->setMeta(false);
-            releaseUinputMetaIfHeld();
-            m_pendingModifierKey = Qt::Key(0);
-            return;
-        }
-
-        // Still held past the threshold: this is a hold, not a tap. Undo the
-        // latch the tap set on press and send a real key-down instead, so the
-        // modifier behaves like a physical key for as long as it stays down.
         switch (m_pendingModifierKey) {
         case Qt::Key_Control:
-            modifiers->setCtrl(!modifiers->ctrl());
+            modifiers->setCtrl(false);
             break;
         case Qt::Key_Alt:
-            modifiers->setAlt(!modifiers->alt());
+            modifiers->setAlt(false);
+            break;
+        case Qt::Key_Meta:
+            modifiers->setMeta(false);
             break;
         default:
-            return;
+            break;
         }
-
-        const uint32_t keysym = modifierKeysym(m_pendingModifierKey);
-        const uint32_t keycode = keysym ? m_input.keycodeForKeysym(keysym) : 0;
-        if (keycode != 0) {
-            m_input.key(InputPlugin::Pressed, keycode);
-            m_modifierHeldForReal = true;
-        }
+        releaseUinputModifierIfHeld(m_pendingModifierKey);
+        m_pendingModifierKey = Qt::Key(0);
     });
 
     connect(&m_input, &InputPlugin::contextChanged, this, [this] {
@@ -644,24 +631,9 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
     return {};
 }
 
-uint32_t InputListenerItem::modifierKeysym(Qt::Key key)
-{
-    switch (key) {
-    case Qt::Key_Control:
-        return XKB_KEY_Control_L;
-    case Qt::Key_Alt:
-        return XKB_KEY_Alt_L;
-    case Qt::Key_Meta:
-        return XKB_KEY_Super_L;
-    default:
-        return 0;
-    }
-}
-
 void InputListenerItem::armModifierHoldTimer(Qt::Key key)
 {
     m_pendingModifierKey = key;
-    m_modifierHeldForReal = false;
     m_modifierHoldTimer->start(PlasmaKeyboardSettings::self()->modifierHoldThresholdMs());
 }
 
@@ -669,15 +641,71 @@ void InputListenerItem::cancelModifierHoldTimer()
 {
     m_modifierHoldTimer->stop();
     m_pendingModifierKey = Qt::Key(0);
-    m_modifierHeldForReal = false;
 }
 
-void InputListenerItem::releaseUinputMetaIfHeld()
+void InputListenerItem::pressUinputModifier(Qt::Key key)
 {
-    if (m_uinputMetaHeld && m_uinput) {
-        m_uinput->releaseKey(KEY_LEFTMETA);
-        m_uinputMetaHeld = false;
+    if (!m_uinput || !m_uinput->isValid()) {
+        return;
     }
+    switch (key) {
+    case Qt::Key_Control:
+        if (!m_uinputCtrlHeld) {
+            m_uinput->pressKey(KEY_LEFTCTRL);
+            m_uinputCtrlHeld = true;
+        }
+        break;
+    case Qt::Key_Alt:
+        if (!m_uinputAltHeld) {
+            m_uinput->pressKey(KEY_LEFTALT);
+            m_uinputAltHeld = true;
+        }
+        break;
+    case Qt::Key_Meta:
+        if (!m_uinputMetaHeld) {
+            m_uinput->pressKey(KEY_LEFTMETA);
+            m_uinputMetaHeld = true;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void InputListenerItem::releaseUinputModifierIfHeld(Qt::Key key)
+{
+    if (!m_uinput) {
+        return;
+    }
+    switch (key) {
+    case Qt::Key_Control:
+        if (m_uinputCtrlHeld) {
+            m_uinput->releaseKey(KEY_LEFTCTRL);
+            m_uinputCtrlHeld = false;
+        }
+        break;
+    case Qt::Key_Alt:
+        if (m_uinputAltHeld) {
+            m_uinput->releaseKey(KEY_LEFTALT);
+            m_uinputAltHeld = false;
+        }
+        break;
+    case Qt::Key_Meta:
+        if (m_uinputMetaHeld) {
+            m_uinput->releaseKey(KEY_LEFTMETA);
+            m_uinputMetaHeld = false;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void InputListenerItem::releaseAllHeldUinputModifiers()
+{
+    releaseUinputModifierIfHeld(Qt::Key_Control);
+    releaseUinputModifierIfHeld(Qt::Key_Alt);
+    releaseUinputModifierIfHeld(Qt::Key_Meta);
 }
 
 bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
@@ -697,38 +725,33 @@ bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
         return false;
     }
 
-    if (modifiers->meta() && m_uinput && m_uinput->isValid()) {
-        // Meta-involving combinations are global compositor shortcuts (Show
-        // Desktop, Lock Session, the application launcher...), which
+    if (m_uinput && m_uinput->isValid()) {
+        // Any Ctrl/Alt/Meta combination can be a compositor-global shortcut
+        // (Alt+Tab, Meta+L, Meta+D, the application launcher...), which
         // input-method-v1's client-scoped key forwarding cannot reach -- see
-        // UinputKeyboard's own documentation. Meta itself is already held
-        // down through that same uinput device (see keyPressEvent()); send
-        // the rest of the combination the same way, so the compositor sees a
-        // real hardware key combination. keycodeForKeysym() already returns
-        // an evdev scancode (see its own comment), so it can be sent as-is.
+        // UinputKeyboard's own documentation. Every latched modifier is
+        // already held down for real through that same uinput device (see
+        // keyPressEvent()); send the completing key the same way, so the
+        // compositor sees a real hardware key combination -- this also still
+        // reaches an ordinary application shortcut like Ctrl+C, since the
+        // compositor forwards a real key to whichever client has keyboard
+        // focus. keycodeForKeysym() already returns an evdev scancode (see
+        // its own comment), so it can be sent as-is.
         if (press) {
-            if (modifiers->ctrl()) {
-                m_uinput->pressKey(KEY_LEFTCTRL);
-            }
-            if (modifiers->alt()) {
-                m_uinput->pressKey(KEY_LEFTALT);
-            }
             m_uinput->pressKey(keycode);
         } else {
             m_uinput->releaseKey(keycode);
-            if (modifiers->alt()) {
-                m_uinput->releaseKey(KEY_LEFTALT);
-            }
-            if (modifiers->ctrl()) {
-                m_uinput->releaseKey(KEY_LEFTCTRL);
-            }
-            releaseUinputMetaIfHeld();
+            releaseAllHeldUinputModifiers();
             modifiers->reset();
             cancelModifierHoldTimer();
         }
         return true;
     }
 
+    // Fallback for when /dev/uinput could not be opened: the older
+    // input-method-v1 path, which only reaches the focused client's own
+    // shortcuts (e.g. Ctrl+C), not compositor-global ones.
+    //
     // Shift can take part in the combination (e.g. Ctrl+Shift+key).
     const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0)
         | (modifiers->meta() ? m_input.metaMask() : 0) | ((event->modifiers() & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
@@ -796,23 +819,21 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
     }
 
     // The on-screen Ctrl/Alt/Meta keys emit a plain Control/Alt/Meta event; a
-    // tap toggles the latch (works the same for touch and gamepad activation),
-    // applying to the next key. If the key is still held past
-    // modifierHoldThresholdMs, armModifierHoldTimer()'s timeout undoes that
-    // latch and sends the modifier as a real held key instead, for games and
-    // applications that read the raw key state rather than a shortcut.
-    //
-    // Meta is a further special case: it is pressed for real through the
-    // uinput device right away, rather than waiting for a hold, because Meta
-    // combinations are global compositor shortcuts (see handleModifiedKey())
-    // that only work when the compositor sees a real key down for the whole
-    // combination, Meta included. The same hold timer now doubles as the
-    // grace period for a possible combination; its own timeout releases the
-    // uinput press again if nothing followed (a bare tap).
+    // tap toggles the latch (works the same for touch and gamepad activation)
+    // and, right away rather than waiting for a hold, presses the modifier
+    // for real through the uinput device -- so it already behaves like a
+    // physical modifier held down, for games/apps that read the raw key state
+    // and for compositor-global shortcuts alike (Alt+Tab, Meta+L...), which
+    // only fire when the compositor sees a real key down for the whole
+    // combination; see UinputKeyboard's and handleModifiedKey()'s own
+    // documentation. The hold timer is then just the grace period for a
+    // possible combination: its timeout releases the press again if nothing
+    // followed (a bare tap).
     auto *modifiers = KeyboardModifiers::instance();
     if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
+        const auto key = static_cast<Qt::Key>(event->key());
         bool nowLatched = false;
-        switch (event->key()) {
+        switch (key) {
         case Qt::Key_Control:
             modifiers->setCtrl(!modifiers->ctrl());
             nowLatched = modifiers->ctrl();
@@ -824,22 +845,16 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
         case Qt::Key_Meta:
             modifiers->setMeta(!modifiers->meta());
             nowLatched = modifiers->meta();
-            if (m_uinput && m_uinput->isValid()) {
-                if (nowLatched) {
-                    m_uinput->pressKey(KEY_LEFTMETA);
-                    m_uinputMetaHeld = true;
-                } else {
-                    // A second tap while already latched cancels it.
-                    releaseUinputMetaIfHeld();
-                }
-            }
             break;
         default:
             break;
         }
         if (nowLatched) {
-            armModifierHoldTimer(static_cast<Qt::Key>(event->key()));
+            pressUinputModifier(key);
+            armModifierHoldTimer(key);
         } else {
+            // A second tap while already latched cancels it.
+            releaseUinputModifierIfHeld(key);
             cancelModifierHoldTimer();
         }
         event->accept();
@@ -867,29 +882,11 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
     }
 
     if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
-        if (m_modifierHeldForReal && event->key() == m_pendingModifierKey) {
-            // Held past the threshold: the timer already sent a real key-down
-            // for it, so release completes it as a real key-up.
-            const uint32_t keysym = modifierKeysym(static_cast<Qt::Key>(event->key()));
-            const uint32_t keycode = keysym ? m_input.keycodeForKeysym(keysym) : 0;
-            if (keycode != 0) {
-                m_input.key(InputPlugin::Released, keycode);
-            }
-            m_pendingModifierKey = Qt::Key(0);
-            m_modifierHeldForReal = false;
-        } else if (event->key() == Qt::Key_Meta) {
-            // Physically releasing the on-screen Meta key does not decide
-            // anything by itself: the grace period (the same hold timer,
-            // still running) keeps deciding between a bare tap and a
-            // combination -- see keyPressEvent() and the timer's own timeout
-            // handler. Leave it running.
-        } else {
-            // A quick Ctrl/Alt tap: the toggle already happened on press, and
-            // the hold timer never fired. Nothing else to do but stop it.
-            m_modifierHoldTimer->stop();
-            m_pendingModifierKey = Qt::Key(0);
-            m_modifierHeldForReal = false;
-        }
+        // Physically releasing the on-screen key does not decide anything by
+        // itself: it is already pressed for real through uinput (see
+        // keyPressEvent()), and the grace period (the hold timer, still
+        // running) keeps deciding between a bare tap and a combination --
+        // see the timer's own timeout handler. Leave it running.
         event->accept();
         return;
     }
@@ -907,10 +904,10 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
         // could not be mapped, so the modifier never gets stuck.
         modifiers->reset();
         cancelModifierHoldTimer();
-        // handleModifiedKey() declined (this key could not be mapped): if
-        // Meta was already pressed for real through uinput, release it too,
-        // so it never gets stuck down.
-        releaseUinputMetaIfHeld();
+        // handleModifiedKey() declined (this key could not be mapped): if a
+        // modifier was already pressed for real through uinput, release it
+        // too, so it never gets stuck down.
+        releaseAllHeldUinputModifiers();
     }
 
     const QList<xkb_keysym_t> keys = QXkbCommon::toKeysym(event);
