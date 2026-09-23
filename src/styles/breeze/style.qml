@@ -173,7 +173,15 @@ KeyboardStyle {
                 // minimumPixelSize, so a short label that already fits (a
                 // single letter, a symbol) renders at the full pixelSize,
                 // same as before.
-                width: Math.max(0, parent.width - theme.keyContentMargin)
+                //
+                // Bound to control.width (the actual key button) rather than
+                // keyContent/parent.width: the latter goes through
+                // BreezeKeyPanel's QQC2.Control contentItem sizing, which for
+                // the very first key created (Escape, top-left of the very
+                // first layout loaded) was still 0 when this binding first
+                // evaluated and never widened afterwards, leaving that one
+                // label unconstrained.
+                width: Math.max(0, control.width - theme.keyContentMargin)
                 fontSizeMode: Text.HorizontalFit
                 minimumPixelSize: 10
                 font {
