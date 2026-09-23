@@ -17,6 +17,9 @@
 #include <xkbcommon/xkbcommon.h>
 
 #include "inputplugin.h"
+#include "uinputkeyboard.h"
+
+#include <memory>
 
 class ClipboardHistory;
 class OverlayController;
@@ -203,10 +206,15 @@ private:
 
     //! Starts the hold-threshold timer for a just-pressed Ctrl/Alt/Meta key.
     //! The tap already latched the modifier for the usual "applies to the next
-    //! key" behavior; if the key is still held when the timer fires, that latch
-    //! is undone and the modifier is sent as a real held key instead (down now,
-    //! up on release), so it works the same as a physical modifier for games
-    //! and applications that read the raw key state rather than a shortcut.
+    //! key" behavior. For Ctrl/Alt, if the key is still held when the timer
+    //! fires, that latch is undone and the modifier is sent as a real held
+    //! key instead (down now, up on release), so it works the same as a
+    //! physical modifier for games and applications that read the raw key
+    //! state rather than a shortcut. For Meta, which is pressed for real
+    //! through uinput as soon as it is tapped (see handleModifiedKey()), the
+    //! same timer instead doubles as the grace period for a possible
+    //! combination: the timeout releases that press again if nothing
+    //! followed, i.e. a bare tap.
     void armModifierHoldTimer(Qt::Key key);
 
     //! The XKB keysym a modifier key event sends when held for real: Control_L,
@@ -251,4 +259,16 @@ private:
     //! m_pendingModifierKey; its release must then send a real key-up instead
     //! of being treated as the tap that toggles the latch.
     bool m_modifierHeldForReal = false;
+
+    //! Virtual keyboard used only for Meta-involving combinations; see
+    //! UinputKeyboard's own documentation for why. Null (and every call
+    //! guarded) is a supported state: it just means those combinations are
+    //! unavailable, same as before this existed.
+    std::unique_ptr<UinputKeyboard> m_uinput;
+    //! True while the Meta key held by m_uinput is currently pressed down.
+    bool m_uinputMetaHeld = false;
+
+    //! Releases the uinput Meta key if armMetaViaUinput() left it held, and
+    //! clears m_uinputMetaHeld. Safe to call unconditionally.
+    void releaseUinputMetaIfHeld();
 };

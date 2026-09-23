@@ -86,6 +86,8 @@ target_sources(plasma-keyboard-custom PRIVATE
     settingsreloader.cpp
     settingsreloader.h
     touchholdwatcher.cpp
+    uinputkeyboard.cpp
+    uinputkeyboard.h
     inputplugin.h
     theme/thememanager.cpp
     theme/thememanager.h
