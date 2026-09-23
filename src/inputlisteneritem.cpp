@@ -661,23 +661,31 @@ void InputListenerItem::cancelModifierHoldTimer()
 bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
 {
     auto *modifiers = KeyboardModifiers::instance();
+    qCDebug(PlasmaKeyboard) << "handleModifiedKey: ENTRY press=" << press << "key=" << event->key() << "text=" << event->text() << "ctrl="
+                            << modifiers->ctrl() << "alt=" << modifiers->alt() << "meta=" << modifiers->meta();
     if (!modifiers->ctrl() && !modifiers->alt() && !modifiers->meta()) {
+        qCDebug(PlasmaKeyboard) << "handleModifiedKey: no modifier latched, declining";
         return false;
     }
 
     const QList<xkb_keysym_t> keysyms = QXkbCommon::toKeysym(event);
     if (keysyms.isEmpty()) {
+        qCDebug(PlasmaKeyboard) << "handleModifiedKey: QXkbCommon::toKeysym() returned no keysyms, declining";
         return false;
     }
 
     const uint32_t keycode = m_input.keycodeForKeysym(keysyms.first());
     if (keycode == 0) {
+        qCDebug(PlasmaKeyboard) << "handleModifiedKey: no keycode for keysym" << Qt::hex << keysyms.first() << Qt::dec << ", declining";
         return false;
     }
 
     // Shift can take part in the combination (e.g. Ctrl+Shift+key).
     const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0)
         | (modifiers->meta() ? m_input.metaMask() : 0) | ((event->modifiers() & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
+    qCDebug(PlasmaKeyboard) << "handleModifiedKey: sending keycode=" << keycode << "depressed=" << Qt::hex << depressed << Qt::dec
+                            << "controlMask=" << Qt::hex << m_input.controlMask() << "altMask=" << m_input.altMask()
+                            << "metaMask=" << m_input.metaMask() << Qt::dec;
 
 
     if (press) {
