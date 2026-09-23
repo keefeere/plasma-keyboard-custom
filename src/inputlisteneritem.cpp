@@ -201,28 +201,13 @@ InputListenerItem::InputListenerItem()
     m_modifierHoldTimer = new QTimer(this);
     m_modifierHoldTimer->setSingleShot(true);
     connect(m_modifierHoldTimer, &QTimer::timeout, this, [this] {
-        // The grace period for a possible combination ran out with nothing
-        // typed: a bare tap. The uinput press already happened on tap (see
-        // keyPressEvent()); release it now so the compositor sees a clean,
-        // real tap of the modifier alone -- exactly like a hardware key,
-        // which is what e.g. triggers KWin's "show the application launcher"
-        // shortcut for a bare Meta tap.
-        auto *modifiers = KeyboardModifiers::instance();
-        switch (m_pendingModifierKey) {
-        case Qt::Key_Control:
-            modifiers->setCtrl(false);
-            break;
-        case Qt::Key_Alt:
-            modifiers->setAlt(false);
-            break;
-        case Qt::Key_Meta:
-            modifiers->setMeta(false);
-            break;
-        default:
-            break;
-        }
-        releaseUinputModifierIfHeld(m_pendingModifierKey);
-        m_pendingModifierKey = Qt::Key(0);
+        // Still held past the threshold: a genuine physical hold, not a tap.
+        // The uinput key is already pressed for real (it went down the
+        // moment the tap latched it, in keyPressEvent()); just remember that
+        // releasing the on-screen key now must end the hold for real (see
+        // keyReleaseEvent()), instead of leaving it latched for whatever is
+        // typed next.
+        m_modifierHeldForReal = true;
     });
 
     connect(&m_input, &InputPlugin::contextChanged, this, [this] {
@@ -634,6 +619,7 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
 void InputListenerItem::armModifierHoldTimer(Qt::Key key)
 {
     m_pendingModifierKey = key;
+    m_modifierHeldForReal = false;
     m_modifierHoldTimer->start(PlasmaKeyboardSettings::self()->modifierHoldThresholdMs());
 }
 
@@ -641,6 +627,7 @@ void InputListenerItem::cancelModifierHoldTimer()
 {
     m_modifierHoldTimer->stop();
     m_pendingModifierKey = Qt::Key(0);
+    m_modifierHeldForReal = false;
 }
 
 void InputListenerItem::pressUinputModifier(Qt::Key key)
@@ -819,16 +806,19 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
     }
 
     // The on-screen Ctrl/Alt/Meta keys emit a plain Control/Alt/Meta event; a
-    // tap toggles the latch (works the same for touch and gamepad activation)
-    // and, right away rather than waiting for a hold, presses the modifier
-    // for real through the uinput device -- so it already behaves like a
-    // physical modifier held down, for games/apps that read the raw key state
-    // and for compositor-global shortcuts alike (Alt+Tab, Meta+L...), which
-    // only fire when the compositor sees a real key down for the whole
-    // combination; see UinputKeyboard's and handleModifiedKey()'s own
-    // documentation. The hold timer is then just the grace period for a
-    // possible combination: its timeout releases the press again if nothing
-    // followed (a bare tap).
+    // tap toggles the latch, which stays engaged like a lock key -- applying
+    // to whatever combination follows, however long that takes -- until it is
+    // either completed (handleModifiedKey()) or cancelled by tapping the same
+    // key again. Right away rather than waiting for a hold, the tap also
+    // presses the modifier for real through the uinput device, so it already
+    // behaves like a physical modifier held down, for games/apps that read
+    // the raw key state and for compositor-global shortcuts alike (Alt+Tab,
+    // Meta+L...), which only fire when the compositor sees a real key down
+    // for the whole combination; see UinputKeyboard's and
+    // handleModifiedKey()'s own documentation. If the key is still physically
+    // held when the hold timer fires, that is a genuine hold rather than a
+    // tap-then-latch, and keyReleaseEvent() ends it the moment the finger
+    // lifts instead of leaving it latched.
     auto *modifiers = KeyboardModifiers::instance();
     if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
         const auto key = static_cast<Qt::Key>(event->key());
@@ -882,11 +872,42 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
     }
 
     if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
-        // Physically releasing the on-screen key does not decide anything by
-        // itself: it is already pressed for real through uinput (see
-        // keyPressEvent()), and the grace period (the hold timer, still
-        // running) keeps deciding between a bare tap and a combination --
-        // see the timer's own timeout handler. Leave it running.
+        const auto key = static_cast<Qt::Key>(event->key());
+        if (m_modifierHeldForReal && key == m_pendingModifierKey) {
+            // A genuine hold (the timer fired while still touching, see
+            // armModifierHoldTimer()): releasing the on-screen key now ends
+            // it for real, instead of leaving it latched for whatever is
+            // typed next.
+            auto *modifiers = KeyboardModifiers::instance();
+            switch (key) {
+            case Qt::Key_Control:
+                modifiers->setCtrl(false);
+                break;
+            case Qt::Key_Alt:
+                modifiers->setAlt(false);
+                break;
+            case Qt::Key_Meta:
+                modifiers->setMeta(false);
+                break;
+            default:
+                break;
+            }
+            releaseUinputModifierIfHeld(key);
+            m_pendingModifierKey = Qt::Key(0);
+            m_modifierHeldForReal = false;
+        } else {
+            // A quick tap: the toggle (and the uinput press it made, if it
+            // latched) already happened on press -- see keyPressEvent(). The
+            // hold timer must not fire later and mark this as a hold when
+            // the finger already lifted, so stop it. The latch itself is
+            // left alone: it stays engaged, like a lock key, until a
+            // combination completes (handleModifiedKey()) or the same key is
+            // tapped again to cancel it (keyPressEvent()) -- it does not
+            // expire on its own.
+            m_modifierHoldTimer->stop();
+            m_pendingModifierKey = Qt::Key(0);
+            m_modifierHeldForReal = false;
+        }
         event->accept();
         return;
     }

@@ -204,16 +204,16 @@ private:
      */
     bool handleModifiedKey(QKeyEvent *event, bool press);
 
-    //! Starts the grace-period timer for a just-latched Ctrl/Alt/Meta key.
-    //! The tap already latched the modifier (for the usual "applies to the
-    //! next key" behavior) and pressed it for real through uinput (see
-    //! keyPressEvent()), so it already behaves like a physical modifier held
-    //! down for games and applications that read the raw key state. The
-    //! timer instead decides how the *uinput* press ends: if it fires before
-    //! another key completes a combination, nothing was typed -- a bare tap --
-    //! so its timeout releases that press again (e.g. what makes a bare Meta
-    //! tap reach KWin's "show the application launcher" shortcut instead of
-    //! leaving Meta stuck down).
+    //! Starts the hold-threshold timer for a just-latched Ctrl/Alt/Meta key.
+    //! The tap already latched the modifier (it stays engaged, like a lock
+    //! key, until a combination completes or the same key is tapped again to
+    //! cancel it -- see keyPressEvent()/keyReleaseEvent()) and pressed it for
+    //! real through uinput, so it already behaves like a physical modifier
+    //! held down for games and applications that read the raw key state. If
+    //! the key is still (physically) held when the timer fires, that is a
+    //! genuine hold rather than a tap: keyReleaseEvent() then ends it (and
+    //! the latch) the moment the finger lifts, instead of leaving it engaged
+    //! for whatever is typed next.
     void armModifierHoldTimer(Qt::Key key);
 
     //! Stops the hold timer and clears the state armModifierHoldTimer() set,
@@ -248,9 +248,12 @@ private:
     //! Fires modifierHoldThresholdMs after a Ctrl/Alt/Meta key is latched; see
     //! armModifierHoldTimer().
     QTimer *m_modifierHoldTimer = nullptr;
-    //! Which modifier key the grace-period timer above is currently running
-    //! for, or 0.
+    //! Which modifier key the hold timer above is currently running for, or 0.
     Qt::Key m_pendingModifierKey = Qt::Key(0);
+    //! True once the hold timer has fired for m_pendingModifierKey: it is
+    //! being genuinely held down (not just latched from a tap), so releasing
+    //! it must end the hold for real instead of leaving it latched.
+    bool m_modifierHeldForReal = false;
 
     //! Virtual keyboard used for Ctrl/Alt/Meta combinations; see
     //! UinputKeyboard's own documentation for why. Null (and every call
