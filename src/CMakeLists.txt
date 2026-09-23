@@ -182,6 +182,7 @@ ecm_target_qml_sources(plasma-keyboard-custom SOURCES
     qml/AlternatesList.qml
     qml/OverlayWindow.qml
     qml/VoicePanel.qml
+    qml/GamepadBadge.qml
 )
 ecm_finalize_qml_module(plasma-keyboard-custom)
 

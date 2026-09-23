@@ -87,7 +87,10 @@ Q_SIGNALS:
     void toggleSymbols();
     /*! Switch to the next keyboard layout. */
     void switchLanguage();
-    /*! Hide the keyboard. */
+    /*! Go back: leave the voice page, or close the keyboard when it is not up
+        (B). */
+    void back();
+    /*! Hide the keyboard (Start). */
     void hideKeyboard();
     /*! Move the focus between the keyboard and the rows above it (Select). */
     void toggleExtraRows();

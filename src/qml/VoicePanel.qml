@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com>
 // SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 
 import org.kde.kirigami as Kirigami
@@ -15,6 +17,12 @@ import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
  * what was said. The recognised text is inserted by the keyboard, which also
  * leaves this mode. The row under the button keeps the keys that are needed
  * while dictating: the space bar, backspace and enter.
+ *
+ * A gamepad drives the page the same way it drives the ordinary keyboard: the
+ * directions move the highlight between the seven controls (the microphone, the
+ * four keys of the row under it and the two corner buttons), A activates the
+ * highlighted one, and every control carries the badge of the button that
+ * reaches it.
  */
 Item {
     id: root
@@ -31,8 +39,12 @@ Item {
     /*! Message shown under the button, for example when the model is missing. */
     property string message: ""
 
-    /*! Whether the gamepad navigation highlights the microphone button. */
+    /*! Whether the gamepad navigation is on: the highlight is shown on the
+        element the gamepad selected. */
     property bool highlighted: false
+
+    /*! Index of the element the gamepad selected, see the focus* properties. */
+    property int focusIndex: 0
 
     /*! Name of the language of the active layout, shown on the space bar the
         same way the ordinary keyboard shows it. */
@@ -41,6 +53,15 @@ Item {
     /*! Height of the keys in the row under the microphone. */
     readonly property real keyHeight: Math.min(height * 0.17, width * 0.11)
 
+    // The controls the gamepad walks, in the order of the focus index: the
+    // microphone, then the row under it (language, space, enter, backspace),
+    // then the corner buttons (hide, back).
+    readonly property int microphoneIndex: 0
+    readonly property int actionRowFirstIndex: 1
+    readonly property int actionRowCount: 4
+    readonly property int hideIndex: actionRowFirstIndex + actionRowCount
+    readonly property int closeIndex: hideIndex + 1
+
     signal toggleRequested()
     signal closeRequested()
     signal hideRequested()
@@ -48,6 +69,84 @@ Item {
     signal spaceRequested()
     signal enterRequested()
     signal backspaceRequested()
+
+    /*! First element of the group the gamepad walks inside. */
+    function groupFirstIndex(group) {
+        if (group === 0) {
+            return microphoneIndex;
+        }
+        return group === 1 ? actionRowFirstIndex : hideIndex;
+    }
+
+    /*! Number of elements in that group. */
+    function groupCount(group) {
+        if (group === 0) {
+            return 1;
+        }
+        return group === 1 ? actionRowCount : 2;
+    }
+
+    /*! Group of the given element: 0 — the microphone, 1 — the row under it,
+        2 — the corner buttons. */
+    function groupOf(index) {
+        if (index <= microphoneIndex) {
+            return 0;
+        }
+        return index < hideIndex ? 1 : 2;
+    }
+
+    /*! Whether the gamepad highlight is on the element with that index. */
+    function focused(index) {
+        return root.highlighted && root.focusIndex === index;
+    }
+
+    /*! Moves the highlight with a gamepad direction. Sideways it walks the
+        group the highlight is in, up and down it walks the groups. */
+    function navigate(key) {
+        const group = root.groupOf(root.focusIndex);
+        const first = root.groupFirstIndex(group);
+        const count = root.groupCount(group);
+
+        if (key === Qt.Key_Left || key === Qt.Key_Right) {
+            const offset = root.focusIndex - first;
+            const step = key === Qt.Key_Right ? 1 : count - 1;
+            root.focusIndex = first + (offset + step) % count;
+            return;
+        }
+
+        if (key === Qt.Key_Up || key === Qt.Key_Down) {
+            const nextGroup = (group + (key === Qt.Key_Down ? 1 : 2)) % 3;
+            root.focusIndex = root.groupFirstIndex(nextGroup);
+        }
+    }
+
+    /*! Activates the element the highlight is on, like A on the ordinary
+        keyboard types the highlighted key. */
+    function activate() {
+        switch (root.focusIndex) {
+        case root.microphoneIndex:
+            root.toggleRequested();
+            break;
+        case root.actionRowFirstIndex:
+            root.languageRequested();
+            break;
+        case root.actionRowFirstIndex + 1:
+            root.spaceRequested();
+            break;
+        case root.actionRowFirstIndex + 2:
+            root.enterRequested();
+            break;
+        case root.actionRowFirstIndex + 3:
+            root.backspaceRequested();
+            break;
+        case root.hideIndex:
+            root.hideRequested();
+            break;
+        case root.closeIndex:
+            root.closeRequested();
+            break;
+        }
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -89,9 +188,30 @@ Item {
                 }
             }
 
+            // Start has no letter on the controller, so the badge shows the
+            // menu glyph the button carries on handhelds.
+            GamepadBadge {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 4
+                glyph: "≡"
+                badgeColor: "#455a64"
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: PlasmaKeyboard.BreezeConstants.buttonRadius
+                color: "transparent"
+                border.width: root.focused(root.hideIndex) ? 3 : 0
+                border.color: PlasmaKeyboard.BreezeConstants.navigationHighlightBorderColor
+            }
+
             MouseArea {
                 anchors.fill: parent
-                onClicked: root.hideRequested()
+                onClicked: {
+                    root.focusIndex = root.hideIndex;
+                    root.hideRequested();
+                }
             }
         }
 
@@ -113,9 +233,28 @@ Item {
                 }
             }
 
+            GamepadBadge {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 4
+                glyph: "B"
+                badgeColor: "#c62828"
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: PlasmaKeyboard.BreezeConstants.buttonRadius
+                color: "transparent"
+                border.width: root.focused(root.closeIndex) ? 3 : 0
+                border.color: PlasmaKeyboard.BreezeConstants.navigationHighlightBorderColor
+            }
+
             MouseArea {
                 anchors.fill: parent
-                onClicked: root.closeRequested()
+                onClicked: {
+                    root.focusIndex = root.closeIndex;
+                    root.closeRequested();
+                }
             }
         }
     }
@@ -140,13 +279,6 @@ Item {
             border.width: Math.max(2, width * 0.03)
             border.color: PlasmaKeyboard.BreezeConstants.primaryDarkColor
             opacity: root.recording ? 0.55 : 0
-
-            Behavior on width {
-                NumberAnimation {
-                    duration: 90
-                    easing.type: Easing.OutQuad
-                }
-            }
         }
 
         Rectangle {
@@ -154,7 +286,7 @@ Item {
             anchors.fill: parent
             radius: width / 2
             color: root.recording ? PlasmaKeyboard.BreezeConstants.primaryDarkColor : PlasmaKeyboard.Theme.current.normalKeyBackgroundColor
-            border.width: root.highlighted ? 3 : 0
+            border.width: root.focused(root.microphoneIndex) ? 3 : 0
             border.color: PlasmaKeyboard.BreezeConstants.navigationHighlightBorderColor
 
             Kirigami.Icon {
@@ -167,9 +299,20 @@ Item {
             }
         }
 
+        GamepadBadge {
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: parent.width * 0.14
+            glyph: "A"
+            badgeColor: "#2e7d32"
+        }
+
         MouseArea {
             anchors.fill: parent
-            onClicked: root.toggleRequested()
+            onClicked: {
+                root.focusIndex = root.microphoneIndex;
+                root.toggleRequested();
+            }
         }
     }
 
@@ -213,27 +356,36 @@ Item {
                 {
                     "kind": "language",
                     "icon": "globe-symbolic",
+                    "glyph": "RB",
+                    "badgeColor": "#455a64",
                     "weight": 1.5
                 },
                 {
                     "kind": "space",
                     "icon": "",
+                    "glyph": "Y",
+                    "badgeColor": "#f9a825",
                     "weight": 5
                 },
                 {
                     "kind": "enter",
                     "icon": "keyboard-enter-symbolic",
+                    "glyph": "RT",
+                    "badgeColor": "#455a64",
                     "weight": 1.5
                 },
                 {
                     "kind": "backspace",
                     "icon": "edit-clear-symbolic",
+                    "glyph": "X",
+                    "badgeColor": "#1565c0",
                     "weight": 1.5
                 }
             ]
 
             delegate: Item {
                 required property var modelData
+                required property int index
                 width: root.keyHeight * modelData.weight
                 height: root.keyHeight
 
@@ -242,6 +394,8 @@ Item {
                     anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin
                     radius: PlasmaKeyboard.BreezeConstants.buttonRadius
                     color: keyHandler.pressed ? PlasmaKeyboard.Theme.current.keyColorFor("normal", "pressed") : PlasmaKeyboard.Theme.current.normalKeyBackgroundColor
+                    border.width: root.focused(root.actionRowFirstIndex + index) ? 3 : 0
+                    border.color: PlasmaKeyboard.BreezeConstants.navigationHighlightBorderColor
 
                     Kirigami.Icon {
                         anchors.centerIn: parent
@@ -266,10 +420,19 @@ Item {
                     }
                 }
 
+                GamepadBadge {
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.margins: PlasmaKeyboard.BreezeConstants.keyBackgroundMargin + 4
+                    glyph: modelData.glyph
+                    badgeColor: modelData.badgeColor
+                }
+
                 MouseArea {
                     id: keyHandler
                     anchors.fill: parent
                     onClicked: {
+                        root.focusIndex = root.actionRowFirstIndex + index;
                         if (modelData.kind === "language") {
                             root.languageRequested();
                         } else if (modelData.kind === "space") {

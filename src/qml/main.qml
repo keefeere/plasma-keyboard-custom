@@ -39,6 +39,9 @@ InputPanelWindow {
             extraRowFocus = 0;
             extraColumn = 0;
 
+            // The gamepad highlight of the voice page is gone with the window.
+            voiceNavigationActive = false;
+
             // The word being typed is gone with the field it was typed into.
             predictions = [];
             suggestionsRow.clipboardChosen = false;
@@ -80,10 +83,17 @@ InputPanelWindow {
     //! microphone button. Only reachable while the voice input is enabled.
     property bool voiceMode: false
 
+    //! Whether the gamepad has taken over the voice page: the highlight is on
+    //! one of its controls, and the directions move it instead of the (hidden)
+    //! keys of Qt Virtual Keyboard.
+    property bool voiceNavigationActive: false
+
     //! Opens the voice input mode from the microphone key of a layout.
     function openVoiceMode() {
         if (PlasmaKeyboardSettings.sttEnabled) {
             root.voiceMode = true;
+            root.voiceNavigationActive = false;
+            voicePanel.focusIndex = voicePanel.microphoneIndex;
         }
     }
 
@@ -91,6 +101,7 @@ InputPanelWindow {
     function closeVoiceMode() {
         PlasmaKeyboard.Stt.cancel();
         root.voiceMode = false;
+        root.voiceNavigationActive = false;
     }
 
     //! The word lists the completions and the corrections are looked up in.
@@ -355,6 +366,13 @@ InputPanelWindow {
     // highlight, so it has to know whether there are any before the button is
     // held: the delay only starts when something can be offered.
     function updateGamepadAlternates() {
+        // Holding A on the voice page must not offer the alternate characters
+        // of a key that is hidden behind it: there A activates the highlighted
+        // control instead.
+        if (root.voiceMode) {
+            gamepad.setAlternatesArmable(false, []);
+            return;
+        }
         if (!PlasmaKeyboardSettings.gamepadAlternatesEnabled) {
             gamepad.setAlternatesArmable(false, []);
             return;
@@ -421,6 +439,15 @@ InputPanelWindow {
         readonly property bool drivingAlternates: thing.overlayController.overlayVisible && thing.overlayController.alternatesOnly
 
         onNavigate: (key) => {
+            // The voice page has no keys of Qt Virtual Keyboard to move in: its
+            // own controls take the highlight, which also turns the highlight on
+            // for the first press.
+            if (root.voiceMode) {
+                root.voiceNavigationActive = true;
+                voicePanel.navigate(key);
+                return;
+            }
+
             if (drivingAlternates) {
                 thing.overlayController.navigateAlternates(key);
                 return;
@@ -545,6 +572,12 @@ InputPanelWindow {
             inputPanel.InputContext.priv.navigationKeyReleased(key, false);
         }
         onActivate: {
+            // A takes the control the voice page has highlighted.
+            if (root.voiceMode) {
+                voicePanel.activate();
+                return;
+            }
+
             if (root.extraRowFocus !== 0) {
                 root.activateExtraRowItem();
                 return;
@@ -571,6 +604,11 @@ InputPanelWindow {
             thing.overlayController.navigateAlternates(Qt.Key_Return);
         }
         onToggleExtraRows: {
+            // The rows above the keyboard are covered by the voice page.
+            if (root.voiceMode) {
+                return;
+            }
+
             const zone = root.rowAbove(root.extraRowFocus);
             if (root.extraRowFocus === 0) {
                 const keyboard = inputPanel.keyboard;
@@ -586,16 +624,35 @@ InputPanelWindow {
         onBackspace: thing.sendKeyEvent(Qt.Key_Backspace, "")
         onSpace: thing.sendKeyEvent(Qt.Key_Space, " ")
         onEnter: thing.sendKeyEvent(Qt.Key_Return, "\n")
-        onToggleShift: inputPanel.InputContext.priv.shiftHandler.toggleShift()
-        onToggleSymbols: inputPanel.keyboard.symbolMode = !inputPanel.keyboard.symbolMode
+        onToggleShift: {
+            // Shift has nothing to shift on the voice page.
+            if (!root.voiceMode) {
+                inputPanel.InputContext.priv.shiftHandler.toggleShift();
+            }
+        }
+        onToggleSymbols: {
+            // The symbols layer is hidden behind the voice page as well.
+            if (!root.voiceMode) {
+                inputPanel.keyboard.symbolMode = !inputPanel.keyboard.symbolMode;
+            }
+        }
         onSwitchLanguage: inputPanel.keyboard.changeInputLanguage(false)
-        onHideKeyboard: {
-            // B dismisses the alternates list without picking anything; only a
-            // second press closes the keyboard.
+        onBack: {
+            // B dismisses the alternates list without picking anything; on the
+            // voice page it goes back to the ordinary keyboard, and only there
+            // does a second press close the keyboard.
             if (drivingAlternates) {
                 thing.overlayController.navigateAlternates(Qt.Key_Escape);
                 return;
             }
+            if (root.voiceMode) {
+                root.closeVoiceMode();
+                return;
+            }
+            Qt.inputMethod.hide();
+        }
+        onHideKeyboard: {
+            // Start hides the keyboard from anywhere, the voice page included.
             Qt.inputMethod.hide();
         }
     }
@@ -1435,7 +1492,7 @@ InputPanelWindow {
             busy: PlasmaKeyboard.Stt.busy
             level: PlasmaKeyboard.Stt.level
             message: PlasmaKeyboard.Stt.lastError
-            highlighted: gamepad.available && inputPanel.keyboard.navigationModeActive
+            highlighted: gamepad.available && root.voiceNavigationActive
             // The space bar of the voice mode shows the active layout, the same
             // way the space bar of the ordinary keyboard does.
             languageName: {

@@ -308,8 +308,9 @@ void GamepadHandler::onInputEvent(const QString &event, double value)
     }
 
     if (event == QLatin1String("ui_back")) {
-        // B: close the keyboard.
-        Q_EMIT hideKeyboard();
+        // B: go back. The panel decides what that means where it stands: it
+        // leaves the voice page, or closes the keyboard when there is none.
+        Q_EMIT back();
     } else if (event == QLatin1String("ui_action")) {
         // Y: space.
         Q_EMIT space();

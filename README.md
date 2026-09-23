@@ -524,6 +524,8 @@ Models are downloaded with the **Download** button on the same page (and removed
 
 To dictate: a **microphone key** appears next to the space bar. It opens the voice mode — one big microphone button in the middle; the first tap starts recording, the second stops it and inserts the recognised text into the focused field. The mode stays open until you leave it yourself with the arrow in the top right corner (next to it is the key that hides the keyboard). The keys that are still needed while dictating are kept under the microphone: the layout switch, the space bar (showing the language), Enter and Backspace.
 
+The gamepad drives the voice mode the same way it drives the ordinary keyboard: the **D-pad** moves the highlight over the seven controls — the big microphone button, the row under it (layout, space, Enter, Backspace) and the corner buttons (hide the keyboard, go back to the keyboard); **A** presses the highlighted one, **B** leaves the voice mode for the ordinary keyboard, **Start** hides the keyboard, and **X**/**Y**/**RT**/**RB** keep their usual meaning (backspace, space, Enter, layout switch). Every control carries the glyph of the gamepad button that presses it.
+
 Notes:
 
 - Whisper and Parakeet are built together with the keyboard (whisper.cpp sources, MIT license) — no separate packages are needed.
