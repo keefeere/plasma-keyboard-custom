@@ -56,7 +56,12 @@ void QWaylandInputPanelSurface::applyConfigure()
     }
     }
 
-    window()->display()->handleWindowActivated(window());
+    // The input panel surface is not the keyboard window in this application: it
+    // is an invisible one pixel stub that only carries the panel rectangle for
+    // the compositor, while the keys are drawn in a layer-shell window of their
+    // own (see main.cpp). Announcing it as the active window would take Qt's
+    // focus window away from the window that holds the input item, and Qt
+    // Virtual Keyboard hides the panel again when the focus object goes away.
 }
 
 QT_END_NAMESPACE

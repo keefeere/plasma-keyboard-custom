@@ -198,10 +198,18 @@ public:
         // hidden, the gamepad mapping is not restored and the focused window keeps
         // the space reserved for the keyboard.
         connect(window, &QWindow::visibleChanged, this, &KeyboardWindowBridge::syncStubVisibility);
-        window->setVisible(true);
+        // The keyboard belongs on screen only while it is asked for: Qt Virtual
+        // Keyboard maps the window when it shows the panel and unmaps it when it
+        // hides it. Mapping it here as well put the keyboard on screen (and made
+        // the compositor reserve its space) right after the session started,
+        // without anything having asked for it. The window is only brought to
+        // the state the input method is in.
+        window->setVisible(QGuiApplication::inputMethod()->isVisible());
         // Qt Virtual Keyboard needs the window with the input item to be active,
         // otherwise it keeps the panel (and its keys) disabled.
-        activateKeyboardWindow(window);
+        if (window->isVisible()) {
+            activateKeyboardWindow(window);
+        }
         syncStubVisibility();
         qCDebug(PlasmaKeyboard) << "keyboard window registered, kwin visible" << m_kwinVisible << "active" << window->isActive() << "focus window"
                                 << QGuiApplication::focusWindow() << "focus object" << QGuiApplication::focusObject();
@@ -224,6 +232,15 @@ public:
     {
         applyStubMask();
         applyPanelLayout();
+    }
+
+    //! Tells Qt that the keyboard window is the window the input goes to. Qt
+    //! Virtual Keyboard only shows the panel while that is the case, and the
+    //! compositor never activates a layer-shell window on its own, so a show
+    //! asked for by the keyboard itself (the shortcut) needs this first.
+    void activateWindow()
+    {
+        activateKeyboardWindow(m_keyboard);
     }
 
     //! Whether KWin considers the virtual keyboard to be on screen.
@@ -380,6 +397,7 @@ public Q_SLOTS:
             return;
         }
         // AnyInput so the panel is shown regardless of the last input device.
+        m_bridge->activateWindow();
         setInputPanelForceShowOnNextActivation();
         setKwinMode(2);
         activateKwinKeyboard();

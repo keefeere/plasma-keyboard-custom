@@ -35,7 +35,30 @@ namespace
 // Timestamp (ms since epoch) until which the next input activation must show
 // the keyboard immediately, bypassing the long-press mode.
 std::atomic<qint64> s_forceShowUntil{0};
+
+// The keyboard window is a layer-shell surface, which the compositor never
+// activates on its own, so Qt has to be told that the window holding the input
+// item is the window the input goes to: without that Qt Virtual Keyboard does
+// not consider the panel visible and refuses to show it (see
+// PlatformInputContext::evaluateInputPanelVisible(), which needs the focus
+// object of the focus window). The activation is announced the same way the
+// compositor-driven show does it (see activateKeyboardWindow() in main.cpp).
+void activateKeyboardWindow(QWindow *window)
+{
+    if (window) {
+        QWindowSystemInterface::handleFocusWindowChanged(window, Qt::ActiveWindowFocusReason);
+    }
 }
+
+//! Asks Qt Virtual Keyboard for the panel. The activation is announced first:
+//! the panel itself appears when the activation reaches the input item, whose
+//! onActiveChanged handler asks for the panel again with the input item focused.
+void showInputPanel(QWindow *window)
+{
+    activateKeyboardWindow(window);
+    QGuiApplication::inputMethod()->show();
+}
+} // namespace
 
 void setInputPanelForceShowOnNextActivation()
 {
@@ -187,7 +210,7 @@ InputListenerItem::InputListenerItem()
             qCDebug(PlasmaKeyboard) << "contextChanged hasContext=" << hasContext << "showOnLongTap=" << longTapSetting << "forceShow=" << forceShow
                                     << "armed=" << armed;
             if (!armed) {
-                QGuiApplication::inputMethod()->show();
+                showInputPanel(window());
             }
         } else {
             QGuiApplication::inputMethod()->setVisible(false);
@@ -212,6 +235,7 @@ InputListenerItem::InputListenerItem()
             // Never do it while the keyboard was hidden on purpose: the field
             // keeps sending updates and the panel would pop up again at once.
             if (!m_hiddenByUser && !m_touchHold.isArmed() && !window()->isVisible()) {
+                activateKeyboardWindow(window());
                 QGuiApplication::inputMethod()->setVisible(true);
             }
 
@@ -239,7 +263,7 @@ InputListenerItem::InputListenerItem()
     connect(&m_touchHold, &TouchHoldWatcher::longPress, this, [this] {
         qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: long press detected, showing keyboard";
         m_hiddenByUser = false;
-        QGuiApplication::inputMethod()->show();
+        showInputPanel(window());
     });
     connect(&m_input, &InputPlugin::resetRequested, this, [] {
         QGuiApplication::inputMethod()->reset();
