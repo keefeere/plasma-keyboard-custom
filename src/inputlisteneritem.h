@@ -201,18 +201,6 @@ private:
      */
     bool handleModifiedKey(QKeyEvent *event, bool press);
 
-    //! Qt Virtual Keyboard delivers ordinary letter/digit keys as an input
-    //! method commit (QInputMethodEvent), not a QKeyEvent, so
-    //! handleModifiedKey() -- which only ever sees the keys that do arrive as
-    //! a QKeyEvent: arrows, Enter, Backspace, the modifiers themselves --
-    //! never gets a chance to apply a latched Ctrl/Alt/Meta to them. Called
-    //! from inputMethodEvent() for a plain single-character commit while a
-    //! modifier is latched; sends it as that combination (e.g. Meta+L)
-    //! instead of typing the character, and returns true. Returns false
-    //! (nothing sent) when no modifier is latched, so the caller commits the
-    //! text as usual.
-    bool handleModifiedCommit(const QString &commit);
-
     //! Starts the hold-threshold timer for a just-pressed Ctrl/Alt/Meta key.
     //! The tap already latched the modifier for the usual "applies to the next
     //! key" behavior; if the key is still held when the timer fires, that latch
