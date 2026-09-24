@@ -266,7 +266,7 @@ InputListenerItem::InputListenerItem()
             if (!armed) {
                 showInputPanel(window());
             }
-        } else {
+        } else if (PlasmaKeyboardSettings::self()->hideOnInputFocusLoss()) {
             m_hideDelay->start();
         }
     });
@@ -310,7 +310,9 @@ InputListenerItem::InputListenerItem()
         // again, even if the user had hidden it.
         m_hiddenByUser = false;
         updatePredictionWords();
-        m_hideDelay->start();
+        if (PlasmaKeyboardSettings::self()->hideOnInputFocusLoss()) {
+            m_hideDelay->start();
+        }
     });
 
     connect(&m_touchHold, &TouchHoldWatcher::longPress, this, [this] {
