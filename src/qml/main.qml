@@ -28,13 +28,13 @@ InputPanelWindow {
         target: inputPanel.keyboard ? inputPanel.keyboard.style : null
         property: "screenWidth"
         value: root.width
-        when: inputPanel.keyboard && inputPanel.keyboard.style
+        when: inputPanel.keyboard && inputPanel.keyboard.style && inputPanel.keyboard.style.screenWidth !== undefined
     }
     Binding {
         target: inputPanel.keyboard ? inputPanel.keyboard.style : null
         property: "screenHeight"
         value: root.height
-        when: inputPanel.keyboard && inputPanel.keyboard.style
+        when: inputPanel.keyboard && inputPanel.keyboard.style && inputPanel.keyboard.style.screenWidth !== undefined
     }
 
     onVisibleChanged: {
