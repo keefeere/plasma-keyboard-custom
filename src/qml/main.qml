@@ -44,6 +44,8 @@ InputPanelWindow {
             // typed text to the input item, so it has to be focused again or
             // the keys would be tapped without anything appearing in the field.
             thing.forceActiveFocus();
+            // See the SystemLayout connection below.
+            PlasmaKeyboard.SystemLayout.syncToLocale(inputPanel.InputContext.locale);
         } else {
             // Reset keyboard navigation when hidden
             // Note: keyboard property is internal Qt API
@@ -233,6 +235,32 @@ InputPanelWindow {
         target: inputPanel.InputContext
         function onLocaleChanged() {
             root.updatePredictions();
+            // Only while the keyboard is on screen: at startup the keyboard's
+            // default language must not switch the hardware keyboard's layout.
+            if (root.visible) {
+                PlasmaKeyboard.SystemLayout.syncToLocale(inputPanel.InputContext.locale);
+            }
+        }
+    }
+
+    // A window without text-input support gets the typed text as key presses of
+    // the current system layout (see SystemLayoutSync), so the two have to match:
+    // the keyboard follows a layout switched elsewhere, and the system layout
+    // follows the keyboard when it is shown (onVisibleChanged) or its language
+    // is switched.
+    Connections {
+        target: PlasmaKeyboard.SystemLayout
+        function onSystemLayoutChanged(layout) {
+            if (PlasmaKeyboard.SystemLayout.layoutForLocale(inputPanel.InputContext.locale) === layout) {
+                return;
+            }
+            const locales = VirtualKeyboardSettings.activeLocales;
+            for (let i = 0; i < locales.length; ++i) {
+                if (PlasmaKeyboard.SystemLayout.layoutForLocale(locales[i]) === layout) {
+                    VirtualKeyboardSettings.locale = locales[i];
+                    return;
+                }
+            }
         }
     }
 

@@ -85,6 +85,8 @@ target_sources(plasma-keyboard-custom PRIVATE
     restartwatcher.h
     settingsreloader.cpp
     settingsreloader.h
+    systemlayoutsync.cpp
+    systemlayoutsync.h
     touchholdwatcher.cpp
     uinputkeyboard.cpp
     uinputkeyboard.h
