@@ -11,7 +11,9 @@
 #include <QDir>
 #include <QSocketNotifier>
 
+#include <algorithm>
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <linux/input.h>
@@ -42,17 +44,40 @@ bool isDirectInput(int fd)
     }
     return props[INPUT_PROP_DIRECT / 8] & (1 << (INPUT_PROP_DIRECT % 8));
 }
+
+// A hold may wobble slightly, but scrolling and dragging should cancel it.
+// Prefer a physical distance when the device reports its resolution; the
+// range-based fallback is for touchscreens whose evdev resolution is missing.
+int movementSlop(int fd, unsigned int code)
+{
+    input_absinfo info{};
+    if (ioctl(fd, EVIOCGABS(code), &info) < 0) {
+        return 1;
+    }
+    constexpr int slopMillimetres = 8;
+    if (info.resolution > 0) {
+        return std::max(1, info.resolution * slopMillimetres);
+    }
+    return std::max(1, (info.maximum - info.minimum) / 100);
+}
 }
 
 TouchHoldWatcher::TouchHoldWatcher(QObject *parent)
     : QObject(parent)
 {
+    // Start observing before an input context is activated. Opening the device
+    // from arm() is too late for the first touch: the BTN_TOUCH press that
+    // focused the text field has already been delivered by then, so the watcher
+    // only sees its release and can never recognise that first long press.
+    // Failure is harmless; arm() retries in case permissions or devices change.
+    openTouchscreen();
+
     connect(&m_holdTimer, &QTimer::timeout, this, [this] {
-        // Stay armed: the gesture should also re-open the keyboard after
-        // the user dismissed it. While the keyboard is visible, show() is
-        // a no-op, so repeat fires are harmless.
-        if (m_armed && m_touchDown) {
-            m_holdTimer.stop();
+        if (m_armed && m_touchDown && !m_gestureMoved && m_activeSlots.size() <= 1) {
+            // One activation arms exactly one touch. Keeping this armed after
+            // success would make a still-focused text field turn every later
+            // long press anywhere on the screen into a keyboard request.
+            disarm();
             Q_EMIT longPress();
         }
     });
@@ -77,6 +102,8 @@ bool TouchHoldWatcher::openTouchscreen()
         }
         if (hasCapability(fd, EV_ABS, ABS_MT_POSITION_X) && hasCapability(fd, EV_KEY, BTN_TOUCH) && isDirectInput(fd)) {
             m_fd = fd;
+            m_xSlop = movementSlop(fd, ABS_MT_POSITION_X);
+            m_ySlop = movementSlop(fd, ABS_MT_POSITION_Y);
             m_notifier = new QSocketNotifier(fd, QSocketNotifier::Read, this);
             connect(m_notifier, &QSocketNotifier::activated, this, &TouchHoldWatcher::readEvents);
             return true;
@@ -94,10 +121,15 @@ bool TouchHoldWatcher::arm(int thresholdMs)
         return false;
     }
 
+    // The Wayland activation and evdev fd are separate event sources. Drain
+    // evdev here so touchIsDown() is correct even when Wayland happened to be
+    // dispatched first for the touch that focused the field.
+    readEvents();
+
     m_thresholdMs = thresholdMs;
     m_armed = true;
     qCDebug(PlasmaKeyboard) << "TouchHoldWatcher armed, touchscreen fd=" << m_fd << "touchDown=" << m_touchDown;
-    if (m_touchDown) {
+    if (m_touchDown && !m_gestureMoved && m_activeSlots.size() <= 1) {
         m_holdTimer.start(m_thresholdMs);
     }
     return true;
@@ -117,6 +149,41 @@ bool TouchHoldWatcher::isArmed() const
 bool TouchHoldWatcher::touchIsDown() const
 {
     return m_touchDown;
+}
+
+void TouchHoldWatcher::cancelGesture()
+{
+    m_gestureMoved = true;
+    m_holdTimer.stop();
+}
+
+void TouchHoldWatcher::updatePosition(int code, int value)
+{
+    if (code == ABS_MT_POSITION_X) {
+        m_x = value;
+        m_currentXValid = true;
+        if (!m_touchDown) {
+            return;
+        }
+        if (!m_haveX) {
+            m_startX = value;
+            m_haveX = true;
+        }
+    } else if (code == ABS_MT_POSITION_Y) {
+        m_y = value;
+        m_currentYValid = true;
+        if (!m_touchDown) {
+            return;
+        }
+        if (!m_haveY) {
+            m_startY = value;
+            m_haveY = true;
+        }
+    }
+
+    if ((m_haveX && std::abs(m_x - m_startX) > m_xSlop) || (m_haveY && std::abs(m_y - m_startY) > m_ySlop)) {
+        cancelGesture();
+    }
 }
 
 void TouchHoldWatcher::readEvents()
@@ -143,17 +210,47 @@ void TouchHoldWatcher::readEvents()
         const auto count = static_cast<size_t>(n) / sizeof(events[0]);
         for (size_t i = 0; i < count; ++i) {
             const input_event &ev = events[i];
+
+            if (ev.type == EV_ABS) {
+                if (ev.code == ABS_MT_SLOT) {
+                    m_currentSlot = ev.value;
+                } else if (ev.code == ABS_MT_TRACKING_ID) {
+                    if (ev.value >= 0) {
+                        m_activeSlots.insert(m_currentSlot);
+                        if (m_activeSlots.size() > 1) {
+                            cancelGesture();
+                        }
+                    } else {
+                        m_activeSlots.remove(m_currentSlot);
+                    }
+                } else if (ev.code == ABS_MT_POSITION_X || ev.code == ABS_MT_POSITION_Y) {
+                    updatePosition(ev.code, ev.value);
+                }
+                continue;
+            }
+
             if (ev.type != EV_KEY || ev.code != BTN_TOUCH) {
                 continue;
             }
+
             if (ev.value == 1) {
                 m_touchDown = true;
+                m_gestureMoved = false;
+                m_haveX = m_currentXValid;
+                m_haveY = m_currentYValid;
+                m_startX = m_x;
+                m_startY = m_y;
                 if (m_armed) {
                     m_holdTimer.start(m_thresholdMs);
                 }
             } else if (ev.value == 0) {
                 m_touchDown = false;
-                m_holdTimer.stop();
+                m_activeSlots.clear();
+                m_currentXValid = false;
+                m_currentYValid = false;
+                // A short tap, scroll or drag must not leave the watcher ready
+                // to accept an unrelated touch elsewhere on the screen.
+                disarm();
             }
         }
     }
