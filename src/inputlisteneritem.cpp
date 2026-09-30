@@ -260,7 +260,20 @@ InputListenerItem::InputListenerItem()
             }
 
             const bool longTapSetting = PlasmaKeyboardSettings::self()->showOnLongTap();
-            const bool armed = !forceShow && longTapSetting && m_touchHold.arm(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs());
+            const bool watchingTouch = !forceShow && longTapSetting && m_touchHold.arm(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs());
+            // Only defer a compositor activation that belongs to a touch which
+            // is still being held. An explicit request (notably the Virtual
+            // Keyboard button on the lock screen) arrives after its tap has
+            // been released. Deferring that request leaves the panel waiting
+            // forever for a second touch.
+            const bool armed = watchingTouch && m_touchHold.touchIsDown();
+            if (watchingTouch && !armed) {
+                m_touchHold.disarm();
+            }
+            // While this activation is waiting for its one permitted hold,
+            // surrounding-text updates must not take the normal re-show path.
+            // A successful hold clears the flag in the longPress handler.
+            m_hiddenByUser = armed;
             qCDebug(PlasmaKeyboard) << "contextChanged hasContext=" << hasContext << "showOnLongTap=" << longTapSetting << "forceShow=" << forceShow
                                     << "armed=" << armed;
             if (!armed) {
