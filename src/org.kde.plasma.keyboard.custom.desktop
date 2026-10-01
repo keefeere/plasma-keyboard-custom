@@ -3,8 +3,9 @@
 
 [Desktop Entry]
 Name=plasma-keyboard-custom
-Exec=plasma-keyboard-custom
+Exec=/usr/bin/plasma-keyboard-custom
 Type=Application
 X-KDE-Wayland-VirtualKeyboard=true
+X-KDE-Wayland-Interfaces=kde_lockscreen_overlay_v1
 Icon=input-keyboard-virtual
 NoDisplay=true

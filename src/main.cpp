@@ -49,6 +49,10 @@
 #include <QVariantMap>
 #include <QWindow>
 #include <qpa/qwindowsysteminterface.h>
+#include <QtWaylandClient/QWaylandClientExtensionTemplate>
+#include <QtWaylandClient/private/qwaylandwindow_p.h>
+
+#include <qwayland-kde-lockscreen-overlay-v1.h>
 
 namespace
 {
@@ -155,6 +159,39 @@ void activateKeyboardWindow(QWindow *window)
 } // namespace
 
 /**
+ * Marks the visible layer-shell surface as safe to render while the session is
+ * locked. KWin otherwise hides every session surface except the lock screen and
+ * input-panel surfaces. The keyboard's one-pixel panel stub is an input-panel
+ * surface, but the window which actually draws the keys is layer-shell.
+ */
+class LockscreenOverlay : public QWaylandClientExtensionTemplate<LockscreenOverlay>, public QtWayland::kde_lockscreen_overlay_v1
+{
+public:
+    LockscreenOverlay()
+        : QWaylandClientExtensionTemplate<LockscreenOverlay>(1)
+    {
+    }
+
+    bool allowWindow(QWindow *window)
+    {
+        if (!window || !isActive()) {
+            return false;
+        }
+
+        // Creating the platform surface is safe here: the QML window is still
+        // unmapped. The protocol rejects an already mapped surface.
+        window->create();
+        auto *waylandWindow = dynamic_cast<QtWaylandClient::QWaylandWindow *>(window->handle());
+        if (!waylandWindow || !waylandWindow->shellSurface()) {
+            return false;
+        }
+
+        allow(waylandWindow->wlSurface());
+        return true;
+    }
+};
+
+/**
  * Joins the two windows the keyboard consists of: the visible layer-shell window
  * that draws the keys and the invisible input-panel window that KWin keeps
  * managing (when to show the keyboard, the input mode, telling the panel state
@@ -173,6 +210,18 @@ public:
     explicit KeyboardWindowBridge(QObject *parent = nullptr)
         : QObject(parent)
     {
+        m_outputRelocationTimer.setSingleShot(true);
+        m_outputRelocationTimer.setInterval(100);
+        connect(&m_outputRelocationTimer, &QTimer::timeout, this, [this]() {
+            if (!m_keyboard || !m_keyboard->isVisible()) {
+                return;
+            }
+            // A layer-shell role cannot change its output after creation.
+            // Hide it once so the visibleChanged handler can recreate the role
+            // with the latest screen selected in syncKeyboardScreen().
+            m_keyboard->setProperty("plasmaKeyboardRelocateAfterDestroy", true);
+            m_keyboard->setVisible(false);
+        });
     }
 
     void setStubWindow(QQuickWindow *stub)
@@ -329,11 +378,32 @@ private:
     //! started calling setScreen() itself.
     void syncKeyboardScreen()
     {
-        if (!m_stub || !m_keyboard || !m_stub->screen() || m_keyboard->screen() == m_stub->screen()) {
+        if (!m_stub || !m_keyboard || !m_stub->screen()) {
             return;
         }
-        m_keyboard->setScreen(m_stub->screen());
+        qCDebug(PlasmaKeyboard) << "keyboard output diagnostic: stub" << m_stub->screen()->name() << "keyboard"
+                                << (m_keyboard->screen() ? m_keyboard->screen()->name() : QStringLiteral("<none>"));
+        const bool keyboardScreenChanged = m_keyboard->screen() != m_stub->screen();
+        const bool layerScreenChanged = m_layerShell && m_layerShell->screen() != m_stub->screen();
+        if (!keyboardScreenChanged && !layerScreenChanged) {
+            return;
+        }
+        if (m_layerShell) {
+            // LayerShellQt consumes this when it next creates the role. This
+            // replaces its one-time active-output choice with the output KWin
+            // actually assigned to the input-panel window.
+            m_layerShell->setScreen(m_stub->screen());
+        }
+        if (keyboardScreenChanged) {
+            m_keyboard->setScreen(m_stub->screen());
+        }
         applyPanelLayout();
+        if (m_keyboard->isVisible()) {
+            // screenChanged can briefly report intermediate outputs while KWin
+            // moves the panel. Wait for it to settle before recreating the
+            // immutable layer-shell role.
+            m_outputRelocationTimer.start();
+        }
     }
 
     //! Keeps the panel stub mapped exactly while the keyboard window is mapped.
@@ -352,6 +422,7 @@ private:
     QPointer<QQuickWindow> m_stub;
     QPointer<QWindow> m_keyboard;
     QPointer<LayerShellQt::Window> m_layerShell;
+    QTimer m_outputRelocationTimer;
     QRect m_panelRect;
     bool m_kwinVisible = false;
 };
@@ -671,12 +742,13 @@ int main(int argc, char **argv)
     keyboardWindowBridge->setStubWindow(&panelStub);
 
     QQmlApplicationEngine view;
+    auto *lockscreenOverlay = new LockscreenOverlay;
     // Let the manager read the effective palette from the QML theme layer
     // (used by exportTheme).
     ThemeManager::instance()->setQmlEngine(&view);
     KLocalization::setupLocalizedContext(&view);
 
-    QObject::connect(&view, &QQmlApplicationEngine::objectCreated, &application, [keyboardWindowBridge](QObject *object) {
+    QObject::connect(&view, &QQmlApplicationEngine::objectCreated, &application, [keyboardWindowBridge, lockscreenOverlay](QObject *object) {
         auto window = qobject_cast<QWindow *>(object);
         if (!window) {
             return;
@@ -713,10 +785,91 @@ int main(int argc, char **argv)
         layerShell->setWantsToBeOnActiveScreen(true);
 #endif
 
-        qCDebug(PlasmaKeyboard) << "keyboard window configured as a layer-shell overlay";
-        keyboardWindowBridge->setLayerShellWindow(layerShell);
-        // Visibility follows what KWin reports for the panel window.
-        keyboardWindowBridge->setKeyboardWindow(window);
+        const auto registerKeyboardWindow = [keyboardWindowBridge, layerShell, lockscreenOverlay, window](bool authorizeLockscreen) {
+            if (window->property("plasmaKeyboardBridgeRegistered").toBool()) {
+                return;
+            }
+            window->setProperty("plasmaKeyboardBridgeRegistered", true);
+
+            if (!authorizeLockscreen) {
+                qCWarning(PlasmaKeyboard) << "The compositor does not provide the lock-screen overlay protocol";
+            }
+
+            const auto authorizeKeyboardRole = [lockscreenOverlay, window]() {
+                if (lockscreenOverlay->allowWindow(window)) {
+                    qCDebug(PlasmaKeyboard) << "Authorized the newly shown keyboard role above the lock screen";
+                } else {
+                    qCWarning(PlasmaKeyboard) << "Could not authorize the keyboard role above the lock screen";
+                }
+            };
+
+            // InputListenerItem handles QInputMethod::visibleChanged first and
+            // completes QWindow::show() synchronously. This callback therefore
+            // runs after LayerShellQt has created the role but before control
+            // returns to the event loop and KWin can map its first buffer.
+            QObject::connect(QGuiApplication::inputMethod(),
+                             &QInputMethod::visibleChanged,
+                             window,
+                             [authorizeKeyboardRole]() {
+                                 if (QGuiApplication::inputMethod()->isVisible()) {
+                                     authorizeKeyboardRole();
+                                 }
+                             });
+
+            QObject::connect(window, &QWindow::visibleChanged, window, [window, authorizeKeyboardRole](bool visible) {
+                if (!visible) {
+                    // A layer-shell role cannot migrate to another output. Drop
+                    // the native surface after every hide so that the next show
+                    // creates a new role on KWin's then-active output. Deferring
+                    // this also lets Qt finish its hide/unmap path first.
+                    QTimer::singleShot(0, window, [window, authorizeKeyboardRole]() {
+                        if (!window->isVisible()) {
+                            const bool relocate = window->property("plasmaKeyboardRelocateAfterDestroy").toBool();
+                            window->setProperty("plasmaKeyboardRelocateAfterDestroy", false);
+                            window->destroy();
+                            qCDebug(PlasmaKeyboard) << "Released the hidden keyboard role so the next show can follow the active output";
+                            if (relocate && QGuiApplication::inputMethod()->isVisible()) {
+                                window->setVisible(true);
+                                // This show is internal, so QInputMethod emits
+                                // no visibility signal. Authorize immediately
+                                // after the new layer role has been created.
+                                authorizeKeyboardRole();
+                            }
+                        }
+                    });
+                }
+            });
+
+            qCDebug(PlasmaKeyboard) << "keyboard window configured as a layer-shell overlay";
+            keyboardWindowBridge->setLayerShellWindow(layerShell);
+            // Visibility follows what KWin reports for the panel window. This
+            // comes after the authorization handler is installed so an already
+            // visible input method cannot race the first show.
+            keyboardWindowBridge->setKeyboardWindow(window);
+            if (QGuiApplication::inputMethod()->isVisible()) {
+                authorizeKeyboardRole();
+            }
+        };
+
+        if (lockscreenOverlay->isActive()) {
+            registerKeyboardWindow(true);
+        } else {
+            // The QML tree is loaded before the event loop starts, while Qt is
+            // still receiving the Wayland registry globals. Do not map the
+            // layer-shell window until KWin has advertised the privileged
+            // overlay protocol and the surface can be marked as lock-safe.
+            QObject::connect(lockscreenOverlay, &LockscreenOverlay::activeChanged, window, [lockscreenOverlay, registerKeyboardWindow]() {
+                if (lockscreenOverlay->isActive()) {
+                    registerKeyboardWindow(true);
+                }
+            });
+            // Keep the keyboard usable on compositors which do not implement
+            // kde_lockscreen_overlay_v1; they simply cannot show it while the
+            // session is locked.
+            QTimer::singleShot(1000, window, [registerKeyboardWindow]() {
+                registerKeyboardWindow(false);
+            });
+        }
     });
     view.load(QUrl(QStringLiteral("qrc:/qt/qml/org/kde/plasma/keyboard/custom/main.qml")));
 
