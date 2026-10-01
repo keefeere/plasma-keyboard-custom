@@ -60,6 +60,13 @@ int movementSlop(int fd, unsigned int code)
     }
     return std::max(1, (info.maximum - info.minimum) / 100);
 }
+
+input_absinfo axisInfo(int fd, unsigned int code)
+{
+    input_absinfo info{};
+    ioctl(fd, EVIOCGABS(code), &info);
+    return info;
+}
 }
 
 TouchHoldWatcher::TouchHoldWatcher(QObject *parent)
@@ -77,7 +84,10 @@ TouchHoldWatcher::TouchHoldWatcher(QObject *parent)
             // One activation arms exactly one touch. Keeping this armed after
             // success would make a still-focused text field turn every later
             // long press anywhere on the screen into a keyboard request.
-            disarm();
+            m_holdTimer.stop();
+            if (!m_persistent) {
+                m_armed = false;
+            }
             Q_EMIT longPress();
         }
     });
@@ -102,6 +112,12 @@ bool TouchHoldWatcher::openTouchscreen()
         }
         if (hasCapability(fd, EV_ABS, ABS_MT_POSITION_X) && hasCapability(fd, EV_KEY, BTN_TOUCH) && isDirectInput(fd)) {
             m_fd = fd;
+            const input_absinfo xInfo = axisInfo(fd, ABS_MT_POSITION_X);
+            const input_absinfo yInfo = axisInfo(fd, ABS_MT_POSITION_Y);
+            m_xMinimum = xInfo.minimum;
+            m_xMaximum = xInfo.maximum;
+            m_yMinimum = yInfo.minimum;
+            m_yMaximum = yInfo.maximum;
             m_xSlop = movementSlop(fd, ABS_MT_POSITION_X);
             m_ySlop = movementSlop(fd, ABS_MT_POSITION_Y);
             m_notifier = new QSocketNotifier(fd, QSocketNotifier::Read, this);
@@ -128,6 +144,7 @@ bool TouchHoldWatcher::arm(int thresholdMs)
 
     m_thresholdMs = thresholdMs;
     m_armed = true;
+    m_persistent = false;
     qCDebug(PlasmaKeyboard) << "TouchHoldWatcher armed, touchscreen fd=" << m_fd << "touchDown=" << m_touchDown;
     if (m_touchDown && !m_gestureMoved && m_activeSlots.size() <= 1) {
         m_holdTimer.start(m_thresholdMs);
@@ -135,9 +152,19 @@ bool TouchHoldWatcher::arm(int thresholdMs)
     return true;
 }
 
+bool TouchHoldWatcher::watchContinuously(int thresholdMs)
+{
+    if (!arm(thresholdMs)) {
+        return false;
+    }
+    m_persistent = true;
+    return true;
+}
+
 void TouchHoldWatcher::disarm()
 {
     m_armed = false;
+    m_persistent = false;
     m_holdTimer.stop();
 }
 
@@ -151,8 +178,43 @@ bool TouchHoldWatcher::touchIsDown() const
     return m_touchDown;
 }
 
+QPointF TouchHoldWatcher::normalizedPosition() const
+{
+    const int xRange = m_xMaximum - m_xMinimum;
+    const int yRange = m_yMaximum - m_yMinimum;
+    if (xRange <= 0 || yRange <= 0) {
+        return {};
+    }
+    return QPointF(std::clamp(double(m_x - m_xMinimum) / xRange, 0.0, 1.0),
+                   std::clamp(double(m_y - m_yMinimum) / yRange, 0.0, 1.0));
+}
+
+bool TouchHoldWatcher::takeCompletedLongPress(int thresholdMs)
+{
+    // Some clients activate/update text input only after delivering touch-up.
+    // Keep the correlation window deliberately shorter than the configured
+    // hold, so an unrelated later protocol update cannot consume an old touch
+    // from elsewhere. It is bounded because very short/long hold settings
+    // should not make event-loop scheduling impossible or retain a gesture for
+    // several seconds.
+    const int maximumActivationDelayMs = std::clamp(thresholdMs / 2, 50, 250);
+    const bool matches = m_completedTouchDurationMs >= thresholdMs && m_releaseElapsed.isValid()
+        && m_releaseElapsed.elapsed() <= maximumActivationDelayMs;
+    m_completedTouchDurationMs = -1;
+    m_releaseElapsed.invalidate();
+    if (matches) {
+        disarm();
+    }
+    return matches;
+}
+
 void TouchHoldWatcher::cancelGesture()
 {
+    if (!m_gestureMoved) {
+        qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: gesture cancelled by movement/multitouch"
+                                << "position=" << m_x << m_y << "start=" << m_startX << m_startY << "slop=" << m_xSlop << m_ySlop
+                                << "contacts=" << m_activeSlots.size();
+    }
     m_gestureMoved = true;
     m_holdTimer.stop();
 }
@@ -236,21 +298,41 @@ void TouchHoldWatcher::readEvents()
             if (ev.value == 1) {
                 m_touchDown = true;
                 m_gestureMoved = false;
+                m_completedTouchDurationMs = -1;
+                m_releaseElapsed.invalidate();
+                m_touchElapsed.restart();
                 m_haveX = m_currentXValid;
                 m_haveY = m_currentYValid;
                 m_startX = m_x;
                 m_startY = m_y;
+                qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: touch down"
+                                        << "position=" << m_x << m_y << "positionValid=" << m_haveX << m_haveY << "armed=" << m_armed;
                 if (m_armed) {
                     m_holdTimer.start(m_thresholdMs);
                 }
             } else if (ev.value == 0) {
+                qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: touch up"
+                                        << "armed=" << m_armed << "moved=" << m_gestureMoved;
+                if (!m_gestureMoved && m_touchElapsed.isValid()) {
+                    m_completedTouchDurationMs = static_cast<int>(m_touchElapsed.elapsed());
+                    m_releaseElapsed.restart();
+                } else {
+                    m_completedTouchDurationMs = -1;
+                    m_releaseElapsed.invalidate();
+                }
+                m_touchElapsed.invalidate();
                 m_touchDown = false;
                 m_activeSlots.clear();
                 m_currentXValid = false;
                 m_currentYValid = false;
-                // A short tap, scroll or drag must not leave the watcher ready
-                // to accept an unrelated touch elsewhere on the screen.
-                disarm();
+                // A one-shot arm belongs only to this touch. Continuous mode
+                // deliberately remains ready: its caller validates each hold
+                // against the focused editable widget's screen rectangle.
+                if (m_persistent) {
+                    m_holdTimer.stop();
+                } else {
+                    disarm();
+                }
             }
         }
     }

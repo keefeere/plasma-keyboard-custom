@@ -19,6 +19,8 @@
 #include "overlay/textexpansiontrigger.h"
 #include "prediction/wordatcursor.h"
 
+#include <QDBusConnection>
+#include <QDBusMessage>
 #include <QLoggingCategory>
 #include <QTextFormat>
 #include <QTimer>
@@ -38,6 +40,16 @@ namespace
 // Timestamp (ms since epoch) until which the next input activation must show
 // the keyboard immediately, bypassing the long-press mode.
 std::atomic<qint64> s_forceShowUntil{0};
+
+bool screenIsLocked()
+{
+    const QDBusMessage request = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.ScreenSaver"),
+                                                                QStringLiteral("/ScreenSaver"),
+                                                                QStringLiteral("org.freedesktop.ScreenSaver"),
+                                                                QStringLiteral("GetActive"));
+    const QDBusMessage reply = QDBusConnection::sessionBus().call(request);
+    return reply.type() == QDBusMessage::ReplyMessage && !reply.arguments().isEmpty() && reply.arguments().constFirst().toBool();
+}
 
 // The keyboard window is a layer-shell surface, which the compositor never
 // activates on its own, so Qt has to be told that the window holding the input
@@ -248,7 +260,6 @@ InputListenerItem::InputListenerItem()
             // shown again even if it was hidden before.
             m_hiddenByUser = false;
 
-            QGuiApplication::inputMethod()->update(Qt::ImQueryAll);
             // In long-press mode the keyboard stays hidden until a touch is
             // held on the screen long enough; fall back to the immediate
             // show when no touchscreen can be watched.
@@ -260,23 +271,34 @@ InputListenerItem::InputListenerItem()
             }
 
             const bool longTapSetting = PlasmaKeyboardSettings::self()->showOnLongTap();
-            const bool watchingTouch = !forceShow && longTapSetting && m_touchHold.arm(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs());
-            // Only defer a compositor activation that belongs to a touch which
-            // is still being held. An explicit request (notably the Virtual
-            // Keyboard button on the lock screen) arrives after its tap has
-            // been released. Deferring that request leaves the panel waiting
-            // forever for a second touch.
+            // The lock screen cannot expose the regular session's AT-SPI tree,
+            // so long-press hit testing can never prove that the touch belongs
+            // to its password field. A lock-screen input context is already an
+            // explicit request to type and must show immediately.
+            const bool lockScreenActive = screenIsLocked();
+            const bool waitForLongTouch = !forceShow && !lockScreenActive && longTapSetting;
+            const int longTouchThreshold = PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs();
+            const bool watchingTouch = waitForLongTouch && m_touchHold.arm(longTouchThreshold);
+            // evdev input is global, so only the touch which caused this text
+            // input activation may arm the hold timer. A mouse click (or any
+            // other non-touch activation) must not bypass long-press mode.
             const bool armed = watchingTouch && m_touchHold.touchIsDown();
-            if (watchingTouch && !armed) {
-                m_touchHold.disarm();
+            const bool completedLongTouch = watchingTouch && m_touchHold.takeCompletedLongPress(longTouchThreshold);
+            if (watchingTouch && !armed && !completedLongTouch) {
+                // A mouse activation (or an already completed short tap) has
+                // not proved that the next hold belongs to the text field.
+                // Keep watching, but require the AT-SPI hit test on every hold.
+                m_touchHold.watchContinuously(longTouchThreshold);
             }
-            // While this activation is waiting for its one permitted hold,
-            // surrounding-text updates must not take the normal re-show path.
-            // A successful hold clears the flag in the longPress handler.
-            m_hiddenByUser = armed;
+            m_longPressNeedsHitTest = watchingTouch && !armed && !completedLongTouch;
+            // Suppress both the immediate show and the surrounding-text
+            // re-show path for every automatic activation in long-press mode.
+            // A successful hold clears this flag in the longPress handler.
+            m_hiddenByUser = watchingTouch && !completedLongTouch;
+            QGuiApplication::inputMethod()->update(Qt::ImQueryAll);
             qCDebug(PlasmaKeyboard) << "contextChanged hasContext=" << hasContext << "showOnLongTap=" << longTapSetting << "forceShow=" << forceShow
-                                    << "armed=" << armed;
-            if (!armed) {
+                                    << "lockScreenActive=" << lockScreenActive << "armed=" << armed;
+            if (!watchingTouch || completedLongTouch) {
                 showInputPanel(window());
             }
         } else if (PlasmaKeyboardSettings::self()->hideOnInputFocusLoss()) {
@@ -284,6 +306,8 @@ InputListenerItem::InputListenerItem()
         }
     });
     connect(&m_input, &InputPlugin::surroundingTextChanged, this, [this] {
+        qCDebug(PlasmaKeyboard) << "long-press diagnostic: surroundingTextChanged"
+                                << "touchDown=" << m_touchHold.touchIsDown() << "armed=" << m_touchHold.isArmed();
         // The word being typed changed with the text around the cursor, so the
         // suggestions have to follow it.
         updatePredictionWords();
@@ -329,11 +353,23 @@ InputListenerItem::InputListenerItem()
     });
 
     connect(&m_touchHold, &TouchHoldWatcher::longPress, this, [this] {
+        if (m_longPressNeedsHitTest && !m_focusedEditable.containsNormalizedTouch(m_touchHold.normalizedPosition())) {
+            qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: hold was outside the focused editable widget";
+            return;
+        }
         qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: long press detected, showing keyboard";
+        m_touchHold.disarm();
+        m_longPressNeedsHitTest = false;
         m_hiddenByUser = false;
         showInputPanel(window());
     });
-    connect(&m_input, &InputPlugin::resetRequested, this, [] {
+    connect(&m_input, &InputPlugin::receivedCommit, this, [this] {
+        qCDebug(PlasmaKeyboard) << "long-press diagnostic: commit_state"
+                                << "touchDown=" << m_touchHold.touchIsDown() << "armed=" << m_touchHold.isArmed();
+    });
+    connect(&m_input, &InputPlugin::resetRequested, this, [this] {
+        qCDebug(PlasmaKeyboard) << "long-press diagnostic: reset"
+                                << "touchDown=" << m_touchHold.touchIsDown() << "armed=" << m_touchHold.isArmed();
         QGuiApplication::inputMethod()->reset();
     });
     connect(QGuiApplication::inputMethod(), &QInputMethod::visibleChanged, this, [this] {
@@ -343,6 +379,13 @@ InputListenerItem::InputListenerItem()
             // context went away). Remember it, so that a text field which keeps
             // sending updates cannot bring the panel back on its own.
             m_hiddenByUser = true;
+            if (m_input.hasContext() && PlasmaKeyboardSettings::self()->showOnLongTap()
+                && m_touchHold.watchContinuously(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs())) {
+                m_longPressNeedsHitTest = true;
+            }
+        } else {
+            m_touchHold.disarm();
+            m_longPressNeedsHitTest = false;
         }
         window()->setVisible(visible);
     });
