@@ -74,6 +74,8 @@ target_sources(plasma-keyboard-custom PRIVATE
     clipboard/clipboardhistory.h
     gamepadhandler.cpp
     gamepadhandler.h
+    focusededitabletracker.cpp
+    focusededitabletracker.h
     inputlisteneritem.cpp
     inputlisteneritem.h
     inputmethod.cpp

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "focusededitabletracker.h"
 #include "touchholdwatcher.h"
 #include <QQuickItem>
 #include <QQuickWindow>
@@ -232,6 +233,8 @@ private:
     OverlayController *m_overlayController = nullptr;
     ClipboardHistory *m_clipboardHistory = nullptr;
     TouchHoldWatcher m_touchHold;
+    FocusedEditableTracker m_focusedEditable;
+    bool m_longPressNeedsHitTest = false;
     bool m_keyboardNavigationActive = false;
 
     //! The word the predictive text input currently suggests for.

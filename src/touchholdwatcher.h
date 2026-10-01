@@ -7,6 +7,8 @@
 #pragma once
 
 #include <QObject>
+#include <QElapsedTimer>
+#include <QPointF>
 #include <QSet>
 #include <QTimer>
 
@@ -43,6 +45,9 @@ public:
      */
     bool arm(int thresholdMs = defaultThresholdMs);
 
+    /** Keep recognising successive holds until disarm() is called. */
+    bool watchContinuously(int thresholdMs = defaultThresholdMs);
+
     /// Stop watching; any pending hold timer is cancelled.
     void disarm();
 
@@ -50,6 +55,15 @@ public:
 
     /// Whether a touch is currently down on the touchscreen.
     bool touchIsDown() const;
+
+    /** Current touch position, normalised to the touchscreen's axis ranges. */
+    QPointF normalizedPosition() const;
+
+    /**
+     * Consume a stationary touch which ended just before the text input
+     * protocol reported the field activation/update.
+     */
+    bool takeCompletedLongPress(int thresholdMs);
 
 Q_SIGNALS:
     /// A touch was held down for at least the threshold duration.
@@ -76,8 +90,16 @@ private:
     int m_startY = 0;
     int m_xSlop = 1;
     int m_ySlop = 1;
+    int m_xMinimum = 0;
+    int m_xMaximum = 1;
+    int m_yMinimum = 0;
+    int m_yMaximum = 1;
     int m_currentSlot = 0;
     QSet<int> m_activeSlots;
+    QElapsedTimer m_touchElapsed;
+    QElapsedTimer m_releaseElapsed;
+    int m_completedTouchDurationMs = -1;
+    bool m_persistent = false;
     int m_thresholdMs = defaultThresholdMs;
     QTimer m_holdTimer;
 };
