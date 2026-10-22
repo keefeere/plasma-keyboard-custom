@@ -6,6 +6,7 @@
 */
 
 #include "inputplugin.h"
+#include "inputcontentpolicy.h"
 #include "inputmethod_p.h"
 
 #include <QStringList>
@@ -53,6 +54,7 @@ InputPlugin::InputPlugin(InputMethod *inputMethod)
 {
     connect(inputMethod, &InputMethod::deactivate, this, &InputPlugin::deactivate);
     connect(inputMethod, &InputMethod::activityChanged, this, [this, inputMethod]() {
+        Q_EMIT contextAboutToChange();
         if (m_context) {
             disconnect(m_context.get(), nullptr, this, nullptr);
         }
@@ -195,6 +197,11 @@ uint32_t InputPlugin::metaMask() const
 uint32_t InputPlugin::shiftMask() const
 {
     return m_keyboard ? m_keyboard->modifierMask(XKB_MOD_NAME_SHIFT) : 0;
+}
+
+bool InputPlugin::predictionsAllowed() const
+{
+    return InputContentPolicy::predictionsAllowed(hasContext(), m_context && m_context->m_contentTypeKnown, contentHint(), contentPurpose());
 }
 
 InputPlugin::ContentHint InputPlugin::contentHint() const

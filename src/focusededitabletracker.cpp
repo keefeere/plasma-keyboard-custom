@@ -10,9 +10,9 @@
 
 #include <QDBusArgument>
 #include <QDBusConnection>
-#include <QDBusInterface>
 #include <QDBusMessage>
-#include <QDBusReply>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
 #include <QDBusVariant>
 #include <QGuiApplication>
 #include <QScreen>
@@ -22,7 +22,16 @@ namespace
 {
 constexpr uint editableState = 7;
 constexpr uint screenCoordinates = 0;
+// Hit testing is optional: a slow application must never hold up key forwarding.
+constexpr int requestTimeoutMs = 1000;
 const QString focusedEvent = QStringLiteral("object:state-changed:focused");
+const QString registryService = QStringLiteral("org.a11y.atspi.Registry");
+const QString registryPath = QStringLiteral("/org/a11y/atspi/registry");
+
+QDBusMessage registryCall(const QString &method)
+{
+    return QDBusMessage::createMethodCall(registryService, registryPath, registryService, method);
+}
 
 bool hasState(const QList<uint> &words, uint state)
 {
@@ -55,56 +64,76 @@ QPointF mapTouchToScreen(const QPointF &position, const QScreen *screen)
 FocusedEditableTracker::FocusedEditableTracker(QObject *parent)
     : QObject(parent)
 {
-    QDBusInterface accessibilityBus(QStringLiteral("org.a11y.Bus"),
-                                    QStringLiteral("/org/a11y/bus"),
-                                    QStringLiteral("org.a11y.Bus"),
-                                    QDBusConnection::sessionBus());
-    const QDBusReply<QString> address = accessibilityBus.call(QStringLiteral("GetAddress"));
-    if (!address.isValid()) {
-        return;
-    }
+    // QDBusInterface construction can itself introspect synchronously. Use raw
+    // messages throughout, including discovery, registration and teardown.
+    const auto request = QDBusMessage::createMethodCall(QStringLiteral("org.a11y.Bus"),
+                                                       QStringLiteral("/org/a11y/bus"),
+                                                       QStringLiteral("org.a11y.Bus"),
+                                                       QStringLiteral("GetAddress"));
+    auto *watcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(request, requestTimeoutMs), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *pending) {
+        const QDBusPendingReply<QString> address = *pending;
+        pending->deleteLater();
+        if (address.isError() || address.value().isEmpty()) {
+            return;
+        }
 
-    m_connectionName = QStringLiteral("plasma-keyboard-atspi-%1").arg(QUuid::createUuid().toString(QUuid::Id128));
-    auto bus = QDBusConnection::connectToBus(address.value(), m_connectionName);
-    if (!bus.isConnected()) {
-        QDBusConnection::disconnectFromBus(m_connectionName);
-        m_connectionName.clear();
-        return;
-    }
+        m_connectionName = QStringLiteral("plasma-keyboard-atspi-%1").arg(QUuid::createUuid().toString(QUuid::Id128));
+        const auto bus = QDBusConnection::connectToBus(address.value(), m_connectionName);
+        if (!bus.isConnected()) {
+            QDBusConnection::disconnectFromBus(m_connectionName);
+            m_connectionName.clear();
+            return;
+        }
+        initialize(bus);
+    });
+}
+
+FocusedEditableTracker::FocusedEditableTracker(const QDBusConnection &bus, QObject *parent)
+    : QObject(parent)
+{
+    initialize(bus);
+}
+
+void FocusedEditableTracker::initialize(const QDBusConnection &bus)
+{
     m_bus = std::make_unique<QDBusConnection>(bus);
-
-    QDBusInterface registry(QStringLiteral("org.a11y.atspi.Registry"),
-                            QStringLiteral("/org/a11y/atspi/registry"),
-                            QStringLiteral("org.a11y.atspi.Registry"),
-                            *m_bus);
-    const QDBusMessage registration = registry.call(QStringLiteral("RegisterEvent"),
-                                                     focusedEvent,
-                                                     QStringList(),
-                                                     m_bus->baseService());
-    if (registration.type() == QDBusMessage::ErrorMessage
-        || !m_bus->connect(QString(),
-                           QString(),
-                           QStringLiteral("org.a11y.atspi.Event.Object"),
-                           QStringLiteral("StateChanged"),
-                           this,
-                           SLOT(stateChanged(QString,int,int,QDBusVariant,QVariantMap,QDBusMessage)))) {
+    if (!m_bus->connect(QString(),
+                        QString(),
+                        QStringLiteral("org.a11y.atspi.Event.Object"),
+                        QStringLiteral("StateChanged"),
+                        this,
+                        SLOT(stateChanged(QString,int,int,QDBusVariant,QVariantMap,QDBusMessage)))) {
         m_bus.reset();
-        QDBusConnection::disconnectFromBus(m_connectionName);
-        m_connectionName.clear();
+        return;
     }
+
+    auto request = registryCall(QStringLiteral("RegisterEvent"));
+    request << focusedEvent << QStringList() << m_bus->baseService();
+    auto *watcher = new QDBusPendingCallWatcher(m_bus->asyncCall(request, requestTimeoutMs), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *pending) {
+        const bool failed = pending->isError();
+        pending->deleteLater();
+        if (failed) {
+            ++m_focusGeneration;
+            m_focusedEditableRect = {};
+            if (m_bus) {
+                m_bus->disconnect(QString(), QString(), QStringLiteral("org.a11y.atspi.Event.Object"),
+                                  QStringLiteral("StateChanged"), this,
+                                  SLOT(stateChanged(QString,int,int,QDBusVariant,QVariantMap,QDBusMessage)));
+            }
+            m_bus.reset();
+        }
+    });
 }
 
 FocusedEditableTracker::~FocusedEditableTracker()
 {
     if (m_bus) {
-        QDBusInterface registry(QStringLiteral("org.a11y.atspi.Registry"),
-                                QStringLiteral("/org/a11y/atspi/registry"),
-                                QStringLiteral("org.a11y.atspi.Registry"),
-                                *m_bus);
-        registry.call(QDBus::NoBlock,
-                      QStringLiteral("DeregisterEvent"),
-                      focusedEvent,
-                      m_bus->baseService());
+        auto request = registryCall(QStringLiteral("DeregisterEvent"));
+        request << focusedEvent << m_bus->baseService();
+        // No introspection or waiting while the input method is being removed.
+        m_bus->send(request);
         m_bus.reset();
     }
     if (!m_connectionName.isEmpty()) {
@@ -131,6 +160,7 @@ void FocusedEditableTracker::stateChanged(const QString &state,
 
     if (!enabled) {
         if (message.service() == m_focusedService && message.path() == m_focusedPath) {
+            ++m_focusGeneration;
             m_focusedService.clear();
             m_focusedPath.clear();
             m_focusedEditableRect = {};
@@ -138,46 +168,56 @@ void FocusedEditableTracker::stateChanged(const QString &state,
         return;
     }
 
-    QDBusInterface accessible(message.service(),
-                              message.path(),
-                              QStringLiteral("org.a11y.atspi.Accessible"),
-                              *m_bus);
-    const QDBusMessage stateReply = accessible.call(QStringLiteral("GetState"));
-    if (stateReply.type() == QDBusMessage::ErrorMessage || stateReply.arguments().isEmpty()) {
-        return;
-    }
-
-    QList<uint> states;
-    const QDBusArgument stateArgument = stateReply.arguments().constFirst().value<QDBusArgument>();
-    stateArgument >> states;
-    if (!hasState(states, editableState)) {
-        return;
-    }
-
-    QDBusInterface component(message.service(),
-                             message.path(),
-                             QStringLiteral("org.a11y.atspi.Component"),
-                             *m_bus);
-    const QDBusMessage extentsReply = component.call(QStringLiteral("GetExtents"), screenCoordinates);
-    if (extentsReply.type() == QDBusMessage::ErrorMessage || extentsReply.arguments().isEmpty()) {
-        return;
-    }
-
-    int x = 0;
-    int y = 0;
-    int width = 0;
-    int height = 0;
-    const QDBusArgument extents = extentsReply.arguments().constFirst().value<QDBusArgument>();
-    extents.beginStructure();
-    extents >> x >> y >> width >> height;
-    extents.endStructure();
-    const QRect rectangle(x, y, width, height);
-    if (!rectangle.isValid()) {
-        return;
-    }
-
+    // Invalidate immediately, including when the new object is non-editable or
+    // fails to reply. Older replies must never restore another field's bounds.
+    const quint64 generation = ++m_focusGeneration;
     m_focusedService = message.service();
     m_focusedPath = message.path();
-    m_focusedEditableRect = rectangle;
-    qCDebug(PlasmaKeyboard) << "Focused editable AT-SPI rectangle:" << rectangle;
+    m_focusedEditableRect = {};
+    const auto request = QDBusMessage::createMethodCall(m_focusedService, m_focusedPath,
+                                                       QStringLiteral("org.a11y.atspi.Accessible"),
+                                                       QStringLiteral("GetState"));
+    auto *watcher = new QDBusPendingCallWatcher(m_bus->asyncCall(request, requestTimeoutMs), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, generation](QDBusPendingCallWatcher *pending) {
+        const QDBusMessage reply = pending->reply();
+        pending->deleteLater();
+        if (!m_bus || generation != m_focusGeneration || reply.type() != QDBusMessage::ReplyMessage
+            || reply.signature() != QLatin1String("au")) {
+            return;
+        }
+        QList<uint> states;
+        const QDBusArgument argument = reply.arguments().constFirst().value<QDBusArgument>();
+        argument >> states;
+        if (!hasState(states, editableState)) {
+            return;
+        }
+
+        auto request = QDBusMessage::createMethodCall(m_focusedService, m_focusedPath,
+                                                     QStringLiteral("org.a11y.atspi.Component"),
+                                                     QStringLiteral("GetExtents"));
+        request << screenCoordinates;
+        auto *extentsWatcher = new QDBusPendingCallWatcher(m_bus->asyncCall(request, requestTimeoutMs), this);
+        connect(extentsWatcher, &QDBusPendingCallWatcher::finished, this, [this, generation](QDBusPendingCallWatcher *pending) {
+            const QDBusMessage reply = pending->reply();
+            pending->deleteLater();
+            if (!m_bus || generation != m_focusGeneration || reply.type() != QDBusMessage::ReplyMessage
+                || reply.signature() != QLatin1String("(iiii)")) {
+                return;
+            }
+
+            int x = 0;
+            int y = 0;
+            int width = 0;
+            int height = 0;
+            const QDBusArgument extents = reply.arguments().constFirst().value<QDBusArgument>();
+            extents.beginStructure();
+            extents >> x >> y >> width >> height;
+            extents.endStructure();
+            const QRect rectangle(x, y, width, height);
+            if (rectangle.isValid()) {
+                m_focusedEditableRect = rectangle;
+                qCDebug(PlasmaKeyboard) << "Focused editable AT-SPI rectangle:" << rectangle;
+            }
+        });
+    });
 }

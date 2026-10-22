@@ -38,6 +38,7 @@ InputPanelWindow {
     }
 
     onVisibleChanged: {
+        updatePredictions();
         if (visible) {
             // The window is unmapped while the keyboard is hidden, which also
             // drops the input focus inside it. Qt Virtual Keyboard delivers the
@@ -61,7 +62,6 @@ InputPanelWindow {
             voiceNavigationActive = false;
 
             // The word being typed is gone with the field it was typed into.
-            predictions = [];
             suggestionsRow.clipboardChosen = false;
 
             // Close language dialog
@@ -95,10 +95,19 @@ InputPanelWindow {
     //! came from ("complete" — the word being typed, continued; "correct" — the
     //! word being typed, with the typo it may have; "next" — the word that may
     //! follow the previous one) and how much of it would be added to the text.
-    property var predictions: []
+    readonly property var predictions: predictor.predictions
 
     //! Whether the voice input mode is on: the keys are covered by one big
     //! microphone button. Only reachable while the voice input is enabled.
+    readonly property bool auxiliaryUiAllowed: thing.auxiliaryUiAllowed
+    onAuxiliaryUiAllowedChanged: {
+        if (!auxiliaryUiAllowed) {
+            closeVoiceMode();
+            extraRowFocus = 0;
+            extraColumn = 0;
+            suggestionsRow.clipboardChosen = false;
+        }
+    }
     property bool voiceMode: false
 
     //! Whether the gamepad has taken over the voice page: the highlight is on
@@ -108,7 +117,7 @@ InputPanelWindow {
 
     //! Opens the voice input mode from the microphone key of a layout.
     function openVoiceMode() {
-        if (PlasmaKeyboardSettings.sttEnabled) {
+        if (auxiliaryUiAllowed && PlasmaKeyboardSettings.sttEnabled) {
             root.voiceMode = true;
             root.voiceNavigationActive = false;
             voicePanel.focusIndex = voicePanel.microphoneIndex;
@@ -122,66 +131,29 @@ InputPanelWindow {
         root.voiceNavigationActive = false;
     }
 
-    //! The word lists the completions and the corrections are looked up in.
-    PredictiveDictionary {
+    //! All loading, completion, correction and next-word work lives off-thread.
+    AsyncPredictor {
         id: predictor
     }
 
-    //! The bigram lists the next-word predictions are looked up in.
-    WordPredictor {
-        id: nextWordPredictor
-    }
-
-    //! @p words as the entries of the row, told where they came from.
-    function predictionItems(words, kind) {
-        const typedLength = kind === "complete" ? thing.predictionPrefix.length : 0;
-        return words.map(word => ({
-            "text": word,
-            "kind": kind,
-            "completion": kind === "complete" ? Math.max(0, word.length - typedLength) : 0
-        }));
-    }
-
-    //! Re-reads what the row above the keyboard offers. What is being typed
-    //! comes first: the words that continue it, or the word it may have been
-    //! meant to be when nothing continues it. With no word being typed, the
-    //! words that may follow the previous one are offered. The language is the
-    //! one the text field asked for.
     function updatePredictions() {
-        if (!PlasmaKeyboardSettings.predictiveTextEnabled) {
-            predictions = [];
+        if (!root.visible || !thing.predictionActive || !PlasmaKeyboardSettings.predictiveTextEnabled) {
+            predictor.cancel();
             return;
         }
-
-        const locale = inputPanel.InputContext.locale;
-        const prefix = thing.predictionPrefix;
-        if (prefix.length >= PlasmaKeyboardSettings.predictiveMinPrefixLength) {
-            const completions = predictor.complete(prefix, PlasmaKeyboardSettings.predictiveSuggestionCount, locale);
-            if (completions.length > 0) {
-                predictions = predictionItems(completions, "complete");
-                return;
-            }
-            // Nothing continues what is typed, so the word may have a typo in
-            // it. One or two letters are too little to tell a typo from the
-            // beginning of a word, so only longer words are corrected.
-            if (PlasmaKeyboardSettings.predictiveTypoCorrectionEnabled && prefix.length >= 2) {
-                predictions = predictionItems(predictor.correct(prefix, PlasmaKeyboardSettings.predictiveSuggestionCount, locale), "correct");
-                return;
-            }
-            predictions = [];
-            return;
-        }
-
-        if (prefix.length === 0 && PlasmaKeyboardSettings.predictiveNextWordEnabled) {
-            predictions = predictionItems(nextWordPredictor.predict(thing.predictionContext, PlasmaKeyboardSettings.predictiveSuggestionCount, locale), "next");
-            return;
-        }
-
-        predictions = [];
+        predictor.request(thing.predictionPrefix, thing.predictionContext,
+                          inputPanel.InputContext.locale,
+                          PlasmaKeyboardSettings.predictiveSuggestionCount,
+                          PlasmaKeyboardSettings.predictiveMinPrefixLength,
+                          PlasmaKeyboardSettings.predictiveTypoCorrectionEnabled,
+                          PlasmaKeyboardSettings.predictiveNextWordEnabled);
     }
 
     Connections {
         target: thing
+        function onPredictionTargetChanged() {
+            root.updatePredictions();
+        }
         function onPredictionPrefixChanged() {
             root.updatePredictions();
         }
@@ -225,7 +197,7 @@ InputPanelWindow {
     Connections {
         target: PlasmaKeyboard.Stt
         function onTextRecognized(text) {
-            if (text.length > 0) {
+            if (root.auxiliaryUiAllowed && text.length > 0) {
                 thing.commitText(text);
             }
         }
@@ -767,7 +739,12 @@ InputPanelWindow {
             style: inputPanel.keyboard.style
             keyboardPanel: inputPanel
 
-            onShowSettings: root.showSettings()
+            settingsAllowed: root.auxiliaryUiAllowed
+            onShowSettings: {
+                if (root.auxiliaryUiAllowed) {
+                    root.showSettings();
+                }
+            }
         }
 
         // Whether the panel takes the full width of the screen. The floating
@@ -992,7 +969,7 @@ InputPanelWindow {
             readonly property bool hasSuggestions: root.predictions.length > 0
 
             //! Whether there are clipboard entries to offer.
-            readonly property bool hasClipboard: PlasmaKeyboardSettings.clipboardEnabled && thing.clipboardHistory.count > 0
+            readonly property bool hasClipboard: root.auxiliaryUiAllowed && thing.clipboardHistory.available && thing.clipboardHistory.count > 0
 
             //! Set when the clipboard was asked for while suggestions are
             //! available; a new word gives way to the suggestions again.
@@ -1003,6 +980,9 @@ InputPanelWindow {
             //! The chips of the row: the suggestions (with the part that would
             //! be added to the word) or the clipboard entries.
             readonly property var rowItems: {
+                if (!root.auxiliaryUiAllowed) {
+                    return [];
+                }
                 if (showingSuggestions) {
                     // What the engine offered is taken as it is: only a
                     // completion has a part to add, a correction and a
@@ -1037,11 +1017,14 @@ InputPanelWindow {
 
             //! Takes the cell the gamepad selected.
             function activate(column) {
+                if (!root.auxiliaryUiAllowed || !visible) {
+                    return;
+                }
                 if (column < rowItems.length) {
                     if (showingSuggestions) {
                         thing.applyPrediction(rowItems[column].text);
                     } else {
-                        thing.commitText(rowItems[column].text);
+                        thing.pasteClipboardEntry(column);
                     }
                     return;
                 }
@@ -1058,7 +1041,7 @@ InputPanelWindow {
                 }
             }
 
-            visible: showingSuggestions || hasClipboard
+            visible: root.auxiliaryUiAllowed && (showingSuggestions || hasClipboard)
             onVisibleChanged: {
                 if (!visible && root.extraRowFocus === root.zoneOf("suggestions")) {
                     root.extraRowFocus = 0;
@@ -1351,7 +1334,7 @@ InputPanelWindow {
         // height when it is shown, the keyboard itself keeps its size.
         Row {
             id: functionKeyRow
-            visible: PlasmaKeyboardSettings.showFunctionKeyRow
+            visible: root.auxiliaryUiAllowed && PlasmaKeyboardSettings.showFunctionKeyRow
             // Match the keyboard geometry: five rows fill the keyboard height,
             // and the visible key background is inset by keyBackgroundMargin.
             readonly property var kbdStyle: inputPanel.keyboard.style

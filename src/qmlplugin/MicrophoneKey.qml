@@ -23,7 +23,7 @@ BaseKey {
 
     functionKey: true
     highlighted: true
-    visible: PlasmaKeyboardSettings.sttEnabled
+    visible: PlasmaKeyboardSettings.sttEnabled && root.Window.window !== null && root.Window.window.auxiliaryUiAllowed === true
     keyPanelDelegate: fallbackPanel
 
     onClicked: {

@@ -100,6 +100,7 @@ public:
     uint32_t metaMask() const;
     uint32_t shiftMask() const;
 
+    bool predictionsAllowed() const;
     ContentHint contentHint() const;
     ContentPurpose contentPurpose() const;
     uint32_t cursorPos() const;
@@ -111,6 +112,8 @@ public:
     }
 
 Q_SIGNALS:
+    // Cleanup must run while key() still targets the outgoing context.
+    void contextAboutToChange();
     void contextChanged();
     void surroundingTextChanged();
     void cursorChanged();

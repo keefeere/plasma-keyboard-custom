@@ -29,6 +29,8 @@ class FocusedEditableTracker : public QObject
 
 public:
     explicit FocusedEditableTracker(QObject *parent = nullptr);
+    // Use an already connected accessibility bus (also useful for isolated tests).
+    explicit FocusedEditableTracker(const QDBusConnection &bus, QObject *parent = nullptr);
     ~FocusedEditableTracker() override;
 
     bool containsNormalizedTouch(const QPointF &position) const;
@@ -42,6 +44,9 @@ private Q_SLOTS:
                       const QDBusMessage &message);
 
 private:
+    void initialize(const QDBusConnection &bus);
+
+    quint64 m_focusGeneration = 0;
     std::unique_ptr<QDBusConnection> m_bus;
     QString m_connectionName;
     QString m_focusedService;

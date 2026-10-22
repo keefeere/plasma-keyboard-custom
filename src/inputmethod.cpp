@@ -81,6 +81,7 @@ void InputMethodContext::zwp_input_method_context_v1_commit_state(uint32_t seria
 
 void InputMethodContext::zwp_input_method_context_v1_content_type(uint32_t hint, uint32_t purpose)
 {
+    m_contentTypeKnown = true;
     m_contentHint = InputPlugin::ContentHint(hint);
     m_contentPurpose = InputPlugin::ContentPurpose(purpose);
     Q_EMIT contentTypeChanged();

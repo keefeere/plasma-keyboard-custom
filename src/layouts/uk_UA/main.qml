@@ -8,6 +8,9 @@ import QtQuick.Layouts
 import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
 
 KeyboardLayout {
+    id: pcLayout
+    // Caps Lock affects letters, not the punctuation level of PC keys.
+    readonly property bool symbolsShifted: InputContext.shiftActive && !InputContext.capsLockActive
 
     sharedLayouts: ['symbols']
     keyWeight: 160
@@ -23,91 +26,81 @@ KeyboardLayout {
             highlighted: true
         }
         Key {
-            text: "`"
+            text: pcLayout.symbolsShifted ? "~" : "`"
             alternativeKeys: "`~"
-            smallText: "~"
+            smallText: pcLayout.symbolsShifted ? "`" : "~"
             smallTextVisible: true
         }
         Key {
-            key: Qt.Key_1
-            text: "1"
+            text: pcLayout.symbolsShifted ? "!" : "1"
             alternativeKeys: "1!"
-            smallText: "!"
+            smallText: pcLayout.symbolsShifted ? "1" : "!"
             smallTextVisible: true
         }
         Key {
-            key: Qt.Key_2
-            text: "2"
-            alternativeKeys: "2@"
-            smallText: "@"
+            text: pcLayout.symbolsShifted ? "\"" : "2"
+            alternativeKeys: "2\"@"
+            smallText: pcLayout.symbolsShifted ? "2" : "\""
             smallTextVisible: true
         }
         Key {
-            key: Qt.Key_3
-            text: "3"
-            alternativeKeys: "3#"
-            smallText: "#"
+            text: pcLayout.symbolsShifted ? "№" : "3"
+            alternativeKeys: "3№#"
+            smallText: pcLayout.symbolsShifted ? "3" : "№"
             smallTextVisible: true
         }
         Key {
-            key: Qt.Key_4
-            text: "4"
-            alternativeKeys: "4$"
-            smallText: "$"
+            text: pcLayout.symbolsShifted ? ";" : "4"
+            alternativeKeys: "4;$"
+            smallText: pcLayout.symbolsShifted ? "4" : ";"
             smallTextVisible: true
         }
         Key {
-            key: Qt.Key_5
-            text: "5"
+            text: pcLayout.symbolsShifted ? "%" : "5"
             alternativeKeys: "5%"
-            smallText: "%"
+            smallText: pcLayout.symbolsShifted ? "5" : "%"
             smallTextVisible: true
         }
         Key {
-            key: Qt.Key_6
-            text: "6"
-            alternativeKeys: "6^"
-            smallText: "^"
+            text: pcLayout.symbolsShifted ? ":" : "6"
+            alternativeKeys: "6:^"
+            smallText: pcLayout.symbolsShifted ? "6" : ":"
             smallTextVisible: true
         }
         Key {
-            key: Qt.Key_7
-            text: "7"
-            alternativeKeys: "7&"
-            smallText: "&"
+            text: pcLayout.symbolsShifted ? "?" : "7"
+            alternativeKeys: "7?&"
+            smallText: pcLayout.symbolsShifted ? "7" : "?"
             smallTextVisible: true
         }
         Key {
-            key: Qt.Key_8
-            text: "8"
+            text: pcLayout.symbolsShifted ? "*" : "8"
             alternativeKeys: "8*"
-            smallText: "*"
+            smallText: pcLayout.symbolsShifted ? "8" : "*"
             smallTextVisible: true
         }
         Key {
-            key: Qt.Key_9
-            text: "9"
+            text: pcLayout.symbolsShifted ? "(" : "9"
             alternativeKeys: "9("
-            smallText: "("
+            smallText: pcLayout.symbolsShifted ? "9" : "("
             smallTextVisible: true
         }
         Key {
-            key: Qt.Key_0
-            text: "0"
+            text: pcLayout.symbolsShifted ? ")" : "0"
             alternativeKeys: "0)"
-            smallText: ")"
+            smallText: pcLayout.symbolsShifted ? "0" : ")"
             smallTextVisible: true
         }
         Key {
-            text: "-"
+            text: pcLayout.symbolsShifted ? "_" : "-"
             alternativeKeys: "-_"
-            smallText: "_"
+            smallText: pcLayout.symbolsShifted ? "-" : "_"
             smallTextVisible: true
         }
         Key {
-            text: "+"
-            alternativeKeys: "+="
-            smallText: "="
+            text: pcLayout.symbolsShifted ? "+" : "="
+            alternativeKeys: "=+"
+            smallText: pcLayout.symbolsShifted ? "=" : "+"
             smallTextVisible: true
         }
         BackspaceKey {
@@ -122,10 +115,10 @@ KeyboardLayout {
             highlighted: true
         }
         Key {
+            id: normalKey
             text: "й"
         }
         Key {
-            id: normalKey
             text: "ц"
         }
         Key {
@@ -159,10 +152,8 @@ KeyboardLayout {
             text: "ї"
         }
         Key {
-            text: "\\"
+            text: "ґ"
             alternativeKeys: "\\|/"
-            smallText: "|/"
-            smallTextVisible: true
         }
     }
     KeyboardRow {
@@ -177,8 +168,6 @@ KeyboardLayout {
         }
         Key {
             text: "ф"
-            weight: normalKeyWidth
-            Layout.fillWidth: false
         }
         Key {
             text: "і"
@@ -209,8 +198,6 @@ KeyboardLayout {
         }
         Key {
             text: "є"
-            weight: normalKeyWidth
-            Layout.fillWidth: false
         }
         EnterKey {
             weight: normalKeyWidth * 2
@@ -221,9 +208,6 @@ KeyboardLayout {
         ShiftKey {
             weight: normalKeyWidth
             Layout.fillWidth: false
-        }
-        Key {
-            text: "ґ"
         }
         Key {
             text: "я"
@@ -255,23 +239,10 @@ KeyboardLayout {
             text: "ю"
         }
         Key {
-            key: Qt.Key_Comma
-            weight: normalKeyWidth
-            Layout.fillWidth: false
-            text: ","
-            smallText: "\u2699"
-            smallTextVisible: keyboard.isFunctionPopupListAvailable()
-            highlighted: true
-        }
-        Key {
-            key: Qt.Key_Period
-            weight: normalKeyWidth
-            Layout.fillWidth: false
-            text: "."
-            alternativeKeys: "!.?"
-            smallText: "!?"
+            text: pcLayout.symbolsShifted ? "," : "."
+            alternativeKeys: ".,!?"
+            smallText: pcLayout.symbolsShifted ? "." : ","
             smallTextVisible: true
-            highlighted: true
         }
         FillerKey {
             weight: normalKeyWidth

@@ -10,9 +10,19 @@ lock_keyboard=${2:?missing lock-screen keyboard desktop file}
 set_keyboard()
 {
     local desktop_file=$1
-    local configured
+    local configured enabled
+
+    enabled=$(kreadconfig6 --file kwinrc --group Wayland --key VirtualKeyboardEnabled --default true)
+    if [[ $enabled != "true" ]]; then
+        return
+    fi
 
     configured=$(kreadconfig6 --file kwinrc --group Wayland --key InputMethod)
+    # Never undo the user's choice of None or another input method. Only
+    # switch between the two keyboards managed by this service.
+    if [[ $configured != "$session_keyboard" && $configured != "$lock_keyboard" ]]; then
+        return
+    fi
     if [[ $configured == "$desktop_file" ]]; then
         return
     fi

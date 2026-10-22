@@ -15,6 +15,15 @@ OverlayController::OverlayController(InputPlugin *inputPlugin, QObject *parent)
     , m_inputPlugin(inputPlugin)
     , m_candidateModel(new CandidateModel(this))
 {
+    if (m_inputPlugin) {
+        connect(m_inputPlugin, &InputPlugin::contextAboutToChange, this, [this] {
+            cancelOverlay();
+            // Release suppression belongs to the old grab, not the new field.
+            m_swallowNextRelease = false;
+            m_ignoreReleaseNativeScanCode = 0;
+        });
+    }
+
     m_holdTimer.setSingleShot(true);
     connect(&m_holdTimer, &QTimer::timeout, this, &OverlayController::handleTimerExpired);
 
@@ -210,6 +219,9 @@ bool OverlayController::processKeyRelease(QKeyEvent *event)
         // Now that the physical key is released, we will simply not handle the release
         // event, so it gets forwarded and the client sees the release and stops repeating.
         // qCDebug(PlasmaKeyboard) << "Stopping repeat for" << m_repeatNativeScanCode;
+        // This physical release is forwarded by Keyboard::keyboard_key().
+        // Do not synthesize a second release during reset.
+        m_repeatNativeScanCode = 0;
         resetState();
         return false;
     }
@@ -529,14 +541,8 @@ bool OverlayController::openAlternates(const QStringList &alternates)
         return false;
     }
 
-    // A pending long press of a physical key would otherwise open its own
-    // overlay on top of this one.
-    if (m_holdTimer.isActive()) {
-        m_holdTimer.stop();
-    }
-    m_pendingText.clear();
-    m_pendingNativeScanCode = 0;
-    m_pendingTrigger = nullptr;
+    // Replacing a physical-key overlay must also end any synthetic repeat.
+    cancelOverlay();
 
     // Opening this overlay is not caused by typing, so the base text is empty
     // and no commit_string is sent. The client may still report a surrounding
@@ -640,17 +646,19 @@ void OverlayController::executeAction(const OverlayTriggerResult &result, Overla
         // Flush any previous pending state to prevent character drops during
         // key rollover.
         if (!m_pendingText.isEmpty()) {
-            // qCDebug(PlasmaKeyboard) << "New pending key arrived; flushing old pending state for" << m_pendingText;
-            if (m_holdTimer.isActive()) {
-                m_holdTimer.stop();
+            // The trigger has already processed the new press. Reset only
+            // controller state, not that trigger's newly armed timer state.
+            if (!m_pendingKeyReleased) {
+                m_ignoreReleaseNativeScanCode = m_pendingNativeScanCode;
+                m_swallowNextRelease = true;
             }
-            m_ignoreReleaseNativeScanCode = m_pendingNativeScanCode;
-            m_swallowNextRelease = true;
+            resetState();
         }
 
         // Set new pending state and start the hold timer
         m_pendingText = result.pendingText;
         m_pendingNativeScanCode = result.pendingNativeScanCode;
+        m_pendingKeyReleased = false;
         m_pendingTrigger = trigger;
         if (result.timerDurationMs > 0) {
             // qCDebug(PlasmaKeyboard) << "Starting timer for" << m_pendingText << "duration" << result.timerDurationMs << "ms";
@@ -708,7 +716,18 @@ void OverlayController::resetState()
     if (m_holdTimer.isActive()) {
         m_holdTimer.stop();
     }
-    m_repeatNativeScanCode = 0;
+    if (m_repeatNativeScanCode != 0) {
+        // A synthetic repeat press must be balanced on every cancellation,
+        // including rollover and context replacement. Remember to consume the
+        // later physical release, since the client already received key-up.
+        const quint32 key = m_repeatNativeScanCode;
+        m_repeatNativeScanCode = 0;
+        if (m_inputPlugin) {
+            m_inputPlugin->key(InputPlugin::Released, key);
+        }
+        m_ignoreReleaseNativeScanCode = key;
+        m_swallowNextRelease = true;
+    }
     m_overlayGraceTimer.stop();
 
     const bool wasVisible = m_overlayVisible;

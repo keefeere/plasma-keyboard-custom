@@ -535,6 +535,8 @@ private Q_SLOTS:
             return;
         }
 
+        qputenv("XDG_CONFIG_HOME", qPrintable(m_home.path() + QStringLiteral("/.config")));
+
         {
             KConfig cfg(QStringLiteral("plasmakeyboardrc"));
             KConfigGroup grp(&cfg, QStringLiteral("General"));
@@ -589,6 +591,8 @@ private Q_SLOTS:
         });
         auto env = QProcessEnvironment::systemEnvironment();
         env.insert(u"WAYLAND_DISPLAY"_s, m_socketPath);
+        env.insert(u"QT_QPA_PLATFORM"_s, u"wayland"_s);
+        env.insert(u"XDG_RUNTIME_DIR"_s, m_runtimeDir.path());
         env.insert(u"QT_QUICK_BACKEND"_s, u"software"_s); // Without this plasma-keyboard explodes on alpine for some reason
         m_child->setProcessEnvironment(env);
 
@@ -994,6 +998,37 @@ private Q_SLOTS:
         QCOMPARE(keySpy.at(secondLast).at(1).toUInt(), static_cast<uint32_t>(WL_KEYBOARD_KEY_STATE_PRESSED));
         QCOMPARE(keySpy.at(last).at(0).toUInt(), static_cast<uint32_t>(KEY_A));
         QCOMPARE(keySpy.at(last).at(1).toUInt(), static_cast<uint32_t>(WL_KEYBOARD_KEY_STATE_RELEASED));
+    }
+
+    // Starting another diacritic key must balance an outstanding synthetic
+    // repeat press even before the old physical key is released.
+    void testRepeatRolloverBalancesPress()
+    {
+        auto *context = m_inputMethod->context();
+        auto *keyboard = context->keyboard();
+        QSignalSpy keySpy(context, &InputMethodContext::keyReceived);
+        keyboard->sendKey(KEY_A, WL_KEYBOARD_KEY_STATE_PRESSED);
+        wl_display_flush_clients(m_compositor->display());
+        // Initial click, then the synthetic repeat press after hold + grace.
+        QTRY_VERIFY_WITH_TIMEOUT(keySpy.count() >= 3, 5000);
+        QCOMPARE(keySpy.at(2).at(0).toUInt(), uint32_t(KEY_A));
+        QCOMPARE(keySpy.at(2).at(1).toUInt(), uint32_t(WL_KEYBOARD_KEY_STATE_PRESSED));
+
+        keyboard->sendKey(KEY_E, WL_KEYBOARD_KEY_STATE_PRESSED);
+        wl_display_flush_clients(m_compositor->display());
+        QTest::qWait(100);
+        // Check before sending either physical release: cancellation itself
+        // must end the synthetic press, not rely on a future physical event.
+        bool released = false;
+        for (int i = 3; i < keySpy.count(); ++i) {
+            const auto &event = keySpy.at(i);
+            released |= event.at(0).toUInt() == KEY_A && event.at(1).toUInt() == WL_KEYBOARD_KEY_STATE_RELEASED;
+        }
+        keyboard->sendKey(KEY_A, WL_KEYBOARD_KEY_STATE_RELEASED);
+        keyboard->sendKey(KEY_E, WL_KEYBOARD_KEY_STATE_RELEASED);
+        wl_display_flush_clients(m_compositor->display());
+        QTest::qWait(100);
+        QVERIFY2(released, "Rollover left the synthetic repeat key pressed");
     }
 
     void cleanupTestCase()

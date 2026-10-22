@@ -1,66 +1,64 @@
 /*
     SPDX-FileCopyrightText: 2026 Plasma Keyboard contributors
-
     SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
 */
-
 #pragma once
 
 #include <QAbstractListModel>
+#include <QDBusConnection>
+#include <QPointer>
 #include <QStringList>
 #include <QTimer>
 #include <qqmlintegration.h>
 
-/**
- * Recent clipboard entries, shown in a row above the keyboard.
- *
- * The keyboard window is never focused, so it cannot read the Wayland
- * selection itself. The entries are asked for over D-Bus instead, from the
- * clipboard manager of the desktop (org.kde.klipper, i.e. the clipboard widget
- * in the Plasma panel), which keeps the history and tells us when it changes.
+class SessionLockState;
+
+/** Session clipboard suggestions. No access until both session and field are
+ * known safe. All Klipper calls are asynchronous; stale replies are discarded.
+ * Clearing the local cache on lock never clears the desktop's clipboard.
  */
 class ClipboardHistory : public QAbstractListModel
 {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("ClipboardHistory is created in C++ and passed to QML.")
-
-    //! Number of entries, so the row can hide itself when there are none.
     Q_PROPERTY(int count READ count NOTIFY countChanged)
+    Q_PROPERTY(bool available READ isAvailable NOTIFY availableChanged)
 
 public:
-    enum Role {
-        TextRole = Qt::UserRole + 1,
-    };
-
-    explicit ClipboardHistory(QObject *parent = nullptr);
+    enum Role { TextRole = Qt::UserRole + 1 };
+    explicit ClipboardHistory(SessionLockState *lockState, QObject *parent = nullptr);
+    ClipboardHistory(SessionLockState *lockState, const QDBusConnection &bus, QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
-
     int count() const;
-
-    //! Text of the entry at @p row, or an empty string when out of range.
+    bool isAvailable() const;
+    // Only trusted C++ field-state updates can enable access, never QML.
+    void setAccessAllowed(bool allowed);
     Q_INVOKABLE QString textAt(int row) const;
-
-    //! Forgets the whole history (the clipboard manager does the same).
     Q_INVOKABLE void clear();
 
 Q_SIGNALS:
     void countChanged();
+    void availableChanged();
 
 private Q_SLOTS:
-    //! Re-reads the entries from the clipboard manager.
     void refresh();
-
-private:
-    //! Starts or stops following the clipboard, depending on the setting.
     void updateEnabled();
 
-    //! The entry at @p index, or an empty string when there is none.
-    static QString historyItem(int index);
-
+private:
+    void fetchItem(int index, quint64 generation);
+    void clearLocal();
+    void publish();
+    QDBusConnection m_bus;
+    QPointer<SessionLockState> m_lockState;
     QTimer m_pollTimer;
     QStringList m_entries;
+    QStringList m_pendingEntries;
+    quint64 m_generation = 0;
+    bool m_accessAllowed = false;
+    bool m_callInFlight = false;
+    bool m_refreshAgain = false;
 };

@@ -66,6 +66,7 @@ public:
     uint32_t m_latestSerial = 0;
     uint32_t m_lastKeyboardSerial = 0;
     uint32_t m_lastKeyboardTime = 0;
+    bool m_contentTypeKnown = false;
     InputPlugin::ContentHint m_contentHint = InputPlugin::content_hint_none;
     InputPlugin::ContentPurpose m_contentPurpose = InputPlugin::content_purpose_normal;
 

@@ -88,12 +88,17 @@ target_sources(plasma-keyboard-custom PRIVATE
     restartwatcher.h
     settingsreloader.cpp
     settingsreloader.h
+    sessionlockstate.cpp
+    sessionlockstate.h
     systemlayoutsync.cpp
     systemlayoutsync.h
     touchholdwatcher.cpp
     uinputkeyboard.cpp
     uinputkeyboard.h
     inputplugin.h
+    inputcontentpolicy.h
+    panelstubgeometry.h
+    keyboardroleprivacy.h
     theme/thememanager.cpp
     theme/thememanager.h
     qwaylandinputpanelshellintegration.cpp
@@ -117,6 +122,8 @@ target_sources(plasma-keyboard-custom PRIVATE
     overlay/textexpansiontrigger.h
     prediction.qrc
     icons.qrc
+    prediction/asyncpredictor.cpp
+    prediction/asyncpredictor.h
     prediction/predictivedictionary.cpp
     prediction/predictivedictionary.h
     prediction/hunspelldictionary.cpp

@@ -4,6 +4,11 @@
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Test WaylandCompositor)
 include(ECMAddTests)
 
+find_program(BASH_EXECUTABLE bash REQUIRED)
+add_test(NAME lockswitchertest COMMAND ${BASH_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/lockswitchertest.sh
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/plasma-keyboard-lock-switcher)
+
 file(GENERATE
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/mockinputmethodcompositor_config.h
     CONTENT "#pragma once\n#define PLASMA_KEYBOARD_BINARY_PATH \"$<TARGET_FILE:plasma-keyboard-custom>\"\n"
@@ -24,6 +29,122 @@ qt6_generate_wayland_protocol_server_sources(mockinputmethodcompositor
     FILES
         ${WaylandProtocols_DATADIR}/unstable/input-method/input-method-unstable-v1.xml
         ${Wayland_DATADIR}/wayland.xml
+)
+
+# Exercise the production overlay state machine with a recording input facade.
+ecm_add_test(overlaycontrollertest.cpp
+    overlaytestsupport/inputplugin.h
+    ../src/overlay/overlaycontroller.cpp
+    ../src/overlay/candidatemodel.cpp
+    ../src/overlay/overlaytrigger.cpp
+    TEST_NAME overlaycontrollertest
+    LINK_LIBRARIES Qt::Core Qt::Gui Qt::Qml Qt::VirtualKeyboard Qt::Test PkgConfig::XKBCommon
+)
+target_include_directories(overlaycontrollertest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlaytestsupport
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/overlay
+)
+
+# Run on a private session bus with PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1
+# and QT_QPA_PLATFORM=offscreen in headless CI.
+ecm_add_test(focusededitabletrackertest.cpp
+    ../src/focusededitabletracker.cpp
+    TEST_NAME focusededitabletrackertest
+    LINK_LIBRARIES Qt::Core Qt::Gui Qt::DBus Qt::Test
+)
+target_include_directories(focusededitabletrackertest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlaytestsupport
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)
+
+ecm_add_test(layoutshiftqttest.cpp
+    TEST_NAME layoutshiftqttest
+    LINK_LIBRARIES Qt::Core Qt::Gui Qt::Qml Qt::Quick Qt::Test
+)
+target_compile_definitions(layoutshiftqttest PRIVATE LAYOUT_SHIFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
+
+# These tests evaluate the actual layout JS bindings without desktop input.
+find_program(NODE_EXECUTABLE NAMES node nodejs)
+if(NODE_EXECUTABLE)
+    add_test(NAME layoutshifttest COMMAND ${NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/layoutshifttest.mjs)
+endif()
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(NAME lockscreenpatchtest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/lockscreenpatchtest.py)
+
+if(LayerShellQt_VERSION VERSION_GREATER_EQUAL 6.6.0)
+    ecm_add_test(layershelloutputpolicytest.cpp
+        TEST_NAME layershelloutputpolicytest
+        LINK_LIBRARIES Qt::Core Qt::Gui Qt::Test LayerShellQt::Interface
+    )
+endif()
+
+ecm_add_test(keyboardvisibilitystatetest.cpp
+    TEST_NAME keyboardvisibilitystatetest
+    LINK_LIBRARIES Qt::Core Qt::Test
+)
+target_include_directories(keyboardvisibilitystatetest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+
+ecm_add_test(keyboardvisibilityordertest.cpp
+    TEST_NAME keyboardvisibilityordertest
+    LINK_LIBRARIES Qt::Core Qt::Gui Qt::Quick Qt::Test
+)
+
+ecm_add_test(lockscreenfocustest.cpp
+    TEST_NAME lockscreenfocustest
+    LINK_LIBRARIES Qt::Core Qt::Gui Qt::Qml Qt::Quick Qt::Test
+)
+target_compile_definitions(lockscreenfocustest PRIVATE LOCKSCREEN_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+
+ecm_add_test(panelstubgeometrytest.cpp
+    TEST_NAME panelstubgeometrytest
+    LINK_LIBRARIES Qt::Core Qt::Gui Qt::Test
+)
+target_include_directories(panelstubgeometrytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+
+ecm_add_test(clipboardhistorytest.cpp
+    clipboardtestsupport/plasmakeyboardsettings.h
+    ../src/clipboard/clipboardhistory.cpp
+    ../src/sessionlockstate.cpp
+    TEST_NAME clipboardhistorytest
+    LINK_LIBRARIES Qt::Core Qt::DBus Qt::Qml Qt::Test
+)
+target_include_directories(clipboardhistorytest BEFORE PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/clipboardtestsupport
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/clipboard
+)
+
+# Private D-Bus only, like focusededitabletrackertest.
+ecm_add_test(sessionlockstatetest.cpp
+    ../src/sessionlockstate.cpp
+    TEST_NAME sessionlockstatetest
+    LINK_LIBRARIES Qt::Core Qt::DBus Qt::Test
+)
+target_include_directories(sessionlockstatetest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+
+ecm_add_test(inputcontentpolicytest.cpp
+    TEST_NAME inputcontentpolicytest
+    LINK_LIBRARIES Qt::Core Qt::Gui Qt::Test
+)
+target_include_directories(inputcontentpolicytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+
+ecm_add_test(asyncpredictortest.cpp
+    ../src/prediction/asyncpredictor.cpp
+    ../src/prediction/predictivedictionary.cpp
+    ../src/prediction/hunspelldictionary.cpp
+    ../src/prediction/wordpredictor.cpp
+    ../src/prediction/wordlookup.cpp
+    TEST_NAME asyncpredictortest
+    LINK_LIBRARIES Qt::Core Qt::Qml Qt::Test
+)
+target_include_directories(asyncpredictortest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction)
+qt_add_resources(asyncpredictortest "async_prediction_data"
+    PREFIX "/prediction"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction/data"
+    FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction/data/en.bin"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../src/prediction/data/en.ngrams"
 )
 
 # The predictive text engine is compiled into the test directly: it is a part

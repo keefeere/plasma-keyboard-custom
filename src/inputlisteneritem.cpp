@@ -18,6 +18,7 @@
 #include "overlay/prefixquerytrigger.h"
 #include "overlay/textexpansiontrigger.h"
 #include "prediction/wordatcursor.h"
+#include "inputcontentpolicy.h"
 
 #include <QDBusConnection>
 #include <QDBusMessage>
@@ -40,16 +41,6 @@ namespace
 // Timestamp (ms since epoch) until which the next input activation must show
 // the keyboard immediately, bypassing the long-press mode.
 std::atomic<qint64> s_forceShowUntil{0};
-
-bool screenIsLocked()
-{
-    const QDBusMessage request = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.ScreenSaver"),
-                                                                QStringLiteral("/ScreenSaver"),
-                                                                QStringLiteral("org.freedesktop.ScreenSaver"),
-                                                                QStringLiteral("GetActive"));
-    const QDBusMessage reply = QDBusConnection::sessionBus().call(request);
-    return reply.type() == QDBusMessage::ReplyMessage && !reply.arguments().isEmpty() && reply.arguments().constFirst().toBool();
-}
 
 // The keyboard window is a layer-shell surface, which the compositor never
 // activates on its own, so Qt has to be told that the window holding the input
@@ -198,8 +189,9 @@ Q_GLOBAL_STATIC_WITH_ARGS(const QList<Qt::Key>, KEYBOARD_NAVIGATION_ACTIVE_CAPTU
 
 InputListenerItem::InputListenerItem()
     : m_input(&(*s_im))
+    , m_sessionLockState(*SessionLockState::instance())
     , m_overlayController(new OverlayController(&m_input, this))
-    , m_clipboardHistory(new ClipboardHistory(this))
+    , m_clipboardHistory(new ClipboardHistory(&m_sessionLockState, this))
     , m_uinput(std::make_unique<UinputKeyboard>())
 {
     // Grab and listen to physical keyboard input
@@ -234,14 +226,56 @@ InputListenerItem::InputListenerItem()
         QGuiApplication::inputMethod()->reset();
     });
 
+    connect(this, &InputListenerItem::predictionTargetChanged, this, [this] {
+        m_clipboardHistory->setAccessAllowed(predictionActive());
+        if (!predictionActive() && m_overlayController) {
+            m_overlayController->cancelOverlay();
+        }
+    });
+
+    connect(&m_sessionLockState, &SessionLockState::unlocked, this, [this] {
+        // The panel belongs to the lock-screen field, not the desktop field
+        // which may acquire focus immediately after authentication.
+        m_hideDelay->stop();
+        m_touchHold.disarm();
+        m_longPressNeedsHitTest = false;
+        m_hiddenByUser = true;
+        QGuiApplication::inputMethod()->hide();
+        QGuiApplication::inputMethod()->reset();
+    });
+    connect(&m_sessionLockState, &SessionLockState::stateChanged, this, [this] {
+        Q_EMIT predictionTargetChanged();
+        updatePredictionWords();
+        // A lock notification is not an input-panel request. In particular,
+        // the current context may still belong to an ordinary desktop field.
+        if (!m_sessionLockState.isKnown() || m_sessionLockState.isPreparingLock()) {
+            m_hideDelay->stop();
+            m_touchHold.disarm();
+            m_longPressNeedsHitTest = false;
+            m_hiddenByUser = true;
+            QGuiApplication::inputMethod()->hide();
+            QGuiApplication::inputMethod()->reset();
+        }
+    });
+
     connect(&m_input, &InputPlugin::contextChanged, this, [this] {
         const bool hasContext = m_input.hasContext();
 
+        // Invalidate asynchronous results even if the new field has the same word.
+        Q_EMIT predictionTargetChanged();
         updatePredictionWords();
 
-        // Cancel any pending overlay state when the input context changes (focus loss or target swap)
-        if (m_overlayController) {
-            m_overlayController->cancelOverlay();
+        // Overlay cleanup runs on contextAboutToChange, before the old
+        // context is dropped, so synthetic releases reach the correct client.
+
+        // During lock, KWin's explicit panel visibility is authoritative.
+        // An activation/adopt can still carry a stale desktop context.
+        if (!m_sessionLockState.allowsPredictions()) {
+            m_hideDelay->stop();
+            m_touchHold.disarm();
+            m_longPressNeedsHitTest = false;
+            QGuiApplication::inputMethod()->update(Qt::ImQueryAll);
+            return;
         }
 
         if (hasContext && m_hideDelay->isActive()) {
@@ -275,7 +309,7 @@ InputListenerItem::InputListenerItem()
             // so long-press hit testing can never prove that the touch belongs
             // to its password field. A lock-screen input context is already an
             // explicit request to type and must show immediately.
-            const bool lockScreenActive = screenIsLocked();
+            const bool lockScreenActive = m_sessionLockState.isKnown() && m_sessionLockState.isLocked();
             const bool waitForLongTouch = !forceShow && !lockScreenActive && longTapSetting;
             const int longTouchThreshold = PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs();
             const bool watchingTouch = waitForLongTouch && m_touchHold.arm(longTouchThreshold);
@@ -317,7 +351,7 @@ InputListenerItem::InputListenerItem()
         // text field while the diacritics overlay was open or the hold timer was
         // still running). The controller uses an internal counter to distinguish
         // its own commit_string echoes from external cursor moves.
-        if (m_overlayController) {
+        if (predictionActive() && m_overlayController) {
             m_overlayController->handleSurroundingTextChanged();
         }
 
@@ -325,7 +359,7 @@ InputListenerItem::InputListenerItem()
             // Re-activate when text input activates, and there is context.
             // Never do it while the keyboard was hidden on purpose: the field
             // keeps sending updates and the panel would pop up again at once.
-            if (!m_hiddenByUser && !m_touchHold.isArmed() && !window()->isVisible()) {
+            if (m_sessionLockState.allowsPredictions() && !m_hiddenByUser && !m_touchHold.isArmed() && !window()->isVisible()) {
                 activateKeyboardWindow(window());
                 QGuiApplication::inputMethod()->setVisible(true);
             }
@@ -335,6 +369,13 @@ InputListenerItem::InputListenerItem()
                 QGuiApplication::inputMethod()->update(Qt::ImSurroundingText);
             }
         }
+    });
+    connect(&m_input, &InputPlugin::contentTypeChanged, this, [this] {
+        // A normal field can become protected without changing input context.
+        // Cancel in-flight results before exposing any new word to QML.
+        Q_EMIT predictionTargetChanged();
+        updatePredictionWords();
+        QGuiApplication::inputMethod()->update(Qt::ImHints | Qt::ImSurroundingText);
     });
     connect(&m_input, &InputPlugin::cursorChanged, this, [this] {
         // Moving the cursor moves the word that is being typed.
@@ -353,6 +394,9 @@ InputListenerItem::InputListenerItem()
     });
 
     connect(&m_touchHold, &TouchHoldWatcher::longPress, this, [this] {
+        if (!m_sessionLockState.allowsPredictions()) {
+            return;
+        }
         if (m_longPressNeedsHitTest && !m_focusedEditable.containsNormalizedTouch(m_touchHold.normalizedPosition())) {
             qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: hold was outside the focused editable widget";
             return;
@@ -379,7 +423,7 @@ InputListenerItem::InputListenerItem()
             // context went away). Remember it, so that a text field which keeps
             // sending updates cannot bring the panel back on its own.
             m_hiddenByUser = true;
-            if (m_input.hasContext() && PlasmaKeyboardSettings::self()->showOnLongTap()
+            if (m_sessionLockState.allowsPredictions() && m_input.hasContext() && PlasmaKeyboardSettings::self()->showOnLongTap()
                 && m_touchHold.watchContinuously(PlasmaKeyboardSettings::self()->showOnLongTapThresholdMs())) {
                 m_longPressNeedsHitTest = true;
             }
@@ -394,7 +438,7 @@ InputListenerItem::InputListenerItem()
         // qCDebug(PlasmaKeyboard) << "keyPressed. keycode:" << keyEvent->key() << "text:" << keyEvent->text() << "modifiers:" << keyEvent->modifiers();
 
         // Delegate to overlay controller for diacritics/emoji/text expansion
-        if (m_overlayController && m_overlayController->processKeyPress(keyEvent)) {
+        if (predictionActive() && m_overlayController && m_overlayController->processKeyPress(keyEvent)) {
             keyEvent->accept();
             return;
         }
@@ -485,9 +529,17 @@ void InputListenerItem::commitText(const QString &text)
     m_input.commit(text);
 }
 
+void InputListenerItem::pasteClipboardEntry(int row)
+{
+    if (!predictionActive()) {
+        return;
+    }
+    commitText(m_clipboardHistory->textAt(row));
+}
+
 QString InputListenerItem::textBeforeCursor() const
 {
-    if (!m_input.hasContext()) {
+    if (!predictionActive() || !PlasmaKeyboardSettings::self()->predictiveTextEnabled()) {
         return {};
     }
 
@@ -524,7 +576,7 @@ void InputListenerItem::updatePredictionWords()
 
 void InputListenerItem::applyPrediction(const QString &word)
 {
-    if (word.isEmpty() || !m_input.hasContext()) {
+    if (word.isEmpty() || !predictionActive() || !PlasmaKeyboardSettings::self()->predictiveTextEnabled()) {
         return;
     }
 
@@ -537,8 +589,6 @@ void InputListenerItem::applyPrediction(const QString &word)
         commitText(committed);
         return;
     }
-
-    qCDebug(PlasmaKeyboard) << "applyPrediction: replacing" << prefix << "with" << committed;
 
     // Replace the word that was typed with the suggestion: the replacement is
     // what the clients expect for a completion, and inputMethodEvent() already
@@ -574,7 +624,7 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
         return m_input.surroundingText();
     case Qt::ImHints: {
         const auto imHints = m_input.contentHint();
-        Qt::InputMethodHints qtHints;
+        Qt::InputMethodHints qtHints = InputContentPolicy::privacyHints(imHints, m_input.contentPurpose());
 
         // Disable Qt VirtualKeyboard's hunspell plugin
         // It deals poorly with current external cursor position change

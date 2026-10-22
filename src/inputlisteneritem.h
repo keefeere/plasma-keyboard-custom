@@ -9,6 +9,7 @@
 #pragma once
 
 #include "focusededitabletracker.h"
+#include "sessionlockstate.h"
 #include "touchholdwatcher.h"
 #include <QQuickItem>
 #include <QQuickWindow>
@@ -109,6 +110,7 @@ class InputListenerItem : public QQuickItem
      * Recent clipboard entries, shown in a row above the keyboard.
      */
     Q_PROPERTY(ClipboardHistory *clipboardHistory READ clipboardHistory CONSTANT)
+    Q_PROPERTY(bool auxiliaryUiAllowed READ predictionActive NOTIFY predictionTargetChanged)
 
     /**
      * The word being typed: the letters before the cursor, together with the
@@ -116,6 +118,7 @@ class InputListenerItem : public QQuickItem
      * field is not being typed into or the cursor is not after a word.
      */
     Q_PROPERTY(QString predictionPrefix READ predictionPrefix NOTIFY predictionPrefixChanged)
+    Q_PROPERTY(bool predictionActive READ predictionActive NOTIFY predictionTargetChanged)
 
     /**
      * The word before the one being typed: the last word of the text before
@@ -147,6 +150,12 @@ public:
      * Used by the clipboard row to paste a copied text.
      */
     Q_INVOKABLE void commitText(const QString &text);
+    Q_INVOKABLE void pasteClipboardEntry(int row);
+
+    bool predictionActive() const
+    {
+        return m_sessionLockState.allowsPredictions() && m_input.predictionsAllowed();
+    }
 
     /**
      * The word being typed, as offered to the predictive text input.
@@ -193,6 +202,7 @@ Q_SIGNALS:
     void keyNavigationPressed(int key);
     void keyNavigationReleased(int key);
     void predictionPrefixChanged();
+    void predictionTargetChanged();
     void predictionContextChanged();
 
 private:
@@ -230,6 +240,7 @@ private:
     QString textBeforeCursor() const;
 
     InputPlugin m_input;
+    SessionLockState &m_sessionLockState;
     OverlayController *m_overlayController = nullptr;
     ClipboardHistory *m_clipboardHistory = nullptr;
     TouchHoldWatcher m_touchHold;
